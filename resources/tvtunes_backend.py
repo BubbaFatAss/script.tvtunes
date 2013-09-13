@@ -60,14 +60,20 @@ class mythread( threading.Thread ):
         
     def run( self ):
         try:
+            isStartedDueToInfoScreen = False
             while (not self._stop):           # the code
                 if not xbmc.getCondVisibility( "Window.IsVisible(10025)"): self.stop()      #destroy threading
+                
+                if xbmc.getCondVisibility( "Window.IsVisible(12003)") and not xbmc.Player().isPlaying() and "plugin://" not in xbmc.getInfoLabel( "ListItem.Path" ) and not xbmc.getInfoLabel( "container.folderpath" ) == "videodb://5/":
+                    isStartedDueToInfoScreen = True
 
-                if xbmc.getCondVisibility( "Container.Content(Seasons)" ) or xbmc.getCondVisibility( "Container.Content(Episodes)" ) and not xbmc.Player().isPlaying() and "plugin://" not in xbmc.getInfoLabel( "ListItem.Path" ) and not xbmc.getInfoLabel( "container.folderpath" ) == "videodb://5/":
+                if isStartedDueToInfoScreen or xbmc.getCondVisibility( "Container.Content(Seasons)" ) or xbmc.getCondVisibility( "Container.Content(Episodes)" ) and not xbmc.Player().isPlaying() and "plugin://" not in xbmc.getInfoLabel( "ListItem.Path" ) and not xbmc.getInfoLabel( "container.folderpath" ) == "videodb://5/":
                     if self.enable_custom_path == "true":
                         tvshow = xbmc.getInfoLabel( "ListItem.TVShowTitle" ).replace(":","")
                         tvshow = normalize_string( tvshow )
                         self.newpath = os.path.join(self.custom_path, tvshow).decode("utf-8")
+                    elif xbmc.getCondVisibility( "Window.IsVisible(12003)") and xbmc.getInfoLabel( "container.folderpath" ) == "videodb://2/2/":
+                        self.newpath = xbmc.getInfoLabel( "ListItem.FilenameAndPath" )
                     else:
                         self.newpath = xbmc.getInfoLabel( "ListItem.Path" )
                     if not self.newpath == self.oldpath and not self.newpath == "" and not self.newpath == "videodb://2/2/":
@@ -82,7 +88,8 @@ class mythread( threading.Thread ):
                     if self.loud: self.raise_volume()
                     xbmcgui.Window( 10025 ).clearProperty('TvTunesIsAlive')
 
-                if xbmc.getCondVisibility( "Container.Content(tvshows)" ) and self.playpath and not xbmc.getCondVisibility( "Window.IsVisible(12003)" ):
+                if (xbmc.getCondVisibility( "Container.Content(tvshows)" ) or xbmc.getCondVisibility( "Container.Content(movies)" ) ) and self.playpath and not xbmc.getCondVisibility( "Window.IsVisible(12003)" ):
+                    isStartedDueToInfoScreen = False
                     log( "### reinit condition" )
                     self.newpath = ""
                     self.oldpath = ""
