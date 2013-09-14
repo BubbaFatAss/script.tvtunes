@@ -68,7 +68,7 @@ class mythread( threading.Thread ):
                     isStartedDueToInfoScreen = True
 
                 if isStartedDueToInfoScreen or xbmc.getCondVisibility( "Container.Content(Seasons)" ) or xbmc.getCondVisibility( "Container.Content(Episodes)" ) and not xbmc.Player().isPlaying() and "plugin://" not in xbmc.getInfoLabel( "ListItem.Path" ) and not xbmc.getInfoLabel( "container.folderpath" ) == "videodb://5/":
-                    if self.enable_custom_path == "true":
+                    if self.enable_custom_path == "true" and not xbmc.getCondVisibility( "Container.Content(movies)" ):
                         tvshow = xbmc.getInfoLabel( "ListItem.TVShowTitle" ).replace(":","")
                         tvshow = normalize_string( tvshow )
                         self.newpath = os.path.join(self.custom_path, tvshow).decode("utf-8")
