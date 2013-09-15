@@ -102,7 +102,7 @@ class mythread( threading.Thread ):
                     if self.loud: self.raise_volume()
                     xbmcgui.Window( 10025 ).clearProperty('TvTunesIsAlive')
 
-                if xbmc.getInfoLabel( "container.folderpath" ) == "videodb://2/2/":
+                if (xbmc.getInfoLabel( "container.folderpath" ) == "videodb://2/2/") or (xbmc.getCondVisibility( "Container.Content(movies)" ) and not xbmc.getCondVisibility( "Window.IsVisible(12003)" )):
                     # clear the last tune path if we are back at the root of the tvshow library
                     self.prevplaypath = ""
 
