@@ -1,3 +1,10 @@
+v3.1.1b
+- Restructured code to try and improve reset of volume
+- Added support for different file types
+- Added support for multiple theme files (default order alphabetical)
+- Added option to allow multiple files to be shuffled in the playlist
+- Added option to allow random start point within media track
+
 v3.1.0
 - Added support for playing themes on display of the Info Screen for TV and Movies
 
@@ -191,7 +198,7 @@ add this button in MyVideoNav.xml:
 
 	    <control type="button" id="9999">
             <description>trigger</description>
-            <onfocus>XBMC.RunScript(script.TvTunes,backend=True&amploop=False)</onfocus>
+            <onfocus>XBMC.RunScript(script.TvTunes,backend=True)</onfocus>
             <onfocus>SetFocus(50)</onfocus>
             <texturenofocus>-</texturenofocus>
             <texturefocus>-</texturefocus>

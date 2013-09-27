@@ -4,6 +4,8 @@
 		<setting id="loop" type="bool" label="32001" default="false"/>
 		<setting id="downvolume" label="32002" type="slider" default="0" range="0,1,60" format="%1.f db" />
 		<setting id="fade" type="bool" label="32008" default="true"/>
+		<setting id="shuffle" type="bool" label="Shuffle multiple tracks" default="true"/>
+		<setting id="random" type="bool" label="Random start time" default="false"/>
 	</category>
 	<category label="32992">
 		<setting id="exact_match" type="bool" label="32009" default="true"/>
@@ -14,5 +16,10 @@
 		<setting id="smb_psw" enable="eq(-2,true)" type="text" option="hidden" label="32005" default="" />
 		<setting id="custom_path_enable" type="bool" label="32006" default="false"/>
 		<setting id="custom_path" enable="eq(-1,true)" type="folder" source="files" label="32007" default="" />
+	</category>
+	<category label="File Types">
+		<setting id="mp3" type="text" label="MP3" enable="false" default="true"/>
+		<setting id="wma" type="bool" label="WMA" default="true"/>
+		<setting id="flac" type="bool" label="FLAC" default="true"/>
 	</category>
 </settings>
