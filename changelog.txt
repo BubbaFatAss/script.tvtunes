@@ -1,9 +1,10 @@
-v3.1.1b
+v3.1.1b2
 - Restructured code to try and improve reset of volume
 - Added support for different file types
 - Added support for multiple theme files (default order alphabetical)
 - Added option to allow multiple files to be shuffled in the playlist
 - Added option to allow random start point within media track
+- b2 - Added more audio type support m4a, wav and made naming case insensitive
 
 v3.1.0
 - Added support for playing themes on display of the Info Screen for TV and Movies

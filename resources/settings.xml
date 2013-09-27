@@ -21,5 +21,7 @@
 		<setting id="mp3" type="text" label="MP3" enable="false" default="true"/>
 		<setting id="wma" type="bool" label="WMA" default="true"/>
 		<setting id="flac" type="bool" label="FLAC" default="true"/>
+		<setting id="m4a" type="bool" label="M4A" default="true"/>
+		<setting id="wav" type="bool" label="WAV" default="true"/>
 	</category>
 </settings>

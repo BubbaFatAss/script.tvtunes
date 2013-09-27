@@ -84,6 +84,10 @@ class Settings():
             fileTypes = fileTypes + "|wma"
         if(__addon__.getSetting("flac") == 'true'):
             fileTypes = fileTypes + "|flac"
+        if(__addon__.getSetting("m4a") == 'true'):
+            fileTypes = fileTypes + "|m4a"
+        if(__addon__.getSetting("wav") == 'true'):
+            fileTypes = fileTypes + "|wav"
         return '(theme[ _A-Za-z0-9.-]*.(' + fileTypes + '))'
     
     def isShuffleThemes(self):
@@ -159,7 +163,7 @@ class ThemeFiles():
         playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
         playlist.clear()
         for aFile in files:
-            m = re.search(self.settings.getThemeFileRegEx(), aFile)
+            m = re.search(self.settings.getThemeFileRegEx(), aFile, re.IGNORECASE)
             if m:
                 path = os.path.join( directory, aFile )
                 log("ThemeFiles: Found match: " + path)
