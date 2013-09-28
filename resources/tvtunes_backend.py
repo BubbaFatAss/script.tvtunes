@@ -66,8 +66,11 @@ class Settings():
     def isLoop(self):
         return self.params.get("loop", "false" ) == 'true'
     
-    def isFade(self):
-        return __addon__.getSetting("fade") == 'true'
+    def isFadeOut(self):
+        return __addon__.getSetting("fadeOut") == 'true'
+
+    def isFadeIn(self):
+        return __addon__.getSetting("fadeIn") == 'true'
     
     def isSmbEnabled(self):
         return self.params.get("smb", "false" ) == 'true'
@@ -207,6 +210,8 @@ class Player(xbmc.Player):
 
     def restoreSettings(self):
         log("Player: Restoring player settings" )
+        while self.isPlayingAudio():
+            xbmc.sleep(1)
         if self.loud:
             self.raiseVolume()
         # restore repeat state
@@ -224,7 +229,31 @@ class Player(xbmc.Player):
             if not self.loud:
                 self.lowerVolume()
 
-            xbmc.Player.play(self, item=item, listitem=listitem, windowed=windowed)
+            if self.settings.isFadeIn():
+                # Get the current volume - this is out target volume
+                targetVol = self.getVolume()
+                cur_vol_perc = 1
+                vol_step = (100 + (targetVol * (100/60.0))) / 10
+                # Reduce the volume before starting
+                # do not mute completely else the mute icon shows up
+                xbmc.executebuiltin('XBMC.SetVolume(1)', True)
+                # Now start playing before we start increasing the volume
+                xbmc.Player.play(self, item=item, listitem=listitem, windowed=windowed)
+                # Wait until playing has started
+                while not self.isPlayingAudio():
+                    xbmc.sleep(30)
+
+                for step in range (0,9):
+                    vol = cur_vol_perc + vol_step
+                    log( "Player: fadeIn_vol: %s" % str(vol) )
+                    xbmc.executebuiltin('XBMC.SetVolume(%d)' % vol, True)
+                    cur_vol_perc = vol
+                    xbmc.sleep(200)
+                # Make sure we end on the correct volume
+                xbmc.executebuiltin('XBMC.SetVolume(%d)' % ( 100 + (targetVol *(100/60.0))), True)
+            else:
+                xbmc.Player.play(self, item=item, listitem=listitem, windowed=windowed)
+
 
             if self.settings.isLoop():
                 xbmc.executeJSONRPC('{ "jsonrpc": "2.0", "method": "Player.SetRepeat", "params": {"playerid": 0, "repeat": "all" }, "id": 1 }')
@@ -252,7 +281,8 @@ class Player(xbmc.Player):
             self.base_volume = self.getVolume()
             self.loud = True
             vol = ((60+self.base_volume-int( self.settings.getDownVolume()) )*(100/60.0))
-            if vol < 0 : vol = 0
+            if vol < 0 :
+                vol = 0
             log( "Player: volume goal: %s%% " % vol )
             xbmc.executebuiltin('XBMC.SetVolume(%d)' % vol, True)
             log( "Player: down volume to %d%%" % vol )
@@ -269,14 +299,14 @@ class Player(xbmc.Player):
 
     # Graceful end of the playing, will fade if set to do so
     def endPlaying(self):
-        if self.settings.isFade():
+        if self.settings.isFadeOut():
             cur_vol = self.getVolume()
             cur_vol_perc = 100 + (cur_vol * (100/60.0))
             vol_step = cur_vol_perc / 10
             # do not mute completely else the mute icon shows up
             for step in range (0,9):
                 vol = cur_vol_perc - vol_step
-                log( "Player: fade_vol: %s" % str(vol) )
+                log( "Player: fadeOut_vol: %s" % str(vol) )
                 xbmc.executebuiltin('XBMC.SetVolume(%d)' % vol, True)
                 cur_vol_perc = vol
                 xbmc.sleep(200)

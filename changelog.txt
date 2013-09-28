@@ -5,6 +5,7 @@ v3.1.1b2
 - Added option to allow multiple files to be shuffled in the playlist
 - Added option to allow random start point within media track
 - b2 - Added more audio type support m4a, wav and made naming case insensitive
+- b2 - Add support for fading in theme on start
 
 v3.1.0
 - Added support for playing themes on display of the Info Screen for TV and Movies
