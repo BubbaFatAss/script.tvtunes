@@ -58,7 +58,7 @@ class Settings():
         return self.enable_custom_path == 'true'
     
     def getCustomPath(self):
-        return custom_path
+        return self.custom_path
     
     def getDownVolume(self):
         return self.params.get("downvolume", 0 )
@@ -91,7 +91,7 @@ class Settings():
             fileTypes = fileTypes + "|m4a"
         if(__addon__.getSetting("wav") == 'true'):
             fileTypes = fileTypes + "|wav"
-        return '(theme[ _A-Za-z0-9.-]*.(' + fileTypes + '))'
+        return '(theme[ _A-Za-z0-9.-]*.(' + fileTypes + ')$)'
     
     def isShuffleThemes(self):
         return __addon__.getSetting("shuffle") == 'true'
@@ -413,10 +413,13 @@ class TunesBackend( ):
                     isStartedDueToInfoScreen = True
 
                 if isStartedDueToInfoScreen or WindowShowing.isSeasons() or WindowShowing.isEpisodes() and not self.themePlayer.isPlaying() and "plugin://" not in xbmc.getInfoLabel( "ListItem.Path" ) and not xbmc.getInfoLabel( "container.folderpath" ) == "videodb://5/":
-                    if self.settings.isCustomPathEnabled() and not WindowShowing.isMovies():
-                        tvshow = xbmc.getInfoLabel( "ListItem.TVShowTitle" ).replace(":","")
-                        tvshow = normalize_string( tvshow )
-                        self.newpath = os.path.join(self.settings.getCustomPath(), tvshow).decode("utf-8")
+                    if self.settings.isCustomPathEnabled():
+                        if not WindowShowing.isMovies():
+                            videotitle = xbmc.getInfoLabel( "ListItem.TVShowTitle" )
+                        else:
+                            videotitle = xbmc.getInfoLabel( "ListItem.Title" )
+                        videotitle = normalize_string( videotitle.replace(":","") )
+                        self.newpath = os.path.join(self.settings.getCustomPath(), videotitle).decode("utf-8")
                     elif WindowShowing.isMovieInformation() and xbmc.getInfoLabel( "container.folderpath" ) == "videodb://2/2/":
                         self.newpath = xbmc.getInfoLabel( "ListItem.FilenameAndPath" )
                     else:

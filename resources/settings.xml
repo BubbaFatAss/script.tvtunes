@@ -10,6 +10,8 @@
 	</category>
 	<category label="32992">
 		<setting id="exact_match" type="bool" label="32009" default="true"/>
+		<setting id="multiThemeDownload" type="bool" label="Always add additional themes (no overwrite)" default="false"/>
+		<setting id="searchMovieDownload" type="bool" label="Search for movie themes" default="false"/>
 	</category>
 	<category label="32993">
 		<setting id="smb_share" type="bool" label="32003" default="false"/>

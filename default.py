@@ -46,7 +46,14 @@ if params.get("backend", False ):
         xbmc.executebuiltin('XBMC.RunScript(%s,loop=%s&downvolume=%s&smb=%s&user=%s&password=%s)' % (os.path.join(__resource__ , "tvtunes_backend.py"), loop , downvolume , smb , username , password))
 
 elif params.get("mode", False ) == "solo":
-    xbmc.executebuiltin('XBMC.RunScript(%s,mode=solo&name=%s&path=%s)' % (os.path.join(__resource__ , "tvtunes_scraper.py") , params.get("tvname", False ) , params.get("tvpath", False )))
+    # Support just name and path in addition to tvname and tvpath
+    videoname = params.get("name", False )
+    if not videoname:
+        videoname = params.get("tvname", False )
+    filepath = params.get("path", False )
+    if not filepath:
+        filepath = params.get("tvpath", False )
+    xbmc.executebuiltin('XBMC.RunScript(%s,mode=solo&name=%s&path=%s)' % (os.path.join(__resource__ , "tvtunes_scraper.py") , videoname, filepath))
 
 else: 
     xbmc.executebuiltin('XBMC.RunScript(%s)' % os.path.join( __resource__ , "tvtunes_scraper.py"))

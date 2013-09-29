@@ -6,6 +6,9 @@ v3.1.1b2
 - Added option to allow random start point within media track
 - b2 - Added more audio type support m4a, wav and made naming case insensitive
 - b2 - Add support for fading in theme on start
+- b3 - Fix scraper bug when selecting from Information Page
+- b3 - Add support for downloading additional themes
+- b3 - Add support for downloading movie themes
 
 v3.1.0
 - Added support for playing themes on display of the Info Screen for TV and Movies
