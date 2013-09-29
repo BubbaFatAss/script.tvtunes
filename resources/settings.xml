@@ -4,14 +4,14 @@
 		<setting id="loop" type="bool" label="32001" default="false"/>
 		<setting id="downvolume" label="32002" type="slider" default="0" range="0,1,60" format="%1.f db" />
 		<setting id="fadeOut" type="bool" label="32008" default="true"/>
-		<setting id="shuffle" type="bool" label="Shuffle multiple tracks" default="true"/>
-		<setting id="random" type="bool" label="Random start time" default="false"/>
-		<setting id="fadeIn" type="bool" label="Fade in the tune when starting" default="false"/>
+		<setting id="shuffle" type="bool" label="32010" default="true"/>
+		<setting id="random" type="bool" label="32011" default="false"/>
+		<setting id="fadeIn" type="bool" label="32013" default="false"/>
 	</category>
 	<category label="32992">
 		<setting id="exact_match" type="bool" label="32009" default="true"/>
-		<setting id="multiThemeDownload" type="bool" label="Always add additional themes (no overwrite)" default="false"/>
-		<setting id="searchMovieDownload" type="bool" label="Search for movie themes" default="false"/>
+		<setting id="multiThemeDownload" type="bool" label="32014" default="false"/>
+		<setting id="searchMovieDownload" type="bool" label="32015" default="false"/>
 	</category>
 	<category label="32993">
 		<setting id="smb_share" type="bool" label="32003" default="false"/>
@@ -20,7 +20,7 @@
 		<setting id="custom_path_enable" type="bool" label="32006" default="false"/>
 		<setting id="custom_path" enable="eq(-1,true)" type="folder" source="files" label="32007" default="" />
 	</category>
-	<category label="File Types">
+	<category label="32012">
 		<setting id="mp3" type="text" label="MP3" enable="false" default="true"/>
 		<setting id="wma" type="bool" label="WMA" default="true"/>
 		<setting id="flac" type="bool" label="FLAC" default="true"/>

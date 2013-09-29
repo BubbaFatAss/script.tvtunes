@@ -52,7 +52,31 @@ msgctxt "#32009"
 msgid "Automatically download if an exact match is found"
 msgstr ""
 
-#empty strings from id 32010 to 32100
+msgctxt "#32010"
+msgid "Shuffle multiple tracks"
+msgstr ""
+
+msgctxt "#32011"
+msgid "Random start time"
+msgstr ""
+
+msgctxt "#32012"
+msgid "File Types"
+msgstr ""
+
+msgctxt "#32013"
+msgid "Fade in the tune when starting"
+msgstr ""
+
+msgctxt "#32014"
+msgid "Always add additional themes (no overwrite)"
+msgstr ""
+
+msgctxt "#32015"
+msgid "Search for movie themes"
+msgstr ""
+
+#empty strings from id 32016 to 32100
 
 msgctxt "#32101"
 msgid "ERROR"

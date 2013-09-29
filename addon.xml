@@ -43,7 +43,7 @@
 	
 		<description lang="el">Αυτό το script θα σας βοηθήσει να κατεβάσετε μουσικά θέματα των τηλεοπτικών σας σειρών από το www.televisiontunes.com, θα τα αποθηκεύει σε αρχεία μορφής theme.mp3 στο φάκελο της εκάστοτε σειράς, και θα τα αναπαράγει κατά την περιήγησή σας στη συλλογή τηλ. σειρών σας (απαιτείται να υποστηρίζεται από το κέλυφός σας)</description>
 	
-		<description lang="en">This script will help you to get theme of your tvshow library from www.televisiontunes.com it will save them in theme.mp3 file in each of your tvshow folder then they will be play while browsing your tvshow library when you enter the tvshow folder (need your skin to be compatible for this feature)</description>
+		<description lang="en">This script will help you to get theme of your tvshow library from www.televisiontunes.com it will save them in theme.mp3 file in each of your tvshow folders then they will be played while browsing your tvshow library when you enter the tvshow folder (need your skin to be compatible for this feature)</description>
 	
 		<description lang="es">Este script te ayudará a buscar la banda sonora de tus series en www.televisiontunes.com se guardará un fichero theme.mp3 en el directorio de tu serie y será reproducido mientras navegas por dentro de la carpeta de la serie. (Necesitas una skin compatible para esta funcionalidad)</description>
 	

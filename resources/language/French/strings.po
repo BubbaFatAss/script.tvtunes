@@ -52,6 +52,18 @@ msgctxt "#32009"
 msgid "Automatically download if an exact match is found"
 msgstr "TÃ©lÃ©charger automatiquement si une correspondance exacte est trouvÃ©e"
 
+msgctxt "#32010"
+msgid "Shuffle multiple tracks"
+msgstr "Lecture aléatoire si plusieurs thèmes"
+
+msgctxt "#32011"
+msgid "Random start time"
+msgstr "Lecture du thème à un endroit aléatoire"
+
+msgctxt "#32012"
+msgid "File Types"
+msgstr "Type de fichiers"
+
 msgctxt "#32101"
 msgid "ERROR"
 msgstr "ERREUR"
