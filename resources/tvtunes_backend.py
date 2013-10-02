@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 #Modules General
 from traceback import print_exc
-import time
 import os
 import re
 import random
+from xml.etree.ElementTree import ElementTree
 #Modules XBMC
 import xbmc
 import xbmcgui
 import sys
 import xbmcvfs
 import xbmcaddon
+
 
 __addon__     = xbmcaddon.Addon(id='script.tvtunes')
 __addonid__   = __addon__.getAddonInfo('id')
@@ -35,53 +36,66 @@ def normalize_string( text ):
 ##############################
 class Settings():
     def __init__( self ):
-        # Start by processing the arguments into a list of parameters
-        try:
-            # parse sys.argv for params
-            log( sys.argv[ 1 ] )
-            try:
-                self.params = dict( arg.split( "=" ) for arg in sys.argv[ 1 ].split( "&" ) )
-            except:
-                print_exc()
-                self.params = dict( sys.argv[ 1 ].split( "=" ))
-        except:
-            # no params passed
-            print_exc()
-            self.params = {}
-        
         # Load the other settings from the addon setting menu
+        self.downvolume = __addon__.getSetting("downvolume")
+        self.downvolume = self.downvolume.split(",")[0]
+        self.downvolume = self.downvolume.split(".")[0]
+        
         self.enable_custom_path = __addon__.getSetting("custom_path_enable")
         if self.enable_custom_path == "true":
             self.custom_path = __addon__.getSetting("custom_path")
-    
-    def isCustomPathEnabled(self):
-        return self.enable_custom_path == 'true'
-    
-    def getCustomPath(self):
-        return self.custom_path
-    
-    def getDownVolume(self):
-        return self.params.get("downvolume", 0 )
+        self.themeRegEx = self.loadThemeFileRegEx()
+        self.screensaverTime = self.loadScreensaverSettings()
 
-    def isLoop(self):
-        return self.params.get("loop", "false" ) == 'true'
-    
-    def isFadeOut(self):
-        return __addon__.getSetting("fadeOut") == 'true'
 
-    def isFadeIn(self):
-        return __addon__.getSetting("fadeIn") == 'true'
-    
-    def isSmbEnabled(self):
-        return self.params.get("smb", "false" ) == 'true'
+    # Loads the Screensaver settings
+    # In Frodo there is no way to get the time before the screensaver
+    # is set to start, this means that the only way open to us is to
+    # load up the XML config file and read it from there.
+    # One of the many down sides of this is that the XML file will not
+    # be updated to reflect changes until the user exits XMBC
+    # This isn't a big problem as screensaver times are not changed
+    # too often
+    #
+    # Unfortunately the act of stopping the theme is seem as "activity"
+    # so it will reset the time, in Gotham, there will be a way to
+    # actually start the screensaver again, but until then there is
+    # not mush we can do
+    def loadScreensaverSettings(self):
+        screenTimeOutSeconds = -1
+        pguisettings = xbmc.translatePath('special://profile/guisettings.xml')
 
-    def getSmbUser(self):
-        return self.params.get("user", "guest" )
-    
-    def getSmbPassword(self):
-        return self.params.get("password", "guest" )
-    
-    def getThemeFileRegEx(self):
+        log("Settings: guisettings.xml location = " + pguisettings)
+
+        # Make sure we found the file and it exists
+        if os.path.exists(pguisettings):
+            # Create an XML parser
+            elemTree = ElementTree()
+            elemTree.parse(pguisettings)
+            
+            # First check to see if any screensaver is set
+            isEnabled = elemTree.findtext('screensaver/mode')
+            if (isEnabled == None) or (isEnabled == ""):
+                log("Settings: No Screensaver enabled")
+            else:
+                log("Settings: Screensaver set to " + isEnabled)
+
+                # Get the screensaver setting in minutes
+                result = elemTree.findtext('screensaver/time')
+                if result != None:
+                    log("Settings: Screensaver timeout set to " + result)
+                    # Convert from minutes to seconds, also reduce by 30 seconds
+                    # as we want to ensure we have time to stop before the
+                    # screensaver kicks in
+                    screenTimeOutSeconds = (int(result) * 60) - 30
+                else:
+                    log("Settings: No Screensaver timeout found")
+            
+            del elemTree
+        return screenTimeOutSeconds
+
+    # Calculates the regular expression to use to search for theme files
+    def loadThemeFileRegEx(self):
         fileTypes = "mp3" # mp3 is the default that is always supported
         if(__addon__.getSetting("wma") == 'true'):
             fileTypes = fileTypes + "|wma"
@@ -92,12 +106,62 @@ class Settings():
         if(__addon__.getSetting("wav") == 'true'):
             fileTypes = fileTypes + "|wav"
         return '(theme[ _A-Za-z0-9.-]*.(' + fileTypes + ')$)'
+
+    def isCustomPathEnabled(self):
+        return self.enable_custom_path == 'true'
+    
+    def getCustomPath(self):
+        return self.custom_path
+    
+    def getDownVolume(self):
+        return self.downvolume
+
+    def isLoop(self):
+        return __addon__.getSetting("loop") == 'true'
+    
+    def isFadeOut(self):
+        return __addon__.getSetting("fadeOut") == 'true'
+
+    def isFadeIn(self):
+        return __addon__.getSetting("fadeIn") == 'true'
+    
+    def isSmbEnabled(self):
+        if __addon__.getSetting("smb_share"):
+            return True
+        else:
+            return False
+
+    def getSmbUser(self):
+        if __addon__.getSetting("smb_login"):
+            return __addon__.getSetting("smb_login")
+        else:
+            return "guest"
+    
+    def getSmbPassword(self):
+        if __addon__.getSetting("smb_psw"):
+            return __addon__.getSetting("smb_psw")
+        else:
+            return "guest"
+    
+    def getThemeFileRegEx(self):
+        return self.themeRegEx
     
     def isShuffleThemes(self):
         return __addon__.getSetting("shuffle") == 'true'
     
     def isRandomStart(self):
         return __addon__.getSetting("random") == 'true'
+
+    def isTimout(self):
+        if self.screensaverTime == -1:
+            return False
+        # It is a timeout if the idle time is larger that the time stored
+        # for when the screensaver is due to kick in
+        if (xbmc.getGlobalIdleTime() > self.screensaverTime):
+            log("Settings: Stopping due to screensaver")
+            return True
+        else:
+            return False
 
 
 ##############################
@@ -305,6 +369,11 @@ class Player(xbmc.Player):
             vol_step = cur_vol_perc / 10
             # do not mute completely else the mute icon shows up
             for step in range (0,9):
+                # If the system is going to be shut down then we need to reset
+                # everything as quickly as possible
+                if WindowShowing.isShutdownMenu() or xbmc.abortRequested:
+                    log("Player: Shutdown menu detected, cancelling fade")
+                    break
                 vol = cur_vol_perc - vol_step
                 log( "Player: fadeOut_vol: %s" % str(vol) )
                 xbmc.executebuiltin('XBMC.SetVolume(%d)' % vol, True)
@@ -333,11 +402,11 @@ class Player(xbmc.Player):
 class WindowShowing():
     @staticmethod
     def isVideoLibrary():
-        return xbmc.getCondVisibility("Window.IsVisible(10025)")
+        return xbmc.getCondVisibility("Window.IsVisible(videolibrary)")
 
     @staticmethod
     def isMovieInformation():
-        return xbmc.getCondVisibility("Window.IsVisible(12003)")
+        return xbmc.getCondVisibility("Window.IsVisible(movieinformation)")
 
     @staticmethod
     def isTvShows():
@@ -354,6 +423,15 @@ class WindowShowing():
     @staticmethod
     def isMovies():
         return xbmc.getCondVisibility("Container.Content(movies)")
+
+    @staticmethod
+    def isScreensaver():
+        return xbmc.getCondVisibility("System.ScreenSaverActive")
+
+    @staticmethod
+    def isShutdownMenu():
+        return xbmc.getCondVisibility("Window.IsVisible(shutdownmenu)")
+
 
 ###############################################################
 # Class to make it easier to see the current state of TV Tunes
@@ -381,7 +459,6 @@ class TvTunesStatus():
         else:
             xbmcgui.Window( 10025 ).clearProperty('TvTunesIsAlive')
 
-
 #
 # Thread to run the program back-end in
 #
@@ -399,15 +476,23 @@ class TunesBackend( ):
     def run( self ):
         try:
             isStartedDueToInfoScreen = False
-            while (not self._stop):           # the code
+            while (not self._stop):
+                # If shutdown is in progress, stop quickly (no fade out)
+                if WindowShowing.isShutdownMenu() or xbmc.abortRequested:
+                    self.stop()
+                    break
+
                 # We only stop looping and exit this script if we leave the Video library
                 # We get called when we enter the library, and the only times we will end
                 # will be if:
                 # 1) A Video is selected to play
                 # 2) We exit to the main menu away from the video view
-                if not WindowShowing.isVideoLibrary():
-                    log("Video Library no longer visible")
+                if not WindowShowing.isVideoLibrary() or WindowShowing.isScreensaver() or self.settings.isTimout():
+                    log("TunesBackend: Video Library no longer visible")
+                    # End playing cleanly (including any fade out) and then stop everything
+                    self.themePlayer.endPlaying()
                     self.stop()
+                    break
                 
                 if WindowShowing.isMovieInformation() and not self.themePlayer.isPlaying() and "plugin://" not in xbmc.getInfoLabel( "ListItem.Path" ) and not xbmc.getInfoLabel( "container.folderpath" ) == "videodb://5/":
                     isStartedDueToInfoScreen = True
@@ -452,7 +537,7 @@ class TunesBackend( ):
                     # clear the last tune path if we are back at the root of the tvshow library
                     self.prevplaypath = ""
 
-                time.sleep( .5 )
+                xbmc.sleep(200)
 
         except:
             print_exc()
@@ -498,26 +583,16 @@ class TunesBackend( ):
 # Main
 #########################
 
-
-#if WindowShowing.isMovieInformation():
-#    log( "### isMovieInformation ###" )
-
-#if WindowShowing.isMovies():
-#    log( "### isMovies ###" )
-
-
-# TODO - need to maybe loop for a bit to see if something has started?
-# how to stop 2 instances running at the same time?
-
 # Make sure that we are not already running on another thread
 # we do not want two running at the same time
 if TvTunesStatus.isRunning() != True:
     # Record that the program has started running
     TvTunesStatus.setRunningState(True)
 
-    # create the thread to run the program in
+    # Create the main class to control the theme playing
     main = TunesBackend()
-    # start the thread
+
+    # Start the themes running
     main.run()
 else:
     log("Already Running")

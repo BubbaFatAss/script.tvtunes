@@ -1,7 +1,7 @@
 # XBMC Media Center language file
 # Addon Name: TvTunes
 # Addon id: script.tvtunes
-# Addon Provider: Ppic|Frost|ronie
+# Addon Provider: Ppic|Frost|ronie|robwebset
 msgid ""
 msgstr ""
 "Project-Id-Version: XBMC Addons\n"
@@ -45,7 +45,7 @@ msgid "Path:"
 msgstr ""
 
 msgctxt "#32008"
-msgid "Fade tune when you exit a tv show"
+msgid "Fade tune out when exiting"
 msgstr ""
 
 msgctxt "#32009"
