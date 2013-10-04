@@ -283,7 +283,9 @@ class Player(xbmc.Player):
 
     def stop(self):
         log("Player: stop called")
-        xbmc.Player.stop(self)
+        # Only stop if playing audio
+        if self.isPlayingAudio():
+            xbmc.Player.stop(self)
         self.restoreSettings()
 
     def play(self, item=None, listitem=None, windowed=False):
