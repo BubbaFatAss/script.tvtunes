@@ -35,8 +35,7 @@ except:
 log( "params %s" % params )
     
 if params.get("backend", False ): 
-    if xbmc.getInfoLabel( "Window(videolibrary).Property(TvTunesIsRunning)" ) != "true":
-        xbmc.executebuiltin('XBMC.RunScript(%s)' % (os.path.join(__resource__ , "tvtunes_backend.py")))
+    xbmc.executebuiltin('XBMC.RunScript(%s)' % (os.path.join(__resource__ , "tvtunes_backend.py")))
 
 elif params.get("mode", False ) == "solo":
     # Support just name and path in addition to tvname and tvpath

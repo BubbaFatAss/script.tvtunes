@@ -4,6 +4,7 @@ from traceback import print_exc
 import os
 import re
 import random
+import threading
 from xml.etree.ElementTree import ElementTree
 #Modules XBMC
 import xbmc
@@ -365,7 +366,7 @@ class Player(xbmc.Player):
 
     # Graceful end of the playing, will fade if set to do so
     def endPlaying(self):
-        if self.settings.isFadeOut():
+        if self.isPlayingAudio() and self.settings.isFadeOut():
             cur_vol = self.getVolume()
             cur_vol_perc = 100 + (cur_vol * (100/60.0))
             vol_step = cur_vol_perc / 10
@@ -434,25 +435,23 @@ class WindowShowing():
     def isShutdownMenu():
         return xbmc.getCondVisibility("Window.IsVisible(shutdownmenu)")
 
+    @staticmethod
+    def isRecentEpisodesAdded():
+        return xbmc.getInfoLabel( "container.folderpath" ) == "videodb://5/"
+
+    @staticmethod
+    def isTvShowTitles():
+        return xbmc.getInfoLabel( "container.folderpath" ) == "videodb://2/2/"
+
 
 ###############################################################
 # Class to make it easier to see the current state of TV Tunes
 ###############################################################
 class TvTunesStatus():
     @staticmethod
-    def isRunning():
-        return xbmcgui.Window( 10025 ).getProperty("TvTunesIsRunning") == "true"
-
-    @staticmethod
-    def setRunningState(state):
-        if state:
-            xbmcgui.Window( 10025 ).setProperty( "TvTunesIsRunning", "true" )
-        else:
-            xbmcgui.Window( 10025 ).clearProperty('TvTunesIsRunning')
-
-    @staticmethod
     def isAlive():
-        return xbmc.getInfoLabel( "Window(10025).Property(TvTunesIsAlive)" ) == "true"
+        return xbmcgui.Window( 10025 ).getProperty( "TvTunesIsAlive" ) == "true"
+#        return xbmc.getInfoLabel( "Window(10025).Property(TvTunesIsAlive)" ) == "true"
     
     @staticmethod
     def setAliveState(state):
@@ -460,6 +459,31 @@ class TvTunesStatus():
             xbmcgui.Window( 10025 ).setProperty( "TvTunesIsAlive", "true" )
         else:
             xbmcgui.Window( 10025 ).clearProperty('TvTunesIsAlive')
+
+    @staticmethod
+    def clearRunningState():
+        xbmcgui.Window( 10025 ).clearProperty('TvTunesIsRunning')
+
+    # Check if the is a different version running
+    @staticmethod
+    def isOkToRun():
+        # Get the current thread ID
+        curThreadId = threading.currentThread().ident
+        log("TvTunesStatus: Thread ID = " + str(curThreadId))
+
+        # Check if the "running state" is set
+        existingvalue = xbmcgui.Window( 10025 ).getProperty("TvTunesIsRunning")
+        if existingvalue == "":
+            log("TvTunesStatus: Current running state is empty, setting to " + str(curThreadId))
+            xbmcgui.Window( 10025 ).setProperty( "TvTunesIsRunning", str(curThreadId) )
+        else:
+            # If it is check if it is set to this thread value
+            if existingvalue != str(curThreadId):
+                log("TvTunesStatus: Running ID already set to " + existingvalue)
+                return False
+        # Default return True unless we have a good reason not to run
+        return True
+
 
 #
 # Thread to run the program back-end in
@@ -478,6 +502,12 @@ class TunesBackend( ):
     def run( self ):
         try:
             isStartedDueToInfoScreen = False
+            
+            # Before we actually start playing something, make sure it is OK
+            # to run, need to ensure there are not multiple copies running
+            if not TvTunesStatus.isOkToRun():
+                return
+
             while (not self._stop):
                 # If shutdown is in progress, stop quickly (no fade out)
                 if WindowShowing.isShutdownMenu() or xbmc.abortRequested:
@@ -496,10 +526,10 @@ class TunesBackend( ):
                     self.stop()
                     break
                 
-                if WindowShowing.isMovieInformation() and not self.themePlayer.isPlaying() and "plugin://" not in xbmc.getInfoLabel( "ListItem.Path" ) and not xbmc.getInfoLabel( "container.folderpath" ) == "videodb://5/":
+                if WindowShowing.isMovieInformation() and not self.themePlayer.isPlaying() and "plugin://" not in xbmc.getInfoLabel( "ListItem.Path" ) and not WindowShowing.isRecentEpisodesAdded():
                     isStartedDueToInfoScreen = True
 
-                if isStartedDueToInfoScreen or WindowShowing.isSeasons() or WindowShowing.isEpisodes() and not self.themePlayer.isPlaying() and "plugin://" not in xbmc.getInfoLabel( "ListItem.Path" ) and not xbmc.getInfoLabel( "container.folderpath" ) == "videodb://5/":
+                if isStartedDueToInfoScreen or WindowShowing.isSeasons() or WindowShowing.isEpisodes() and not self.themePlayer.isPlaying() and "plugin://" not in xbmc.getInfoLabel( "ListItem.Path" ) and not WindowShowing.isRecentEpisodesAdded():
                     if self.settings.isCustomPathEnabled():
                         if not WindowShowing.isMovies():
                             videotitle = xbmc.getInfoLabel( "ListItem.TVShowTitle" )
@@ -507,7 +537,7 @@ class TunesBackend( ):
                             videotitle = xbmc.getInfoLabel( "ListItem.Title" )
                         videotitle = normalize_string( videotitle.replace(":","") )
                         self.newpath = os.path.join(self.settings.getCustomPath(), videotitle).decode("utf-8")
-                    elif WindowShowing.isMovieInformation() and xbmc.getInfoLabel( "container.folderpath" ) == "videodb://2/2/":
+                    elif WindowShowing.isMovieInformation() and WindowShowing.isTvShowTitles():
                         self.newpath = xbmc.getInfoLabel( "ListItem.FilenameAndPath" )
                     else:
                         self.newpath = xbmc.getInfoLabel( "ListItem.Path" )
@@ -520,7 +550,7 @@ class TunesBackend( ):
                         else:
                             log( "TunesBackend: player already playing" )
 
-                if TvTunesStatus.isAlive() and not self.themePlayer.isPlaying():
+                if TvTunesStatus.isAlive() and not self.themePlayer.isPlayingAudio():
                     log( "TunesBackend: playing ends" )
                     self.themePlayer.restoreSettings()
                     TvTunesStatus.setAliveState(False)
@@ -535,7 +565,7 @@ class TunesBackend( ):
                     self.themePlayer.endPlaying()
                     TvTunesStatus.setAliveState(False)
 
-                if (xbmc.getInfoLabel( "container.folderpath" ) == "videodb://2/2/") or (WindowShowing.isMovies() and not WindowShowing.isMovieInformation()):
+                if WindowShowing.isTvShowTitles() or (WindowShowing.isMovies() and not WindowShowing.isMovieInformation()):
                     # clear the last tune path if we are back at the root of the tvshow library
                     self.prevplaypath = ""
 
@@ -570,7 +600,7 @@ class TunesBackend( ):
         while self.themePlayer.isPlayingAudio():
             xbmc.sleep(50)
         TvTunesStatus.setAliveState(False)
-        TvTunesStatus.setRunningState(False)
+        TvTunesStatus.clearRunningState()
 
         # If currently playing a video file, then we have been overridden,
         # and we need to restore all the settings, the player callbacks
@@ -585,18 +615,16 @@ class TunesBackend( ):
 # Main
 #########################
 
+
 # Make sure that we are not already running on another thread
 # we do not want two running at the same time
-if TvTunesStatus.isRunning() != True:
-    # Record that the program has started running
-    TvTunesStatus.setRunningState(True)
-
+if TvTunesStatus.isOkToRun():
     # Create the main class to control the theme playing
     main = TunesBackend()
 
     # Start the themes running
     main.run()
 else:
-    log("Already Running")
+    log("TvTunes Already Running")
 
 
