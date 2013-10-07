@@ -13,6 +13,12 @@ import sys
 import xbmcvfs
 import xbmcaddon
 
+# Add JSON support for queries
+if sys.version_info < (2, 7):
+    import simplejson
+else:
+    import json as simplejson
+
 
 __addon__     = xbmcaddon.Addon(id='script.tvtunes')
 __addonid__   = __addon__.getAddonInfo('id')
@@ -251,7 +257,8 @@ class Player(xbmc.Player):
     def __init__(self, settings, *args):
         self.settings = settings
         self.loud = False
-        self.base_volume = self.getVolume()
+        # Save the volume from before any alterations
+        self.original_volume = self.getVolume()
         
         # Save off the current repeat state before we started playing anything
         if xbmc.getCondVisibility('Playlist.IsRepeat'):
@@ -277,10 +284,12 @@ class Player(xbmc.Player):
         log("Player: Restoring player settings" )
         while self.isPlayingAudio():
             xbmc.sleep(1)
-        if self.loud:
-            self.raiseVolume()
         # restore repeat state
         xbmc.executeJSONRPC('{ "jsonrpc": "2.0", "method": "Player.SetRepeat", "params": {"playerid": 0, "repeat": "%s" }, "id": 1 }' % self.repeat)
+        # Force the volume to the starting volume
+        pre_vol_perc = 100 + (self.original_volume * (100/60.0))
+        xbmc.executebuiltin('XBMC.SetVolume(%d)' % pre_vol_perc, True)
+
 
     def stop(self):
         log("Player: stop called")
@@ -345,9 +354,9 @@ class Player(xbmc.Player):
 
     def lowerVolume( self ):
         try:
-            self.base_volume = self.getVolume()
+            current_volume = self.getVolume()
             self.loud = True
-            vol = ((60+self.base_volume-int( self.settings.getDownVolume()) )*(100/60.0))
+            vol = ((60+current_volume-int( self.settings.getDownVolume()) )*(100/60.0))
             if vol < 0 :
                 vol = 0
             log( "Player: volume goal: %s%% " % vol )
@@ -355,14 +364,6 @@ class Player(xbmc.Player):
             log( "Player: down volume to %d%%" % vol )
         except:
             print_exc()
-
-    def raiseVolume( self ):
-        self.base_volume = self.getVolume()
-        vol = ((60+self.base_volume+int( self.settings.getDownVolume()) )*(100/60.0))
-        log( "Player: volume goal : %s%% " % vol )
-        log( "Player: raise volume to %d%% " % vol )
-        xbmc.executebuiltin( 'XBMC.SetVolume(%d)' % vol, True )
-        self.loud = False
 
     # Graceful end of the playing, will fade if set to do so
     def endPlaying(self):
@@ -404,6 +405,10 @@ class Player(xbmc.Player):
 ###############################################################
 class WindowShowing():
     @staticmethod
+    def isHome():
+        return xbmc.getCondVisibility("Window.IsVisible(home)")
+
+    @staticmethod
     def isVideoLibrary():
         return xbmc.getCondVisibility("Window.IsVisible(videolibrary)")
 
@@ -443,6 +448,10 @@ class WindowShowing():
     def isTvShowTitles():
         return xbmc.getInfoLabel( "container.folderpath" ) == "videodb://2/2/"
 
+    @staticmethod
+    def isPluginPath():
+        return "plugin://" in xbmc.getInfoLabel( "ListItem.Path" )
+
 
 ###############################################################
 # Class to make it easier to see the current state of TV Tunes
@@ -451,7 +460,6 @@ class TvTunesStatus():
     @staticmethod
     def isAlive():
         return xbmcgui.Window( 10025 ).getProperty( "TvTunesIsAlive" ) == "true"
-#        return xbmc.getInfoLabel( "Window(10025).Property(TvTunesIsAlive)" ) == "true"
     
     @staticmethod
     def setAliveState(state):
@@ -501,8 +509,6 @@ class TunesBackend( ):
         
     def run( self ):
         try:
-            isStartedDueToInfoScreen = False
-            
             # Before we actually start playing something, make sure it is OK
             # to run, need to ensure there are not multiple copies running
             if not TvTunesStatus.isOkToRun():
@@ -525,22 +531,16 @@ class TunesBackend( ):
                     self.themePlayer.endPlaying()
                     self.stop()
                     break
-                
-                if WindowShowing.isMovieInformation() and not self.themePlayer.isPlaying() and "plugin://" not in xbmc.getInfoLabel( "ListItem.Path" ) and not WindowShowing.isRecentEpisodesAdded():
-                    isStartedDueToInfoScreen = True
 
-                if isStartedDueToInfoScreen or WindowShowing.isSeasons() or WindowShowing.isEpisodes() and not self.themePlayer.isPlaying() and "plugin://" not in xbmc.getInfoLabel( "ListItem.Path" ) and not WindowShowing.isRecentEpisodesAdded():
-                    if self.settings.isCustomPathEnabled():
-                        if not WindowShowing.isMovies():
-                            videotitle = xbmc.getInfoLabel( "ListItem.TVShowTitle" )
-                        else:
-                            videotitle = xbmc.getInfoLabel( "ListItem.Title" )
-                        videotitle = normalize_string( videotitle.replace(":","") )
-                        self.newpath = os.path.join(self.settings.getCustomPath(), videotitle).decode("utf-8")
-                    elif WindowShowing.isMovieInformation() and WindowShowing.isTvShowTitles():
-                        self.newpath = xbmc.getInfoLabel( "ListItem.FilenameAndPath" )
-                    else:
-                        self.newpath = xbmc.getInfoLabel( "ListItem.Path" )
+                if self.isPlayingZone() and not self.themePlayer.isPlaying():
+                    self.newpath = self.getThemePath();
+
+                # At this point we have several options
+                # 1) The path is the same as it was last time, so leave playing what is currently playing
+                # 2) The path has changed, but is still for the same theme - so leave playing
+                # 3) The path has changed and now points to a new theme - start playing new theme
+                # 4) The path no longer points to a theme - stop playing
+
                     if not self.newpath == self.oldpath and not self.newpath == "" and not self.newpath == "videodb://2/2/":
                         log( "TunesBackend: old path: %s" % self.oldpath )
                         log( "TunesBackend: new path: %s" % self.newpath )
@@ -550,13 +550,17 @@ class TunesBackend( ):
                         else:
                             log( "TunesBackend: player already playing" )
 
+                # This will occur when a theme has stopped playing, maybe is is not set to loop
                 if TvTunesStatus.isAlive() and not self.themePlayer.isPlayingAudio():
                     log( "TunesBackend: playing ends" )
                     self.themePlayer.restoreSettings()
                     TvTunesStatus.setAliveState(False)
 
-                if (WindowShowing.isTvShows() or WindowShowing.isMovies() ) and self.playpath and not WindowShowing.isMovieInformation():
-                    isStartedDueToInfoScreen = False
+                # This is the case where the user has moved from within an area where the themes
+                # to an area where the theme is no longer played, so it will trigger a stop and
+                # reset everything to highlight that nothing is playing
+                # Note: TvTunes is still running in this case, just not playing a theme
+                if not self.isPlayingZone() and self.playpath:
                     log( "TunesBackend: reinit condition" )
                     self.newpath = ""
                     self.oldpath = ""
@@ -565,6 +569,7 @@ class TunesBackend( ):
                     self.themePlayer.endPlaying()
                     TvTunesStatus.setAliveState(False)
 
+                # This is the case where we are looking at the lists of movies or TV Series
                 if WindowShowing.isTvShowTitles() or (WindowShowing.isMovies() and not WindowShowing.isMovieInformation()):
                     # clear the last tune path if we are back at the root of the tvshow library
                     self.prevplaypath = ""
@@ -574,6 +579,44 @@ class TunesBackend( ):
         except:
             print_exc()
             self.stop()
+
+    # Works out if the currently displayed area on the screen is something
+    # that is deemed a zone where themes should be played
+    def isPlayingZone(self):
+        if WindowShowing.isRecentEpisodesAdded():
+            return False
+        if WindowShowing.isPluginPath():
+            return False
+        if WindowShowing.isMovieInformation():
+            return True
+        if WindowShowing.isSeasons():
+            return True
+        if WindowShowing.isEpisodes():
+            return True
+        # Any other area is deemed to be a non play area
+        return False
+
+    # Locates the path to look for a theme to play based on what is
+    # currently being displayed on the screen
+    def getThemePath(self):
+        themePath = ""
+
+        # Check if the files are stored in a custom path
+        if self.settings.isCustomPathEnabled():
+            if not WindowShowing.isMovies():
+                videotitle = xbmc.getInfoLabel( "ListItem.TVShowTitle" )
+            else:
+                videotitle = xbmc.getInfoLabel( "ListItem.Title" )
+            videotitle = normalize_string( videotitle.replace(":","") )
+            themePath = os.path.join(self.settings.getCustomPath(), videotitle).decode("utf-8")
+
+        # Looking at the TV Show information page
+        elif WindowShowing.isMovieInformation() and WindowShowing.isTvShowTitles():
+            themePath = xbmc.getInfoLabel( "ListItem.FilenameAndPath" )
+        else:
+            themePath = xbmc.getInfoLabel( "ListItem.Path" )
+
+        return themePath
 
 
     def start_playing( self ):
