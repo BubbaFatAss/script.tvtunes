@@ -256,9 +256,8 @@ class ThemeFiles():
 class Player(xbmc.Player):
     def __init__(self, settings, *args):
         self.settings = settings
-        self.loud = False
         # Save the volume from before any alterations
-        self.original_volume = self.getVolume()
+        self.original_volume = ( 100 + (self.getVolume() *(100/60.0)))
         
         # Save off the current repeat state before we started playing anything
         if xbmc.getCondVisibility('Playlist.IsRepeat'):
@@ -287,9 +286,7 @@ class Player(xbmc.Player):
         # restore repeat state
         xbmc.executeJSONRPC('{ "jsonrpc": "2.0", "method": "Player.SetRepeat", "params": {"playerid": 0, "repeat": "%s" }, "id": 1 }' % self.repeat)
         # Force the volume to the starting volume
-        pre_vol_perc = 100 + (self.original_volume * (100/60.0))
-        xbmc.executebuiltin('XBMC.SetVolume(%d)' % pre_vol_perc, True)
-
+        xbmc.executebuiltin('XBMC.SetVolume(%d)' % self.original_volume, True)
 
     def stop(self):
         log("Player: stop called")
@@ -302,8 +299,8 @@ class Player(xbmc.Player):
         # if something is already playing, then we do not want
         # to replace it with the theme
         if not self.isPlaying():
-            if not self.loud:
-                self.lowerVolume()
+            # Perform and lowering of the sound for theme playing
+            self.lowerVolume()
 
             if self.settings.isFadeIn():
                 # Get the current volume - this is out target volume
@@ -354,14 +351,15 @@ class Player(xbmc.Player):
 
     def lowerVolume( self ):
         try:
-            current_volume = self.getVolume()
-            self.loud = True
-            vol = ((60+current_volume-int( self.settings.getDownVolume()) )*(100/60.0))
-            if vol < 0 :
-                vol = 0
-            log( "Player: volume goal: %s%% " % vol )
-            xbmc.executebuiltin('XBMC.SetVolume(%d)' % vol, True)
-            log( "Player: down volume to %d%%" % vol )
+            if int(self.settings.getDownVolume()) != 0:
+                current_volume = self.getVolume()
+                vol = ((60+current_volume-int( self.settings.getDownVolume()) )*(100/60.0))
+                if vol < 0 :
+                    vol = 0
+                log( "Player: volume goal: %d%% " % vol )
+                xbmc.executebuiltin('XBMC.SetVolume(%d)' % vol, True)
+            else:
+                log( "Player: No reduced volume option set" )
         except:
             print_exc()
 
@@ -383,18 +381,8 @@ class Player(xbmc.Player):
                 xbmc.executebuiltin('XBMC.SetVolume(%d)' % vol, True)
                 cur_vol_perc = vol
                 xbmc.sleep(200)
-            # need to stop before we turn the volume back up, however we
-            # need to make sure if we have changed the volume, we save
-            # of the loud setting so it can be re-applied after we recover
-            # from the fade
-            lastLoudSetting = self.loud
-            self.stop()
-            self.loud = lastLoudSetting
-            # wait till player is stopped before raising the volume
-            while self.isPlayingAudio():
-                xbmc.sleep(50)
-            pre_vol_perc = 100 + (cur_vol * (100/60.0))
-            xbmc.executebuiltin('XBMC.SetVolume(%d)' % pre_vol_perc, True)
+            # The final stop and reset of the settings will be done
+            # outside of this "if"
         # Need to always stop by the end of this
         self.stop()
 
@@ -565,14 +553,15 @@ class TunesBackend( ):
                     self.newpath = ""
                     self.oldpath = ""
                     self.playpath = ""
+                    self.prevplaypath = ""
                     log( "TunesBackend: end playing" )
                     self.themePlayer.endPlaying()
                     TvTunesStatus.setAliveState(False)
 
                 # This is the case where we are looking at the lists of movies or TV Series
-                if WindowShowing.isTvShowTitles() or (WindowShowing.isMovies() and not WindowShowing.isMovieInformation()):
+#                if WindowShowing.isTvShowTitles() or (WindowShowing.isMovies() and not WindowShowing.isMovieInformation()):
                     # clear the last tune path if we are back at the root of the tvshow library
-                    self.prevplaypath = ""
+#                    self.prevplaypath = ""
 
                 xbmc.sleep(200)
 
