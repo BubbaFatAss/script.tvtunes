@@ -169,6 +169,12 @@ class Settings():
             return True
         else:
             return False
+    
+    def isPlayMovieList(self):
+        return __addon__.getSetting("movielist") == 'true'
+
+    def isPlayTvShowList(self):
+        return __addon__.getSetting("tvlist") == 'true'
 
 
 ##############################
@@ -178,12 +184,51 @@ class ThemeFiles():
     def __init__(self, settings, rawPath):
         self.settings = settings
         self.rawPath = rawPath
+        if rawPath == "":
+            self.clear()
+        else:
+            self.themeFiles = self.generateThemeFilelist(rawPath)
+
+    # Define the equals to be based off of the list of theme files
+    def __eq__(self, other):
+        try:
+            if isinstance(other, ThemeFiles):
+                # If the lengths are not the same, there is no chance of a match
+                if len(self.themeFiles) != len(other.themeFiles):
+                    return False
+                # Make sure each file in the list is also in the source list
+                for aFile in other.themeFiles:
+                    if( self.themeFiles.count(aFile) < 1 ):
+                        return False
+            else:
+                return NotImplemented
+        except AttributeError:
+            return False
+        # If we reach here then the theme lists are equal
+        return True
+
+    # Define the not equals to be based off of the list of theme files
+    def __ne__(self, other):
+        result = self.__eq__(other)
+        if result is NotImplemented:
+            return result
+        return not result
+
+    def hasThemes(self):
+        return (len(self.themeFiles) > 0)
+    
+    def getPath(self):
+        return self.rawPath
+    
+    def clear(self):
+        self.rawPath == ""
+        self.themeFiles = []
 
     #
     # Gets the usable path after alterations like network details
     #
-    def getUsablePath(self):
-        workingPath = self.rawPath
+    def getUsablePath(self, rawPath):
+        workingPath = rawPath
         if self.settings.isSmbEnabled() and workingPath.startswith("smb://") : 
             log( "### Try authentication share" )
             workingPath = workingPath.replace("smb://", "smb://%s:%s@" % (self.settings.getSmbUser(), self.settings.getSmbPassword()) )
@@ -198,30 +243,45 @@ class ThemeFiles():
     #
     # Calculates the location of the theme file
     #
-    def getThemePlaylist(self):
+    def generateThemeFilelist(self, rawPath):
         # Get the full path with any network alterations
-        workingPath = self.getUsablePath()
+        workingPath = self.getUsablePath(rawPath)
 
         #######hack for TV shows stored as ripped disc folders
         if 'VIDEO_TS' in str(workingPath):
             log( "### FOUND VIDEO_TS IN PATH: Correcting the path for DVDR tv shows" )
             workingPath = self._updir( workingPath, 3 )
-            playlist = self.getThemeFiles(workingPath)
-            if playlist.size() < 1:
+            themeList = self.getThemeFiles(workingPath)
+            if len(themeList) < 1:
                 workingPath = self._updir(workingPath,1)
-                playlist = self.getThemeFiles(workingPath)
+                themeList = self.getThemeFiles(workingPath)
         #######end hack
         else:
-            playlist = self.getThemeFiles(workingPath)
+            themeList = self.getThemeFiles(workingPath)
             # If no theme files were found in this path, look at the parent directory
-            if playlist.size() < 1:
+            if len(themeList) < 1:
                 workingPath = os.path.dirname( os.path.dirname( workingPath ))
-                playlist = self.getThemeFiles(workingPath)
+                themeList = self.getThemeFiles(workingPath)
 
-        log("ThemeFiles: Playlist size = " + str(playlist.size()))
+        log("ThemeFiles: Playlist size = " + str(len(themeList)))
         log("ThemeFiles: Working Path = " + workingPath)
         
-        return (workingPath, playlist)
+        return themeList
+
+    # Returns the playlist for the themes
+    def getThemePlaylist(self):
+        # Take the list of files and create a playlist from them
+        playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
+        playlist.clear()
+        for aFile in self.themeFiles:
+            # Add the theme file to a playlist
+            playlist.add( url=aFile )
+
+        if self.settings.isShuffleThemes() and playlist.size() > 1:
+            playlist.shuffle()
+
+        return playlist
+
 
     def _updir(self, thepath, x):
         # move up x directories on the path
@@ -234,20 +294,16 @@ class ThemeFiles():
     def getThemeFiles(self, directory):
         log( "Searching " + directory + " for " + self.settings.getThemeFileRegEx() )
         dirs, files = xbmcvfs.listdir( directory )
-        playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
-        playlist.clear()
+        themeFiles = []
         for aFile in files:
             m = re.search(self.settings.getThemeFileRegEx(), aFile, re.IGNORECASE)
             if m:
                 path = os.path.join( directory, aFile )
                 log("ThemeFiles: Found match: " + path)
-                # If there are any files matching the RegEx, add them to a playlist
-                playlist.add( url=path )
+                # Add the theme file to the list
+                themeFiles.append(path)
 
-        if self.settings.isShuffleThemes() and playlist.size() > 1:
-            playlist.shuffle()
-
-        return playlist
+        return themeFiles
 
 
 ###################################
@@ -295,7 +351,7 @@ class Player(xbmc.Player):
             xbmc.Player.stop(self)
         self.restoreSettings()
 
-    def play(self, item=None, listitem=None, windowed=False):
+    def play(self, item=None, listitem=None, windowed=False, fastFade=False):
         # if something is already playing, then we do not want
         # to replace it with the theme
         if not self.isPlaying():
@@ -306,7 +362,14 @@ class Player(xbmc.Player):
                 # Get the current volume - this is out target volume
                 targetVol = self.getVolume()
                 cur_vol_perc = 1
-                vol_step = (100 + (targetVol * (100/60.0))) / 10
+
+                # Calculate how fast to fade the theme, this determines
+                # the number of step to drop the volume in
+                numSteps = 10
+                if fastFade:
+                    numSteps = numSteps/2
+
+                vol_step = (100 + (targetVol * (100/60.0))) / numSteps
                 # Reduce the volume before starting
                 # do not mute completely else the mute icon shows up
                 xbmc.executebuiltin('XBMC.SetVolume(1)', True)
@@ -316,7 +379,7 @@ class Player(xbmc.Player):
                 while not self.isPlayingAudio():
                     xbmc.sleep(30)
 
-                for step in range (0,9):
+                for step in range (0,(numSteps-1)):
                     vol = cur_vol_perc + vol_step
                     log( "Player: fadeIn_vol: %s" % str(vol) )
                     xbmc.executebuiltin('XBMC.SetVolume(%d)' % vol, True)
@@ -364,13 +427,20 @@ class Player(xbmc.Player):
             print_exc()
 
     # Graceful end of the playing, will fade if set to do so
-    def endPlaying(self):
+    def endPlaying(self, fastFade=False):
         if self.isPlayingAudio() and self.settings.isFadeOut():
             cur_vol = self.getVolume()
             cur_vol_perc = 100 + (cur_vol * (100/60.0))
-            vol_step = cur_vol_perc / 10
+            
+            # Calculate how fast to fade the theme, this determines
+            # the number of step to drop the volume in
+            numSteps = 10
+            if fastFade:
+                numSteps = numSteps/2
+            
+            vol_step = cur_vol_perc / numSteps
             # do not mute completely else the mute icon shows up
-            for step in range (0,9):
+            for step in range (0,(numSteps-1)):
                 # If the system is going to be shut down then we need to reset
                 # everything as quickly as possible
                 if WindowShowing.isShutdownMenu() or xbmc.abortRequested:
@@ -433,8 +503,11 @@ class WindowShowing():
         return xbmc.getInfoLabel( "container.folderpath" ) == "videodb://5/"
 
     @staticmethod
-    def isTvShowTitles():
-        return xbmc.getInfoLabel( "container.folderpath" ) == "videodb://2/2/"
+    def isTvShowTitles(currentPath=None):
+        if currentPath == None:
+            return xbmc.getInfoLabel( "container.folderpath" ) == "videodb://2/2/"
+        else:
+            return currentPath == "videodb://2/2/"
 
     @staticmethod
     def isPluginPath():
@@ -490,10 +563,9 @@ class TunesBackend( ):
         self.themePlayer = Player(settings=self.settings)
         self._stop = False
         log( "### starting TvTunes Backend ###" )
-        self.newpath = ""
-        self.oldpath = ""
-        self.playpath = ""
-        self.prevplaypath = ""
+        self.newThemeFiles = ThemeFiles(self.settings, "")
+        self.oldThemeFiles = ThemeFiles(self.settings, "")
+        self.prevThemeFiles = ThemeFiles(self.settings, "")
         
     def run( self ):
         try:
@@ -520,23 +592,24 @@ class TunesBackend( ):
                     self.stop()
                     break
 
-                if self.isPlayingZone() and not self.themePlayer.isPlaying():
-                    self.newpath = self.getThemePath();
+                # There is a valid page selected and there is currently nothing playing
+                if self.isPlayingZone():
+                    newThemes = self.getThemes()
+                    if( self.newThemeFiles != newThemes):
+                        self.newThemeFiles = newThemes
 
-                # At this point we have several options
-                # 1) The path is the same as it was last time, so leave playing what is currently playing
-                # 2) The path has changed, but is still for the same theme - so leave playing
-                # 3) The path has changed and now points to a new theme - start playing new theme
-                # 4) The path no longer points to a theme - stop playing
+                # Check if the file path has changed, if so there is a new file to play
+                if self.newThemeFiles != self.oldThemeFiles and self.newThemeFiles.hasThemes():
+                    log( "TunesBackend: old path: %s" % self.oldThemeFiles.getPath() )
+                    log( "TunesBackend: new path: %s" % self.newThemeFiles.getPath() )
+                    self.oldThemeFiles = self.newThemeFiles
+                    self.start_playing()
 
-                    if not self.newpath == self.oldpath and not self.newpath == "" and not self.newpath == "videodb://2/2/":
-                        log( "TunesBackend: old path: %s" % self.oldpath )
-                        log( "TunesBackend: new path: %s" % self.newpath )
-                        self.oldpath = self.newpath
-                        if not self.themePlayer.isPlaying():
-                            self.start_playing()
-                        else:
-                            log( "TunesBackend: player already playing" )
+                # There is no theme at this location, so make sure we are stopped
+                if not self.newThemeFiles.hasThemes() and self.themePlayer.isPlayingAudio():
+                    self.themePlayer.endPlaying()
+                    self.oldThemeFiles.clear()
+                    self.prevThemeFiles.clear()
 
                 # This will occur when a theme has stopped playing, maybe is is not set to loop
                 if TvTunesStatus.isAlive() and not self.themePlayer.isPlayingAudio():
@@ -548,21 +621,17 @@ class TunesBackend( ):
                 # to an area where the theme is no longer played, so it will trigger a stop and
                 # reset everything to highlight that nothing is playing
                 # Note: TvTunes is still running in this case, just not playing a theme
-                if not self.isPlayingZone() and self.playpath:
+                if not self.isPlayingZone():
                     log( "TunesBackend: reinit condition" )
-                    self.newpath = ""
-                    self.oldpath = ""
-                    self.playpath = ""
-                    self.prevplaypath = ""
+                    self.newThemeFiles.clear()
+                    self.oldThemeFiles.clear()
+                    self.prevThemeFiles.clear()
                     log( "TunesBackend: end playing" )
-                    self.themePlayer.endPlaying()
+                    if self.themePlayer.isPlaying():
+                        self.themePlayer.endPlaying()
                     TvTunesStatus.setAliveState(False)
 
-                # This is the case where we are looking at the lists of movies or TV Series
-#                if WindowShowing.isTvShowTitles() or (WindowShowing.isMovies() and not WindowShowing.isMovieInformation()):
-                    # clear the last tune path if we are back at the root of the tvshow library
-#                    self.prevplaypath = ""
-
+                # Wait a little before starting the check again
                 xbmc.sleep(200)
 
         except:
@@ -582,12 +651,18 @@ class TunesBackend( ):
             return True
         if WindowShowing.isEpisodes():
             return True
+        # Only valid is wanting theme on movie list
+        if WindowShowing.isMovies() and self.settings.isPlayMovieList():
+            return True
+        # Only valid is wanting theme on TV list
+        if WindowShowing.isTvShowTitles() and self.settings.isPlayTvShowList():
+            return True
         # Any other area is deemed to be a non play area
         return False
 
     # Locates the path to look for a theme to play based on what is
     # currently being displayed on the screen
-    def getThemePath(self):
+    def getThemes(self):
         themePath = ""
 
         # Check if the files are stored in a custom path
@@ -605,29 +680,55 @@ class TunesBackend( ):
         else:
             themePath = xbmc.getInfoLabel( "ListItem.Path" )
 
-        return themePath
+        # TODO: NEED TO ADD SUPPORT FOR MOVIE SETS
+        log("**** Rob themePath = " + themePath)
+
+        # When the reference is into the database and not the file system
+        # then don't return it
+        if themePath.startswith("videodb:"):
+            # If in either the Tv Show List or the Movie list then
+            # need to stop the theme is selecting the back button
+            if WindowShowing.isMovies() or WindowShowing.isTvShowTitles():
+                themefile = ThemeFiles(self.settings, "")
+            else:
+                # Load the previous theme
+                themefile = self.newThemeFiles
+        else:
+            themefile = ThemeFiles(self.settings, themePath)
+
+        return themefile
 
 
     def start_playing( self ):
-        themefile = ThemeFiles(self.settings, self.newpath)
-        self.playpath, playlist = themefile.getThemePlaylist()
+        playlist = self.newThemeFiles.getThemePlaylist()
 
-        if playlist.size() > 0:
-            if self.playpath == self.prevplaypath: 
-                log( "TunesBackend: Not playing the same files twice %s" % self.playpath )
+        if self.newThemeFiles.hasThemes():
+            if self.newThemeFiles == self.prevThemeFiles: 
+                log("TunesBackend: Not playing the same files twice %s" % self.newThemeFiles.getPath() )
                 return # don't play the same tune twice (when moving from season to episodes etc)
-            self.prevplaypath = self.playpath
+            # Value that will force a quicker than normal fade in and out
+            # this is needed if switching from one theme to the next, we
+            # do not want a long pause starting and stopping
+            fastFadeNeeded = False
+            # Check if a theme is already playing, if there is we will need
+            # to stop it before playing the new theme
+            if self.prevThemeFiles.hasThemes() and self.themePlayer.isPlayingAudio():
+                fastFadeNeeded = True
+                log("TunesBackend: Stopping previous theme: %s" % self.prevThemeFiles.getPath())
+                self.themePlayer.endPlaying(fastFade=fastFadeNeeded)
+            # Store the new theme that is being played
+            self.prevThemeFiles = self.newThemeFiles
             TvTunesStatus.setAliveState(True)
-            log( "TunesBackend: start playing %s" % self.playpath )
-            self.themePlayer.play( playlist )
+            log("TunesBackend: start playing %s" % self.newThemeFiles.getPath() )
+            self.themePlayer.play( playlist, fastFade=fastFadeNeeded )
         else:
-            log("TunesBackend: no themes found for %s" % self.newpath )
+            log("TunesBackend: no themes found for %s" % self.newThemeFiles.getPath() )
 
 
     def stop( self ):
-        log( "TunesBackend: ### Stopping TvTunes Backend ###" )
+        log("TunesBackend: ### Stopping TvTunes Backend ###")
         if TvTunesStatus.isAlive() and not self.themePlayer.isPlayingVideo(): 
-            log( "TunesBackend: stop playing" )
+            log("TunesBackend: stop playing")
             self.themePlayer.stop()
         while self.themePlayer.isPlayingAudio():
             xbmc.sleep(50)
@@ -639,7 +740,7 @@ class TunesBackend( ):
         # will not be called, so just force it on stop
         self.themePlayer.restoreSettings()
 
-        log( "TunesBackend: ### Stopped TvTunes Backend ###" )
+        log("TunesBackend: ### Stopped TvTunes Backend ###")
         self._stop = True
 
 
