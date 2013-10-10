@@ -262,6 +262,15 @@ class ThemeFiles():
         if 'rar://' in str(workingPath):
             workingPath = workingPath.replace("rar://","")
         
+        # If this is a file, then get it's parent directory
+        if os.path.isfile(workingPath):
+            workingPath = os.path.dirname(workingPath)
+        
+        # If the path currently ends in the directory separator
+        # then we need to clear an extra one
+        if workingPath[-1] == os.sep:
+            workingPath = workingPath[:-1]
+
         return workingPath
 
     #
@@ -284,7 +293,7 @@ class ThemeFiles():
             themeList = self._getThemeFiles(workingPath)
             # If no theme files were found in this path, look at the parent directory
             if len(themeList) < 1:
-                workingPath = os.path.dirname( os.path.dirname( workingPath ))
+                workingPath = self._updir( workingPath, 1 )
                 themeList = self._getThemeFiles(workingPath)
 
         log("ThemeFiles: Playlist size = " + str(len(themeList)))
@@ -708,9 +717,8 @@ class TunesBackend( ):
                 # Get the list of movies paths from the movie set
                 items = json_query['result']['setdetails']['movies']
                 for item in items:
-                    filepath = os.path.dirname(item['file'])
-                    log("TunesBackend: Movie Set file: " + filepath)
-                    themePaths.append(filepath)
+                    log("TunesBackend: Movie Set file: " + item['file'])
+                    themePaths.append(item['file'])
                 themefile = ThemeFiles(self.settings, themePath, themePaths)
             else:
                 themefile = ThemeFiles(self.settings, "")
