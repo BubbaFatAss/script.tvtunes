@@ -51,8 +51,8 @@ class Settings():
         self.enable_custom_path = __addon__.getSetting("custom_path_enable")
         if self.enable_custom_path == "true":
             self.custom_path = __addon__.getSetting("custom_path")
-        self.themeRegEx = self.loadThemeFileRegEx()
-        self.screensaverTime = self.loadScreensaverSettings()
+        self.themeRegEx = self._loadThemeFileRegEx()
+        self.screensaverTime = self._loadScreensaverSettings()
 
 
     # Loads the Screensaver settings
@@ -68,7 +68,7 @@ class Settings():
     # so it will reset the time, in Gotham, there will be a way to
     # actually start the screensaver again, but until then there is
     # not mush we can do
-    def loadScreensaverSettings(self):
+    def _loadScreensaverSettings(self):
         screenTimeOutSeconds = -1
         pguisettings = xbmc.translatePath('special://profile/guisettings.xml')
 
@@ -102,7 +102,7 @@ class Settings():
         return screenTimeOutSeconds
 
     # Calculates the regular expression to use to search for theme files
-    def loadThemeFileRegEx(self):
+    def _loadThemeFileRegEx(self):
         fileTypes = "mp3" # mp3 is the default that is always supported
         if(__addon__.getSetting("wma") == 'true'):
             fileTypes = fileTypes + "|wma"
@@ -181,13 +181,23 @@ class Settings():
 # Calculates file locations
 ##############################
 class ThemeFiles():
-    def __init__(self, settings, rawPath):
+    def __init__(self, settings, rawPath, pathList=None):
         self.settings = settings
+        self.forceShuffle = False
         self.rawPath = rawPath
         if rawPath == "":
             self.clear()
+        elif (pathList != None) and (len(pathList) > 0):
+            self.themeFiles = []
+            for aPath in pathList:
+                subThemeList = self._generateThemeFilelist(aPath)
+                # add these files to the existing list
+                self.themeFiles = self.themeFiles + subThemeList
+            # If we were given a list, then we should shuffle the themes
+            # as we don't always want the first path playing first
+            self.forceShuffle = True
         else:
-            self.themeFiles = self.generateThemeFilelist(rawPath)
+            self.themeFiles = self._generateThemeFilelist(rawPath)
 
     # Define the equals to be based off of the list of theme files
     def __eq__(self, other):
@@ -224,10 +234,24 @@ class ThemeFiles():
         self.rawPath == ""
         self.themeFiles = []
 
+    # Returns the playlist for the themes
+    def getThemePlaylist(self):
+        # Take the list of files and create a playlist from them
+        playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
+        playlist.clear()
+        for aFile in self.themeFiles:
+            # Add the theme file to a playlist
+            playlist.add( url=aFile )
+
+        if (self.settings.isShuffleThemes() or self.forceShuffle) and playlist.size() > 1:
+            playlist.shuffle()
+
+        return playlist
+
     #
     # Gets the usable path after alterations like network details
     #
-    def getUsablePath(self, rawPath):
+    def _getUsablePath(self, rawPath):
         workingPath = rawPath
         if self.settings.isSmbEnabled() and workingPath.startswith("smb://") : 
             log( "### Try authentication share" )
@@ -243,45 +267,30 @@ class ThemeFiles():
     #
     # Calculates the location of the theme file
     #
-    def generateThemeFilelist(self, rawPath):
+    def _generateThemeFilelist(self, rawPath):
         # Get the full path with any network alterations
-        workingPath = self.getUsablePath(rawPath)
+        workingPath = self._getUsablePath(rawPath)
 
         #######hack for TV shows stored as ripped disc folders
         if 'VIDEO_TS' in str(workingPath):
             log( "### FOUND VIDEO_TS IN PATH: Correcting the path for DVDR tv shows" )
             workingPath = self._updir( workingPath, 3 )
-            themeList = self.getThemeFiles(workingPath)
+            themeList = self._getThemeFiles(workingPath)
             if len(themeList) < 1:
                 workingPath = self._updir(workingPath,1)
-                themeList = self.getThemeFiles(workingPath)
+                themeList = self._getThemeFiles(workingPath)
         #######end hack
         else:
-            themeList = self.getThemeFiles(workingPath)
+            themeList = self._getThemeFiles(workingPath)
             # If no theme files were found in this path, look at the parent directory
             if len(themeList) < 1:
                 workingPath = os.path.dirname( os.path.dirname( workingPath ))
-                themeList = self.getThemeFiles(workingPath)
+                themeList = self._getThemeFiles(workingPath)
 
         log("ThemeFiles: Playlist size = " + str(len(themeList)))
         log("ThemeFiles: Working Path = " + workingPath)
         
         return themeList
-
-    # Returns the playlist for the themes
-    def getThemePlaylist(self):
-        # Take the list of files and create a playlist from them
-        playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
-        playlist.clear()
-        for aFile in self.themeFiles:
-            # Add the theme file to a playlist
-            playlist.add( url=aFile )
-
-        if self.settings.isShuffleThemes() and playlist.size() > 1:
-            playlist.shuffle()
-
-        return playlist
-
 
     def _updir(self, thepath, x):
         # move up x directories on the path
@@ -291,7 +300,7 @@ class ThemeFiles():
         return thepath
 
     # Search for theme files in the given directory
-    def getThemeFiles(self, directory):
+    def _getThemeFiles(self, directory):
         log( "Searching " + directory + " for " + self.settings.getThemeFileRegEx() )
         dirs, files = xbmcvfs.listdir( directory )
         themeFiles = []
@@ -513,6 +522,10 @@ class WindowShowing():
     def isPluginPath():
         return "plugin://" in xbmc.getInfoLabel( "ListItem.Path" )
 
+    @staticmethod
+    def isMovieSet():
+        return xbmc.getCondVisibility("!IsEmpty(ListItem.DBID) + SubString(ListItem.Path,videodb://1/7/,left)")
+
 
 ###############################################################
 # Class to make it easier to see the current state of TV Tunes
@@ -680,12 +693,31 @@ class TunesBackend( ):
         else:
             themePath = xbmc.getInfoLabel( "ListItem.Path" )
 
-        # TODO: NEED TO ADD SUPPORT FOR MOVIE SETS
-        log("**** Rob themePath = " + themePath)
+        log("TunesBackend: themePath = " + themePath)
+
+        # Check if the selection is a Movie Set
+        if WindowShowing.isMovieSet():
+            # Get Movie Set Data Base ID
+            dbid = xbmc.getInfoLabel( "ListItem.DBID" )
+            # Get movies from Movie Set
+            json_query = xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "VideoLibrary.GetMovieSetDetails", "params": {"setid": %s, "properties": [ "thumbnail" ], "movies": { "properties":  [ "file"], "sort": { "order": "ascending",  "method": "title" }} },"id": 1 }' % dbid)
+            json_query = unicode(json_query, 'utf-8', errors='ignore')
+            json_query = simplejson.loads(json_query)
+            if "result" in json_query and json_query['result'].has_key('setdetails'):
+                themePaths = []
+                # Get the list of movies paths from the movie set
+                items = json_query['result']['setdetails']['movies']
+                for item in items:
+                    filepath = os.path.dirname(item['file'])
+                    log("TunesBackend: Movie Set file: " + filepath)
+                    themePaths.append(filepath)
+                themefile = ThemeFiles(self.settings, themePath, themePaths)
+            else:
+                themefile = ThemeFiles(self.settings, "")
 
         # When the reference is into the database and not the file system
         # then don't return it
-        if themePath.startswith("videodb:"):
+        elif themePath.startswith("videodb:"):
             # If in either the Tv Show List or the Movie list then
             # need to stop the theme is selecting the back button
             if WindowShowing.isMovies() or WindowShowing.isTvShowTitles():
