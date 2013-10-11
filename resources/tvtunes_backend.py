@@ -720,28 +720,8 @@ class TunesBackend( ):
  
             if len(movieSetMap) < 1:
                 themefile = ThemeFiles(self.settings, "")
- #           elif self.settings.isCustomPathEnabled():
- #               themefile = ThemeFiles(self.settings, themePath, movieSetMap.keys())
             else:
                 themefile = ThemeFiles(self.settings, themePath, movieSetMap.values())
-            
-            # Get Movie Set Data Base ID
- #           dbid = xbmc.getInfoLabel( "ListItem.DBID" )
-            # Get movies from Movie Set
-#            json_query = xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "VideoLibrary.GetMovieSetDetails", "params": {"setid": %s, "properties": [ "thumbnail" ], "movies": { "properties":  [ "file", "title"], "sort": { "order": "ascending",  "method": "title" }} },"id": 1 }' % dbid)
-#            json_query = unicode(json_query, 'utf-8', errors='ignore')
-#            json_query = simplejson.loads(json_query)
-#            if "result" in json_query and json_query['result'].has_key('setdetails'):
-#                themePaths = []
-                # Get the list of movies paths from the movie set
-#                items = json_query['result']['setdetails']['movies']
-#                for item in items:
-#                    log("TunesBackend: Movie Set title: " + item['title'])
-#                    log("TunesBackend: Movie Set file: " + item['file'])
-#                    themePaths.append(item['file'])
-#                themefile = ThemeFiles(self.settings, themePath, themePaths)
-#            else:
-#                themefile = ThemeFiles(self.settings, "")
 
         # When the reference is into the database and not the file system
         # then don't return it
@@ -758,6 +738,7 @@ class TunesBackend( ):
 
         return themefile
 
+    # Gets the list of movies in a movie set
     def _getMovieSetFileList(self):
         # Create a map for Program name to video file
         movieSetMap = dict()
