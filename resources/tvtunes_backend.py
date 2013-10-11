@@ -700,7 +700,7 @@ class TunesBackend( ):
             themePath = os.path.join(self.settings.getCustomPath(), videotitle).decode("utf-8")
 
         # Looking at the TV Show information page
-        elif WindowShowing.isMovieInformation() and WindowShowing.isTvShowTitles():
+        elif WindowShowing.isMovieInformation() and (WindowShowing.isTvShowTitles() or WindowShowing.isTvShows()):
             themePath = xbmc.getInfoLabel( "ListItem.FilenameAndPath" )
         else:
             themePath = xbmc.getInfoLabel( "ListItem.Path" )
