@@ -27,10 +27,11 @@ __addonid__   = __addon__.getAddonInfo('id')
 # Output logging method, if global logging is enabled
 #
 def log(txt):
-    if isinstance (txt,str):
-        txt = txt.decode("utf-8")
-    message = u'%s: %s' % (__addonid__, txt)
-    xbmc.log(msg=message.encode("utf-8"), level=xbmc.LOGDEBUG)
+    if __addon__.getSetting( "logEnabled" ) == "true":
+        if isinstance (txt,str):
+            txt = txt.decode("utf-8")
+            message = u'%s: %s' % (__addonid__, txt)
+            xbmc.log(msg=message.encode("utf-8"), level=xbmc.LOGDEBUG)
 
 
 def normalize_string( text ):
@@ -311,15 +312,17 @@ class ThemeFiles():
     # Search for theme files in the given directory
     def _getThemeFiles(self, directory):
         log( "Searching " + directory + " for " + self.settings.getThemeFileRegEx() )
-        dirs, files = xbmcvfs.listdir( directory )
         themeFiles = []
-        for aFile in files:
-            m = re.search(self.settings.getThemeFileRegEx(), aFile, re.IGNORECASE)
-            if m:
-                path = os.path.join( directory, aFile )
-                log("ThemeFiles: Found match: " + path)
-                # Add the theme file to the list
-                themeFiles.append(path)
+        # check if the directory exists before searching
+        if xbmcvfs.exists(directory):
+            dirs, files = xbmcvfs.listdir( directory )
+            for aFile in files:
+                m = re.search(self.settings.getThemeFileRegEx(), aFile, re.IGNORECASE)
+                if m:
+                    path = os.path.join( directory, aFile )
+                    log("ThemeFiles: Found match: " + path)
+                    # Add the theme file to the list
+                    themeFiles.append(path)
 
         return themeFiles
 
@@ -706,22 +709,39 @@ class TunesBackend( ):
 
         # Check if the selection is a Movie Set
         if WindowShowing.isMovieSet():
-            # Get Movie Set Data Base ID
-            dbid = xbmc.getInfoLabel( "ListItem.DBID" )
-            # Get movies from Movie Set
-            json_query = xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "VideoLibrary.GetMovieSetDetails", "params": {"setid": %s, "properties": [ "thumbnail" ], "movies": { "properties":  [ "file"], "sort": { "order": "ascending",  "method": "title" }} },"id": 1 }' % dbid)
-            json_query = unicode(json_query, 'utf-8', errors='ignore')
-            json_query = simplejson.loads(json_query)
-            if "result" in json_query and json_query['result'].has_key('setdetails'):
-                themePaths = []
-                # Get the list of movies paths from the movie set
-                items = json_query['result']['setdetails']['movies']
-                for item in items:
-                    log("TunesBackend: Movie Set file: " + item['file'])
-                    themePaths.append(item['file'])
-                themefile = ThemeFiles(self.settings, themePath, themePaths)
-            else:
+            movieSetMap = self._getMovieSetFileList()
+
+            if self.settings.isCustomPathEnabled():
+                # Need to make the values part (the path) point to the custom path
+                # rather than the video file
+                for aKey in movieSetMap.keys():
+                    videotitle = normalize_string(aKey.replace(":","") )
+                    movieSetMap[aKey] = os.path.join(self.settings.getCustomPath(), videotitle).decode("utf-8")
+ 
+            if len(movieSetMap) < 1:
                 themefile = ThemeFiles(self.settings, "")
+ #           elif self.settings.isCustomPathEnabled():
+ #               themefile = ThemeFiles(self.settings, themePath, movieSetMap.keys())
+            else:
+                themefile = ThemeFiles(self.settings, themePath, movieSetMap.values())
+            
+            # Get Movie Set Data Base ID
+ #           dbid = xbmc.getInfoLabel( "ListItem.DBID" )
+            # Get movies from Movie Set
+#            json_query = xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "VideoLibrary.GetMovieSetDetails", "params": {"setid": %s, "properties": [ "thumbnail" ], "movies": { "properties":  [ "file", "title"], "sort": { "order": "ascending",  "method": "title" }} },"id": 1 }' % dbid)
+#            json_query = unicode(json_query, 'utf-8', errors='ignore')
+#            json_query = simplejson.loads(json_query)
+#            if "result" in json_query and json_query['result'].has_key('setdetails'):
+#                themePaths = []
+                # Get the list of movies paths from the movie set
+#                items = json_query['result']['setdetails']['movies']
+#                for item in items:
+#                    log("TunesBackend: Movie Set title: " + item['title'])
+#                    log("TunesBackend: Movie Set file: " + item['file'])
+#                    themePaths.append(item['file'])
+#                themefile = ThemeFiles(self.settings, themePath, themePaths)
+#            else:
+#                themefile = ThemeFiles(self.settings, "")
 
         # When the reference is into the database and not the file system
         # then don't return it
@@ -737,6 +757,28 @@ class TunesBackend( ):
             themefile = ThemeFiles(self.settings, themePath)
 
         return themefile
+
+    def _getMovieSetFileList(self):
+        # Create a map for Program name to video file
+        movieSetMap = dict()
+        
+        # Check if the selection is a Movie Set
+        if WindowShowing.isMovieSet():
+            # Get Movie Set Data Base ID
+            dbid = xbmc.getInfoLabel( "ListItem.DBID" )
+            # Get movies from Movie Set
+            json_query = xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "VideoLibrary.GetMovieSetDetails", "params": {"setid": %s, "properties": [ "thumbnail" ], "movies": { "properties":  [ "file", "title"], "sort": { "order": "ascending",  "method": "title" }} },"id": 1 }' % dbid)
+            json_query = unicode(json_query, 'utf-8', errors='ignore')
+            json_query = simplejson.loads(json_query)
+            if "result" in json_query and json_query['result'].has_key('setdetails'):
+                # Get the list of movies paths from the movie set
+                items = json_query['result']['setdetails']['movies']
+                for item in items:
+                    log("TunesBackend: Movie Set file (%s): %s" % (item['title'], item['file']))
+                    movieSetMap[item['title']] = item['file']
+#                    themePaths.append(item['file'])
+
+        return movieSetMap
 
 
     def start_playing( self ):
