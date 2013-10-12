@@ -343,7 +343,7 @@ class Player(xbmc.Player):
     def __init__(self, settings, *args):
         self.settings = settings
         # Save the volume from before any alterations
-        self.original_volume = ( 100 + (self.getVolume() *(100/60.0)))
+        self.original_volume = ( 100 + (self._getVolume() *(100/60.0)))
         
         # Save off the current repeat state before we started playing anything
         if xbmc.getCondVisibility('Playlist.IsRepeat'):
@@ -386,11 +386,11 @@ class Player(xbmc.Player):
         # to replace it with the theme
         if not self.isPlaying():
             # Perform and lowering of the sound for theme playing
-            self.lowerVolume()
+            self._lowerVolume()
 
             if self.settings.isFadeIn():
                 # Get the current volume - this is out target volume
-                targetVol = self.getVolume()
+                targetVol = self._getVolume()
                 cur_vol_perc = 1
 
                 # Calculate how fast to fade the theme, this determines
@@ -405,6 +405,7 @@ class Player(xbmc.Player):
                 xbmc.executebuiltin('XBMC.SetVolume(1)', True)
                 # Now start playing before we start increasing the volume
                 xbmc.Player.play(self, item=item, listitem=listitem, windowed=windowed)
+                self._performRandomSeek()
                 # Wait until playing has started
                 while not self.isPlayingAudio():
                     xbmc.sleep(30)
@@ -419,21 +420,24 @@ class Player(xbmc.Player):
                 xbmc.executebuiltin('XBMC.SetVolume(%d)' % ( 100 + (targetVol *(100/60.0))), True)
             else:
                 xbmc.Player.play(self, item=item, listitem=listitem, windowed=windowed)
-
+                self._performRandomSeek()
 
             if self.settings.isLoop():
                 xbmc.executeJSONRPC('{ "jsonrpc": "2.0", "method": "Player.SetRepeat", "params": {"playerid": 0, "repeat": "all" }, "id": 1 }')
             else:
                 xbmc.executeJSONRPC('{ "jsonrpc": "2.0", "method": "Player.SetRepeat", "params": {"playerid": 0, "repeat": "off" }, "id": 1 }')
             
-            if self.settings.isRandomStart():
-                random.seed()
-                randomStart = random.randint( 0, int(xbmc.Player().getTotalTime() * .75) )        
-                log("Player: Setting Random start, Total Track = %s, Start Time = %s" % (xbmc.Player().getTotalTime(), randomStart))
-                xbmc.Player().seekTime( randomStart )
+            
+    # Will move the playing to a random position in the track
+    def _performRandomSeek(self):
+        if self.settings.isRandomStart():
+            random.seed()
+            randomStart = random.randint( 0, int(xbmc.Player().getTotalTime() * .75) )        
+            log("Player: Setting Random start, Total Track = %s, Start Time = %s" % (xbmc.Player().getTotalTime(), randomStart))
+            xbmc.Player().seekTime( randomStart )
+            
 
-
-    def getVolume(self):
+    def _getVolume(self):
         try:
             volume = int(xbmc.getInfoLabel('player.volume').split(".")[0])
         except:
@@ -442,10 +446,10 @@ class Player(xbmc.Player):
         return volume
 
 
-    def lowerVolume( self ):
+    def _lowerVolume( self ):
         try:
             if int(self.settings.getDownVolume()) != 0:
-                current_volume = self.getVolume()
+                current_volume = self._getVolume()
                 vol = ((60+current_volume-int( self.settings.getDownVolume()) )*(100/60.0))
                 if vol < 0 :
                     vol = 0
@@ -459,7 +463,7 @@ class Player(xbmc.Player):
     # Graceful end of the playing, will fade if set to do so
     def endPlaying(self, fastFade=False):
         if self.isPlayingAudio() and self.settings.isFadeOut():
-            cur_vol = self.getVolume()
+            cur_vol = self._getVolume()
             cur_vol_perc = 100 + (cur_vol * (100/60.0))
             
             # Calculate how fast to fade the theme, this determines
