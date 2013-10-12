@@ -1,20 +1,42 @@
 # XBMC Media Center language file
 # Addon Name: TvTunes
 # Addon id: script.tvtunes
-# Addon Provider: Ppic|Frost|ronie
+# Addon Provider: Ppic|Frost|ronie|robwebset
+# Translators:
+# foXaCe <foxace66@gmail.com>, 2013
+# mikebzh44 <mikael.bertho@gmail.com>, 2013
 msgid ""
 msgstr ""
 "Project-Id-Version: XBMC Addons\n"
 "Report-Msgid-Bugs-To: alanwww1@xbmc.org\n"
 "POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: XBMC Translation Team\n"
+"PO-Revision-Date: 2013-10-11 08:30+0000\n"
+"Last-Translator: mikebzh44 <mikael.bertho@gmail.com>\n"
 "Language-Team: French (http://www.transifex.com/projects/p/xbmc-addons/language/fr/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Language: fr\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgctxt "Addon Summary"
+msgid "Get and play your Movie and TV shows Themes"
+msgstr "Récupérez et écoutez les génériques des séries TV"
+
+msgctxt "Addon Description"
+msgid ""
+"This script will help you to get themes for your movie and TV show library "
+"from www.televisiontunes.com It will save them in theme[0-9].mp3 file in "
+"each of your video folders then they will be played while browsing your "
+"video library when you enter the TV Show folder or Video Information screen "
+"(need your skin to be compatible for this feature)"
+msgstr "Ce script vous aidera à télécharger vos génériques de série depuis www.televisiontunes.com Il les enregistrera dans un fichier theme.mp3 dans vos répertoires de série, ils seront ensuite joué lorsque vous entrerez dans la série correspondante (cette fonctionalité requiert une skin compatible)"
+
+msgctxt "Addon Disclaimer"
+msgid ""
+"Skinners, please see the wiki to know how to integrate it in your skin: "
+"http://wiki.xbmc.org/index.php?title=Add-on:TvTunes"
+msgstr "Skinneurs, lisez le changelog.txt pour obtenir les infos pour l'intégrer à votre skin"
 
 msgctxt "#32001"
 msgid "Play theme in loop"
@@ -45,8 +67,8 @@ msgid "Path:"
 msgstr "Chemin:"
 
 msgctxt "#32008"
-msgid "Fade tune when you exit a tv show"
-msgstr "Fondu du générique lorsque vous quittez une série Tv"
+msgid "Fade tune out when exiting"
+msgstr "Arrêter en fondu le thème à la sortie"
 
 msgctxt "#32009"
 msgid "Automatically download if an exact match is found"
@@ -54,15 +76,35 @@ msgstr "Télécharger automatiquement si une correspondance exacte est trouvée"
 
 msgctxt "#32010"
 msgid "Shuffle multiple tracks"
-msgstr "Lecture al�atoire si plusieurs th�mes"
+msgstr "Lecture aléatoire si plusieurs thèmes"
 
 msgctxt "#32011"
 msgid "Random start time"
-msgstr "Lecture du th�me � un endroit al�atoire"
+msgstr "Lecture du thème à un endroit aléatoire"
 
 msgctxt "#32012"
 msgid "File Types"
-msgstr "Type de fichiers"
+msgstr "Types de fichier"
+
+msgctxt "#32013"
+msgid "Fade in the tune when starting"
+msgstr "Lire en fondu le thème au démarrage"
+
+msgctxt "#32014"
+msgid "Always add additional themes (no overwrite)"
+msgstr "Toujours ajouter les thèmes additionnels (pas d'écrasement)"
+
+msgctxt "#32015"
+msgid "Search for movie themes"
+msgstr "Rechercher des thèmes pour les films"
+
+msgctxt "#32016"
+msgid "Play themes when browsing Movie list"
+msgstr "Lire les th�mes durant la navigation dans la liste des films"
+
+msgctxt "#32017"
+msgid "Play themes when browsing TV Show list"
+msgstr "Lire les th�mes durant la navigation dans la liste des s�ries TV"
 
 msgctxt "#32101"
 msgid "ERROR"

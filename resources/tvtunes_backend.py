@@ -193,7 +193,7 @@ class ThemeFiles():
             for aPath in pathList:
                 subThemeList = self._generateThemeFilelist(aPath)
                 # add these files to the existing list
-                self.themeFiles = self.themeFiles + subThemeList
+                self.themeFiles = self._mergeThemeLists(self.themeFiles, subThemeList)
             # If we were given a list, then we should shuffle the themes
             # as we don't always want the first path playing first
             self.forceShuffle = True
@@ -326,6 +326,15 @@ class ThemeFiles():
 
         return themeFiles
 
+    # Merges lists making sure there are no duplicates
+    def _mergeThemeLists(self, list_a, list_b):
+        mergedList = list_a
+        for b_item in list_b:
+            # check if the item is already in the list
+            if mergedList.count(b_item) < 1:
+                # Not in the list, add it
+                mergedList.append(b_item)
+        return mergedList
 
 ###################################
 # Custom Player to play the themes
