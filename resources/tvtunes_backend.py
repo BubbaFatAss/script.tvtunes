@@ -266,10 +266,10 @@ class ThemeFiles():
         # If this is a file, then get it's parent directory
         if os.path.isfile(workingPath):
             workingPath = os.path.dirname(workingPath)
-        
+
         # If the path currently ends in the directory separator
         # then we need to clear an extra one
-        if workingPath[-1] == os.sep:
+        if (workingPath[-1] == os.sep) or (workingPath[-1] == os.altsep):
             workingPath = workingPath[:-1]
 
         return workingPath
@@ -311,7 +311,7 @@ class ThemeFiles():
 
     # Search for theme files in the given directory
     def _getThemeFiles(self, directory):
-        log( "Searching " + directory + " for " + self.settings.getThemeFileRegEx() )
+        log( "ThemeFiles: Searching " + directory + " for " + self.settings.getThemeFileRegEx() )
         themeFiles = []
         # check if the directory exists before searching
         if xbmcvfs.exists(directory):
