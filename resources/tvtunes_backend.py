@@ -177,6 +177,11 @@ class Settings():
     def isPlayTvShowList(self):
         return __addon__.getSetting("tvlist") == 'true'
 
+    # Check if the video info button should be hidden
+    @staticmethod
+    def hideVideoInfoButton():
+        return __addon__.getSetting("showVideoInfoButton") != 'true'
+
 
 ##############################
 # Calculates file locations
@@ -319,7 +324,7 @@ class ThemeFiles():
             for aFile in files:
                 m = re.search(self.settings.getThemeFileRegEx(), aFile, re.IGNORECASE)
                 if m:
-                    path = os.path.join( directory, aFile )
+                    path = os.path.join( directory, aFile ).decode("utf-8")
                     log("ThemeFiles: Found match: " + path)
                     # Add the theme file to the list
                     themeFiles.append(path)
@@ -828,6 +833,14 @@ class TunesBackend( ):
 # Make sure that we are not already running on another thread
 # we do not want two running at the same time
 if TvTunesStatus.isOkToRun():
+    # Check if the video info button should be hidden, we do this here as this will be
+    # called when the video info screen is loaded, it can then be read by the skin
+    # when it comes to draw the button
+    if Settings.hideVideoInfoButton():
+        xbmcgui.Window( 12003 ).setProperty( "HideVideoInfoButton", "true" )
+    else:
+        xbmcgui.Window( 12003 ).clearProperty("HideVideoInfoButton")
+    
     # Create the main class to control the theme playing
     main = TunesBackend()
 
