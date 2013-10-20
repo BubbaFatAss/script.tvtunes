@@ -837,9 +837,9 @@ if TvTunesStatus.isOkToRun():
     # called when the video info screen is loaded, it can then be read by the skin
     # when it comes to draw the button
     if Settings.hideVideoInfoButton():
-        xbmcgui.Window( 12003 ).setProperty( "HideVideoInfoButton", "true" )
+        xbmcgui.Window( 12003 ).setProperty( "TvTunes_HideVideoInfoButton", "true" )
     else:
-        xbmcgui.Window( 12003 ).clearProperty("HideVideoInfoButton")
+        xbmcgui.Window( 12003 ).clearProperty("TvTunes_HideVideoInfoButton")
     
     # Create the main class to control the theme playing
     main = TunesBackend()
