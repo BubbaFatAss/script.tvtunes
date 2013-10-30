@@ -104,6 +104,10 @@ msgctxt "#32019"
 msgid "Enable debug logging"
 msgstr "Foutregistratie inschakelen"
 
+msgctxt "#32020"
+msgid "Show the TvTunes button on the Video Info screen"
+msgstr "Toon de TVTunes knop op het videoinformatiescherm"
+
 msgctxt "#32101"
 msgid "ERROR"
 msgstr "ERROR"
