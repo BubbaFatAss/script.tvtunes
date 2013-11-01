@@ -5,6 +5,7 @@ import os
 import re
 import random
 import threading
+import time
 from xml.etree.ElementTree import ElementTree
 #Modules XBMC
 import xbmc
@@ -45,10 +46,6 @@ def normalize_string( text ):
 class Settings():
     def __init__( self ):
         # Load the other settings from the addon setting menu
-        self.downvolume = __addon__.getSetting("downvolume")
-        self.downvolume = self.downvolume.split(",")[0]
-        self.downvolume = self.downvolume.split(".")[0]
-        
         self.enable_custom_path = __addon__.getSetting("custom_path_enable")
         if self.enable_custom_path == "true":
             self.custom_path = __addon__.getSetting("custom_path")
@@ -122,7 +119,7 @@ class Settings():
         return self.custom_path
     
     def getDownVolume(self):
-        return self.downvolume
+        return int(__addon__.getSetting("downvolume"))
 
     def isLoop(self):
         return __addon__.getSetting("loop") == 'true'
@@ -176,6 +173,9 @@ class Settings():
 
     def isPlayTvShowList(self):
         return __addon__.getSetting("tvlist") == 'true'
+
+    def getPlayDurationLimit(self):
+        return int(__addon__.getSetting("endafter"))
 
     # Check if the video info button should be hidden
     @staticmethod
@@ -350,6 +350,10 @@ class Player(xbmc.Player):
         # Save the volume from before any alterations
         self.original_volume = ( 100 + (self._getVolume() *(100/60.0)))
         
+        # Record the time that playing was started
+        # 0 is not playing
+        self.startTime = 0
+        
         # Save off the current repeat state before we started playing anything
         if xbmc.getCondVisibility('Playlist.IsRepeat'):
             self.repeat = "all"
@@ -378,6 +382,9 @@ class Player(xbmc.Player):
         xbmc.executeJSONRPC('{ "jsonrpc": "2.0", "method": "Player.SetRepeat", "params": {"playerid": 0, "repeat": "%s" }, "id": 1 }' % self.repeat)
         # Force the volume to the starting volume
         xbmc.executebuiltin('XBMC.SetVolume(%d)' % self.original_volume, True)
+        # Record the time that playing was started (0 is stopped)
+        self.startTime = 0
+
 
     def stop(self):
         log("Player: stop called")
@@ -431,31 +438,43 @@ class Player(xbmc.Player):
                 xbmc.executeJSONRPC('{ "jsonrpc": "2.0", "method": "Player.SetRepeat", "params": {"playerid": 0, "repeat": "all" }, "id": 1 }')
             else:
                 xbmc.executeJSONRPC('{ "jsonrpc": "2.0", "method": "Player.SetRepeat", "params": {"playerid": 0, "repeat": "off" }, "id": 1 }')
+
+            # Record the time that playing was started
+            self.startTime = time.time()
             
             
     # Will move the playing to a random position in the track
     def _performRandomSeek(self):
         if self.settings.isRandomStart():
             random.seed()
-            randomStart = random.randint( 0, int(xbmc.Player().getTotalTime() * .75) )        
-            log("Player: Setting Random start, Total Track = %s, Start Time = %s" % (xbmc.Player().getTotalTime(), randomStart))
+            # Need to make sure that it is actually playing before setting a random
+            # point - if it hasn't started playing it will just return zero resulting
+            # playing from the start (This only happens on very quick machines)
+            trackDuration = 0
+            for step in range(0, 10):
+                trackDuration = xbmc.Player().getTotalTime()
+                if trackDuration != 0:
+                    break
+                xbmc.sleep(1)
+            randomStart = random.randint( 0, int(trackDuration * .75) )        
+            log("Player: Setting Random start, Total Track = %s, Start Time = %s" % (trackDuration, randomStart))
             xbmc.Player().seekTime( randomStart )
-            
+
 
     def _getVolume(self):
         try:
-            volume = int(xbmc.getInfoLabel('player.volume').split(".")[0])
+            volume = float(xbmc.getInfoLabel('player.volume').split(".")[0])
         except:
-            volume = int(xbmc.getInfoLabel('player.volume').split(",")[0])
+            volume = float(xbmc.getInfoLabel('player.volume').split(",")[0])
         log( "Player: current volume: %s%%" % (( 60 + volume )*(100/60.0)) )
         return volume
 
 
     def _lowerVolume( self ):
         try:
-            if int(self.settings.getDownVolume()) != 0:
+            if self.settings.getDownVolume() != 0:
                 current_volume = self._getVolume()
-                vol = ((60+current_volume-int( self.settings.getDownVolume()) )*(100/60.0))
+                vol = ((60+current_volume- self.settings.getDownVolume() )*(100/60.0))
                 if vol < 0 :
                     vol = 0
                 log( "Player: volume goal: %d%% " % vol )
@@ -466,7 +485,7 @@ class Player(xbmc.Player):
             print_exc()
 
     # Graceful end of the playing, will fade if set to do so
-    def endPlaying(self, fastFade=False):
+    def endPlaying(self, fastFade=False, slowFade=False):
         if self.isPlayingAudio() and self.settings.isFadeOut():
             cur_vol = self._getVolume()
             cur_vol_perc = 100 + (cur_vol * (100/60.0))
@@ -476,7 +495,9 @@ class Player(xbmc.Player):
             numSteps = 10
             if fastFade:
                 numSteps = numSteps/2
-            
+            elif slowFade:
+                numSteps = numSteps * 4
+
             vol_step = cur_vol_perc / numSteps
             # do not mute completely else the mute icon shows up
             for step in range (0,(numSteps-1)):
@@ -494,6 +515,20 @@ class Player(xbmc.Player):
             # outside of this "if"
         # Need to always stop by the end of this
         self.stop()
+
+    # Checks if the play duration has been exceeded and then stops playing 
+    def checkEnding(self):
+        if self.isPlayingAudio() and (self.startTime > 0):
+            # Time in minutes to play for
+            durationLimit = self.settings.getPlayDurationLimit();
+            if durationLimit > 0:
+                # Get the current time
+                currTime = time.time()
+
+                expectedEndTime = self.startTime + (60 * durationLimit)
+                
+                if currTime > expectedEndTime:
+                    self.endPlaying(slowFade=True)
 
 
 
@@ -673,6 +708,8 @@ class TunesBackend( ):
                     if self.themePlayer.isPlaying():
                         self.themePlayer.endPlaying()
                     TvTunesStatus.setAliveState(False)
+
+                self.themePlayer.checkEnding()
 
                 # Wait a little before starting the check again
                 xbmc.sleep(200)

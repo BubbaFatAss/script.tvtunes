@@ -108,7 +108,11 @@ msgctxt "#32020"
 msgid "Show the TvTunes button on the Video Info screen"
 msgstr ""
 
-#empty strings from id 32021 to 32100
+msgctxt "#32021"
+msgid "Fade out after playing for (minutes)"
+msgstr ""
+
+#empty strings from id 32022 to 32100
 
 msgctxt "#32101"
 msgid "ERROR"
