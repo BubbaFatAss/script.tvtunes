@@ -18,8 +18,8 @@ def log(txt):
     if __addon__.getSetting( "logEnabled" ) == "true":
         if isinstance (txt,str):
             txt = txt.decode("utf-8")
-            message = u'%s: %s' % (__addonid__, txt)
-            xbmc.log(msg=message.encode("utf-8"), level=xbmc.LOGDEBUG)
+        message = u'%s: %s' % (__addonid__, txt)
+        xbmc.log(msg=message.encode("utf-8"), level=xbmc.LOGDEBUG)
 
 log('script version %s started' % __version__)
 
@@ -39,14 +39,7 @@ if params.get("backend", False ):
     xbmc.executebuiltin('XBMC.RunScript(%s)' % (os.path.join(__resource__ , "tvtunes_backend.py")))
 
 elif params.get("mode", False ) == "solo":
-    # Support just name and path in addition to tvname and tvpath
-    videoname = params.get("name", False )
-    if not videoname:
-        videoname = params.get("tvname", False )
-    filepath = params.get("path", False )
-    if not filepath:
-        filepath = params.get("tvpath", False )
-    xbmc.executebuiltin('XBMC.RunScript(%s,mode=solo&name=%s&path=%s)' % (os.path.join(__resource__ , "tvtunes_scraper.py") , videoname, filepath))
+    xbmc.executebuiltin('XBMC.RunScript(%s,mode=solo)' % (os.path.join(__resource__ , "tvtunes_scraper.py")))
 
 else: 
     xbmc.executebuiltin('XBMC.RunScript(%s)' % os.path.join( __resource__ , "tvtunes_scraper.py"))

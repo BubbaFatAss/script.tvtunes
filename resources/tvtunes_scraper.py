@@ -64,6 +64,22 @@ def get_html_source( url , save=False):
         xbmcgui.Dialog().ok(__language__(32101) , __language__(32102))
         return False
 
+###############################################################
+# Class to make it easier to see which screen is being checked
+###############################################################
+class WindowShowing():
+    @staticmethod
+    def isTvShows():
+        return xbmc.getCondVisibility("Container.Content(tvshows)")
+
+    @staticmethod
+    def isTvShowTitles(currentPath=None):
+        if currentPath == None:
+            return xbmc.getInfoLabel( "container.folderpath" ) == "videodb://2/2/"
+        else:
+            return currentPath == "videodb://2/2/"
+
+
 class TvTunes:
     def __init__(self):
         if not xbmcvfs.exists( xbmc.translatePath( 'special://profile/addon_data/%s' % __addonid__ ).decode("utf-8") ):
@@ -95,8 +111,21 @@ class TvTunes:
     # Handles the case where there is just a single theme to look for
     # and it has been invoked from the given video location
     def runSolo(self):
-        videoName = params.get("name", "" )
-        videoPath = params.get("path", "false" )
+        # Used to pass the name and path via the command line
+        # This caused problems with non ascii characters, so now
+        # we just look at the screen details
+        # The solo option is only available from the info screen
+        # Looking at the TV Show information page
+        if WindowShowing.isTvShowTitles() or WindowShowing.isTvShows():
+            videoPath = xbmc.getInfoLabel( "ListItem.Path" )
+            videoName = xbmc.getInfoLabel( "ListItem.TVShowTitle" )
+            if videoPath == None or videoPath == "":
+                videoPath = xbmc.getInfoLabel( "ListItem.FilenameAndPath" )
+        else:
+            videoPath = xbmc.getInfoLabel( "ListItem.FilenameAndPath" )
+            videoName = xbmc.getInfoLabel( "ListItem.Title" )
+            if videoPath == None or videoPath == "":
+                videoPath = xbmc.getInfoLabel( "ListItem.Path" )
         
         if self.enable_custom_path == "true":
             tvshow = videoName.replace(":","")
