@@ -1,3 +1,6 @@
+v3.1.9
+- Fixed scraper with none ascii characters in path
+
 v3.1.8
 - Add ability to fade out the theme after a given duration
 
