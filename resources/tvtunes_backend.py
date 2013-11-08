@@ -812,7 +812,6 @@ class TunesBackend( ):
                 for item in items:
                     log("TunesBackend: Movie Set file (%s): %s" % (item['title'], item['file']))
                     movieSetMap[item['title']] = item['file']
-#                    themePaths.append(item['file'])
 
         return movieSetMap
 
