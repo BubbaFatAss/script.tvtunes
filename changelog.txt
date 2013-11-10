@@ -1,5 +1,6 @@
 v3.1.9
 - Fixed scraper with none ascii characters in path
+- Fixed movie TvTunes search button so searches for just the movie
 - Improve start at random position to not show seek dialog
 - Improve random start to not play the first second of the track
 
