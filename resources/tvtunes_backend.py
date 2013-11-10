@@ -247,10 +247,34 @@ class ThemeFiles():
         playlist.clear()
         for aFile in self.themeFiles:
             # Add the theme file to a playlist
-            playlist.add( url=aFile )
+            playlist.add( url=str(aFile) )
 
         if (self.settings.isShuffleThemes() or self.forceShuffle) and playlist.size() > 1:
             playlist.shuffle()
+        
+        # Now we have the playlist, and it has been shuffled if needed
+        # Check if we need to have a random start time for the first track
+        # Note: The following method (rather than seek) should prevent
+        # the seek dialog being displayed on the screen and also prevent
+        # the need to start the theme playing before changing the start point
+        if self.settings.isRandomStart() and playlist.size() > 0:
+            filename = playlist[0].getfilename()
+            duration = int(playlist[0].getduration())
+
+            log("ThemeFiles: Duration is %d for file %s" % (duration, filename))
+            
+            if duration > 10:
+                listitem = xbmcgui.ListItem()
+                # Record if the theme should start playing part-way through
+                randomStart = random.randint(0, int(duration * 0.75))
+                listitem.setProperty('StartOffset', str(randomStart))
+
+                log("ThemeFiles: Setting Random start of %d for %s" % (randomStart, filename))
+
+                # Remove the old item from the playlist
+                playlist.remove(filename)
+                # Add the new item at the start of the list
+                playlist.add(str(filename), listitem, 0)
 
         return playlist
 
@@ -417,7 +441,7 @@ class Player(xbmc.Player):
                 xbmc.executebuiltin('XBMC.SetVolume(1)', True)
                 # Now start playing before we start increasing the volume
                 xbmc.Player.play(self, item=item, listitem=listitem, windowed=windowed)
-                self._performRandomSeek()
+
                 # Wait until playing has started
                 while not self.isPlayingAudio():
                     xbmc.sleep(30)
@@ -432,34 +456,20 @@ class Player(xbmc.Player):
                 xbmc.executebuiltin('XBMC.SetVolume(%d)' % ( 100 + (targetVol *(100/60.0))), True)
             else:
                 xbmc.Player.play(self, item=item, listitem=listitem, windowed=windowed)
-                self._performRandomSeek()
 
             if self.settings.isLoop():
                 xbmc.executeJSONRPC('{ "jsonrpc": "2.0", "method": "Player.SetRepeat", "params": {"playerid": 0, "repeat": "all" }, "id": 1 }')
+                # If we had a random start and we are looping then we need to make sure
+                # when it comes to play the theme for a second time it starts at the beginning
+                # and not from the same mid-point
+                if self.settings.isRandomStart():
+                    item[0].setProperty('StartOffset', "0")
             else:
                 xbmc.executeJSONRPC('{ "jsonrpc": "2.0", "method": "Player.SetRepeat", "params": {"playerid": 0, "repeat": "off" }, "id": 1 }')
 
             # Record the time that playing was started
             self.startTime = time.time()
-            
-            
-    # Will move the playing to a random position in the track
-    def _performRandomSeek(self):
-        if self.settings.isRandomStart():
-            random.seed()
-            # Need to make sure that it is actually playing before setting a random
-            # point - if it hasn't started playing it will just return zero resulting
-            # playing from the start (This only happens on very quick machines)
-            trackDuration = 0
-            for step in range(0, 10):
-                trackDuration = xbmc.Player().getTotalTime()
-                if trackDuration != 0:
-                    break
-                xbmc.sleep(1)
-            randomStart = random.randint( 0, int(trackDuration * .75) )        
-            log("Player: Setting Random start, Total Track = %s, Start Time = %s" % (trackDuration, randomStart))
-            xbmc.Player().seekTime( randomStart )
-
+    
 
     def _getVolume(self):
         try:

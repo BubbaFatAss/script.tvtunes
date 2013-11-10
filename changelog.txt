@@ -1,5 +1,7 @@
 v3.1.9
 - Fixed scraper with none ascii characters in path
+- Improve start at random position to not show seek dialog
+- Improve random start to not play the first second of the track
 
 v3.1.8
 - Add ability to fade out the theme after a given duration
