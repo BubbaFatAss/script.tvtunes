@@ -112,7 +112,16 @@ msgctxt "#32021"
 msgid "Fade out after playing for (minutes)"
 msgstr ""
 
-#empty strings from id 32022 to 32100
+msgctxt "#32022"
+msgid "Operations"
+msgstr ""
+
+msgctxt "#32023"
+msgid "Perform Complete Search Now"
+msgstr ""
+
+
+#empty strings from id 32024 to 32100
 
 msgctxt "#32101"
 msgid "ERROR"

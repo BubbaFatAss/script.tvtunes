@@ -1,5 +1,6 @@
 v3.2.0
 - Fixed problem when previewing theme stops quickly
+- Add button to settings to search for themes
 
 v3.1.9
 - Fixed scraper with none ascii characters in path
