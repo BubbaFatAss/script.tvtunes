@@ -182,6 +182,11 @@ class Settings():
     def hideVideoInfoButton():
         return __addon__.getSetting("showVideoInfoButton") != 'true'
 
+    # Check the delay start value
+    @staticmethod
+    def getStartDelaySeconds():
+        return int(__addon__.getSetting("delayStart"))
+
 
 ##############################
 # Calculates file locations
@@ -641,6 +646,40 @@ class TvTunesStatus():
         # Default return True unless we have a good reason not to run
         return True
 
+# Class to handle delaying the start of playing a theme 
+class DelayedStartTheme():
+    def __init__(self):
+        self.themesToStart = None
+        self.anchorTime = 0
+
+    def shouldStartPlaying(self, themes):
+        delaySeconds = Settings.getStartDelaySeconds()
+
+        # Check is the start playing should be delayed
+        if delaySeconds < 1:
+            # Start playing straight away
+            return True
+
+        currentTime = int(time.time())
+
+        if themes != self.themesToStart:
+            log("DelayedStartTheme: Themes do not match, new anchor = " + str(currentTime))
+            self.themesToStart = themes
+            # Reset the current time as we need the delay from here
+            self.anchorTime = currentTime
+        else:
+            log("DelayedStartTheme: Target time = " + str(self.anchorTime + delaySeconds) + " current time =" + str(currentTime))
+            # Themes are the same, see if it is time to play the the theme yet
+            if currentTime > (self.anchorTime + delaySeconds):
+                log("DelayedStartTheme: Start playing")
+                # Now we are going to start the theme, clear the values
+                self.clear()
+                return True
+        return False
+    
+    def clear(self):
+        self.themesToStart = None
+        self.anchorTime = 0
 
 #
 # Thread to run the program back-end in
@@ -654,6 +693,7 @@ class TunesBackend( ):
         self.newThemeFiles = ThemeFiles(self.settings, "")
         self.oldThemeFiles = ThemeFiles(self.settings, "")
         self.prevThemeFiles = ThemeFiles(self.settings, "")
+        self.delayedStart = DelayedStartTheme()
         
     def run( self ):
         try:
@@ -690,14 +730,15 @@ class TunesBackend( ):
                 if self.newThemeFiles != self.oldThemeFiles and self.newThemeFiles.hasThemes():
                     log( "TunesBackend: old path: %s" % self.oldThemeFiles.getPath() )
                     log( "TunesBackend: new path: %s" % self.newThemeFiles.getPath() )
-                    self.oldThemeFiles = self.newThemeFiles
-                    self.start_playing()
+                    if self.start_playing():
+                        self.oldThemeFiles = self.newThemeFiles
 
                 # There is no theme at this location, so make sure we are stopped
                 if not self.newThemeFiles.hasThemes() and self.themePlayer.isPlayingAudio() and TvTunesStatus.isAlive():
                     self.themePlayer.endPlaying()
                     self.oldThemeFiles.clear()
                     self.prevThemeFiles.clear()
+                    self.delayedStart.clear()
                     TvTunesStatus.setAliveState(False)
 
                 # This will occur when a theme has stopped playing, maybe is is not set to loop
@@ -715,6 +756,7 @@ class TunesBackend( ):
                     self.newThemeFiles.clear()
                     self.oldThemeFiles.clear()
                     self.prevThemeFiles.clear()
+                    self.delayedStart.clear()
                     log( "TunesBackend: end playing" )
                     if self.themePlayer.isPlaying():
                         self.themePlayer.endPlaying()
@@ -827,13 +869,14 @@ class TunesBackend( ):
         return movieSetMap
 
 
+    # Returns True is started playing, False is delayed
     def start_playing( self ):
         playlist = self.newThemeFiles.getThemePlaylist()
 
         if self.newThemeFiles.hasThemes():
             if self.newThemeFiles == self.prevThemeFiles: 
                 log("TunesBackend: Not playing the same files twice %s" % self.newThemeFiles.getPath() )
-                return # don't play the same tune twice (when moving from season to episodes etc)
+                return True # don't play the same tune twice (when moving from season to episodes etc)
             # Value that will force a quicker than normal fade in and out
             # this is needed if switching from one theme to the next, we
             # do not want a long pause starting and stopping
@@ -844,6 +887,11 @@ class TunesBackend( ):
                 fastFadeNeeded = True
                 log("TunesBackend: Stopping previous theme: %s" % self.prevThemeFiles.getPath())
                 self.themePlayer.endPlaying(fastFade=fastFadeNeeded)
+            
+            # Check if this should be delayed
+            if not self.delayedStart.shouldStartPlaying(self.newThemeFiles):
+                return False
+
             # Store the new theme that is being played
             self.prevThemeFiles = self.newThemeFiles
             TvTunesStatus.setAliveState(True)
@@ -851,6 +899,7 @@ class TunesBackend( ):
             self.themePlayer.play( playlist, fastFade=fastFadeNeeded )
         else:
             log("TunesBackend: no themes found for %s" % self.newThemeFiles.getPath() )
+        return True
 
 
     def stop( self ):

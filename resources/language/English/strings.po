@@ -120,8 +120,11 @@ msgctxt "#32023"
 msgid "Perform Complete Search Now"
 msgstr ""
 
+msgctxt "#32024"
+msgid "Delay Theme Start (Seconds)"
+msgstr ""
 
-#empty strings from id 32024 to 32100
+#empty strings from id 32025 to 32100
 
 msgctxt "#32101"
 msgid "ERROR"

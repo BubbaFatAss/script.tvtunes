@@ -3,6 +3,7 @@
 	<category label="32991">
 		<setting id="loop" type="bool" label="32001" default="false"/>
 		<setting id="downvolume" label="32002" type="slider" default="0" range="0,1,60" option="int" />
+		<setting id="delayStart" label="32024" type="slider" default="0" range="0,1,60" option="int" />
 		<setting id="endafter" label="32021" type="slider" default="0" range="0,1,60" option="int" />
 		<setting id="movielist" type="bool" label="32016" default="false"/>
 		<setting id="tvlist" type="bool" label="32017" default="false"/>
