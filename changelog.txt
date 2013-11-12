@@ -1,3 +1,6 @@
+v3.2.0
+- Fixed problem when previewing theme stops quickly
+
 v3.1.9
 - Fixed scraper with none ascii characters in path
 - Fixed movie TvTunes search button so searches for just the movie

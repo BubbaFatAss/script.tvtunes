@@ -694,10 +694,11 @@ class TunesBackend( ):
                     self.start_playing()
 
                 # There is no theme at this location, so make sure we are stopped
-                if not self.newThemeFiles.hasThemes() and self.themePlayer.isPlayingAudio():
+                if not self.newThemeFiles.hasThemes() and self.themePlayer.isPlayingAudio() and TvTunesStatus.isAlive():
                     self.themePlayer.endPlaying()
                     self.oldThemeFiles.clear()
                     self.prevThemeFiles.clear()
+                    TvTunesStatus.setAliveState(False)
 
                 # This will occur when a theme has stopped playing, maybe is is not set to loop
                 if TvTunesStatus.isAlive() and not self.themePlayer.isPlayingAudio():
