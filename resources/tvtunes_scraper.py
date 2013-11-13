@@ -135,7 +135,7 @@ class TvTunes:
             # Need to clean the path if we are going to store the file there
             # Handle stacked files that have a custom file name format
             if videoPath.startswith("stack://"):
-                videoPath = videoPath.replace("stack://", "").split(",", 1)[0]
+                videoPath = videoPath.replace("stack://", "").split(" , ", 1)[0]
             # Need to remove the filename from the end  as we just want the directory
             if not os.path.isdir(videoPath):
                 videoPath = os.path.dirname( videoPath )
