@@ -252,7 +252,7 @@ class ThemeFiles():
         playlist.clear()
         for aFile in self.themeFiles:
             # Add the theme file to a playlist
-            playlist.add( url=str(aFile) )
+            playlist.add( url=aFile )
 
         if (self.settings.isShuffleThemes() or self.forceShuffle) and playlist.size() > 1:
             playlist.shuffle()
@@ -279,7 +279,7 @@ class ThemeFiles():
                 # Remove the old item from the playlist
                 playlist.remove(filename)
                 # Add the new item at the start of the list
-                playlist.add(str(filename), listitem, 0)
+                playlist.add(filename, listitem, 0)
 
         return playlist
 
