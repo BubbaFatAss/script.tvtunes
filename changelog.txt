@@ -1,3 +1,7 @@
+v3.2.1
+- Fix problem with non ascii characters in paths
+- Improve handling of retrieving themes for stacked movies 
+
 v3.2.0
 - Fixed problem when previewing theme stops quickly
 - Add button to settings to search for themes
