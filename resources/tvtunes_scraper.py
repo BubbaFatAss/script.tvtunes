@@ -310,7 +310,7 @@ class TvTunes:
                         path = item['file']
                         # Handle stacked files that have a custom file name format
                         if path.startswith("stack://"):
-                            path = path.replace("stack://", "").split(",", 1)[0]
+                            path = path.replace("stack://", "").split(" , ", 1)[0]
                         # Need to remove the filename from the end  as we just want the directory
                         path = os.path.dirname( path )
                     TVlist.append( ( movie , path, orgname ) )

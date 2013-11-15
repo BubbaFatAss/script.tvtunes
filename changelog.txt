@@ -1,3 +1,6 @@
+v3.2.2
+- Improve complete search with stacked files
+
 v3.2.1
 - Fix problem with non ascii characters in paths
 - Improve handling of retrieving themes for stacked movies 
