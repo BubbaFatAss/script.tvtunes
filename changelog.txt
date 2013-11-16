@@ -1,5 +1,6 @@
 v3.2.2
 - Improve complete search with stacked files
+- Update scraper to check for all theme file types
 
 v3.2.1
 - Fix problem with non ascii characters in paths

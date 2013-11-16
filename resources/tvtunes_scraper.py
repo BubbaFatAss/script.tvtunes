@@ -141,7 +141,32 @@ class TvTunes:
                 videoPath = os.path.dirname( videoPath )
 
             self.scan(normalize_string( videoName ),videoPath.decode("utf-8"))
-        
+
+    # Checks if a theme exists in a directory
+    def _doesThemeExist(self, directory):
+        log("## Checking directory: %s" % directory)
+        # check if the directory exists before searching
+        if xbmcvfs.exists(directory):
+            # Generate the regex
+            fileTypes = "mp3" # mp3 is the default that is always supported
+            if(__addon__.getSetting("wma") == 'true'):
+                fileTypes = fileTypes + "|wma"
+            if(__addon__.getSetting("flac") == 'true'):
+                fileTypes = fileTypes + "|flac"
+            if(__addon__.getSetting("m4a") == 'true'):
+                fileTypes = fileTypes + "|m4a"
+            if(__addon__.getSetting("wav") == 'true'):
+                fileTypes = fileTypes + "|wav"
+            themeFileRegEx = '(theme[ _A-Za-z0-9.-]*.(' + fileTypes + ')$)'
+
+            dirs, files = xbmcvfs.listdir( directory )
+            for aFile in files:
+                m = re.search(themeFileRegEx, aFile, re.IGNORECASE)
+                if m:
+                    log("### Found match: " + aFile)
+                    return True
+        return False
+
 
     def scan(self , cur_name=False , cur_path=False):
         count = 0
@@ -153,8 +178,8 @@ class TvTunes:
         total = len(self.TVlist)
         for show in self.TVlist:
             count = count + 1
-            if (not self.ERASE and xbmcvfs.exists(os.path.join(show[1],"theme.mp3"))) and (self.support_multi_themes == 'false'):
-                log( "### %s already exists, ERASE is set to %s" % ( os.path.join(show[1],"theme.mp3"), [False,True][self.ERASE] ) )
+            if (not self.ERASE and self._doesThemeExist(show[1])) and (self.support_multi_themes == 'false'):
+                log( "### %s already exists, ERASE is set to %s" % ( os.path.join(show[1],"theme.*"), [False,True][self.ERASE] ) )
             else:
                 self.DIALOG_PROGRESS.update( (count*100)/total , __language__(32107) + ' ' + show[0] , ' ')
                 if self.DIALOG_PROGRESS.iscanceled():
