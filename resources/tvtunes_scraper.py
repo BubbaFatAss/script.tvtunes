@@ -69,15 +69,16 @@ def get_html_source( url , save=False):
 ###############################################################
 class WindowShowing():
     @staticmethod
-    def isTvShows():
-        return xbmc.getCondVisibility("Container.Content(tvshows)")
-
-    @staticmethod
-    def isTvShowTitles(currentPath=None):
-        if currentPath == None:
-            return xbmc.getInfoLabel( "container.folderpath" ) == "videodb://2/2/"
-        else:
-            return currentPath == "videodb://2/2/"
+    def isTv():
+        if xbmc.getCondVisibility("Container.Content(tvshows)"):
+            return True
+        if xbmc.getInfoLabel( "container.folderpath" ) == "videodb://2/2/":
+            return True # TvShowTitles
+        if xbmc.getCondVisibility("Container.Content(Seasons)"):
+            return True
+        if xbmc.getCondVisibility("Container.Content(Episodes)"):
+            return True
+        return False
 
 
 class TvTunes:
@@ -116,7 +117,7 @@ class TvTunes:
         # we just look at the screen details
         # The solo option is only available from the info screen
         # Looking at the TV Show information page
-        if WindowShowing.isTvShowTitles() or WindowShowing.isTvShows():
+        if WindowShowing.isTv():
             videoPath = xbmc.getInfoLabel( "ListItem.Path" )
             videoName = xbmc.getInfoLabel( "ListItem.TVShowTitle" )
             if videoPath == None or videoPath == "":

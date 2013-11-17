@@ -1,6 +1,8 @@
 v3.2.2
 - Improve complete search with stacked files
 - Update scraper to check for all theme file types
+- Support stacked files on some theme play back
+- Add support for custom window theme playing
 
 v3.2.1
 - Fix problem with non ascii characters in paths

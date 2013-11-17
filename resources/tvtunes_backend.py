@@ -288,6 +288,11 @@ class ThemeFiles():
     #
     def _getUsablePath(self, rawPath):
         workingPath = rawPath
+        
+        # Start by removing the stack details
+        if workingPath.startswith("stack://"):
+            workingPath = workingPath.replace("stack://", "").split(" , ", 1)[0]
+        
         if self.settings.isSmbEnabled() and workingPath.startswith("smb://") : 
             log( "### Try authentication share" )
             workingPath = workingPath.replace("smb://", "smb://%s:%s@" % (self.settings.getSmbUser(), self.settings.getSmbPassword()) )
@@ -297,8 +302,12 @@ class ThemeFiles():
         if 'rar://' in str(workingPath):
             workingPath = workingPath.replace("rar://","")
         
+        # Support special paths like smb:// means that we can not just call
+        # os.path.isfile as it will return false even if it is a file
+        # (A bit of a shame - but that's the way it is)
+        fileExt = os.path.splitext( workingPath )[1]
         # If this is a file, then get it's parent directory
-        if os.path.isfile(workingPath):
+        if fileExt != None and fileExt != "":
             workingPath = os.path.dirname(workingPath)
 
         # If the path currently ends in the directory separator
@@ -588,6 +597,11 @@ class WindowShowing():
         return xbmc.getCondVisibility("Window.IsVisible(shutdownmenu)")
 
     @staticmethod
+    def isTvTunesEnabledWindow():
+        win = xbmcgui.Window(xbmcgui.getCurrentWindowId())
+        return win.getProperty("TvTunesSupported") == "true"
+
+    @staticmethod
     def isRecentEpisodesAdded():
         return xbmc.getInfoLabel( "container.folderpath" ) == "videodb://5/"
 
@@ -713,7 +727,7 @@ class TunesBackend( ):
                 # will be if:
                 # 1) A Video is selected to play
                 # 2) We exit to the main menu away from the video view
-                if not WindowShowing.isVideoLibrary() or WindowShowing.isScreensaver() or self.settings.isTimout():
+                if (not WindowShowing.isVideoLibrary() and not WindowShowing.isTvTunesEnabledWindow()) or WindowShowing.isScreensaver() or self.settings.isTimout():
                     log("TunesBackend: Video Library no longer visible")
                     # End playing cleanly (including any fade out) and then stop everything
                     self.themePlayer.endPlaying()
@@ -774,6 +788,8 @@ class TunesBackend( ):
     # Works out if the currently displayed area on the screen is something
     # that is deemed a zone where themes should be played
     def isPlayingZone(self):
+        if WindowShowing.isTvTunesEnabledWindow():
+            return True
         if WindowShowing.isRecentEpisodesAdded():
             return False
         if WindowShowing.isPluginPath():
