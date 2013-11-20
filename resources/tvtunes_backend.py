@@ -44,6 +44,8 @@ def normalize_string( text ):
 # Stores Various Settings
 ##############################
 class Settings():
+    xbmcMajorVersion = 0
+    
     def __init__( self ):
         # Load the other settings from the addon setting menu
         self.enable_custom_path = __addon__.getSetting("custom_path_enable")
@@ -186,6 +188,21 @@ class Settings():
     @staticmethod
     def getStartDelaySeconds():
         return int(__addon__.getSetting("delayStart"))
+
+    @staticmethod
+    def getXbmcMajorVersion():
+        if Settings.xbmcMajorVersion == 0:
+            xbmcVer = xbmc.getInfoLabel('system.buildversion')
+            log("Settings: XBMC Version = " + xbmcVer)
+            Settings.xbmcMajorVersion = 12
+            try:
+                # Get just the major version number
+                Settings.xbmcMajorVersion = int(xbmcVer.split(".", 1)[0])
+            except:
+                # Default to frodo as the default version if we fail to find it
+                log("Settings: Failed to get XBMC version")
+            log("Settings: XBMC Version %d (%s)" % (Settings.xbmcMajorVersion, xbmcVer))
+        return Settings.xbmcMajorVersion
 
 
 ##############################
@@ -603,14 +620,22 @@ class WindowShowing():
 
     @staticmethod
     def isRecentEpisodesAdded():
-        return xbmc.getInfoLabel( "container.folderpath" ) == "videodb://5/"
+        folderPathId = "videodb://5/"
+        # The ID for the Recent Episodes changed in Gotham
+        if Settings.getXbmcMajorVersion() > 12:
+            folderPathId = "videodb://recentlyaddedepisodes/"
+        return xbmc.getInfoLabel( "container.folderpath" ) == folderPathId
 
     @staticmethod
     def isTvShowTitles(currentPath=None):
+        folderPathId = "videodb://2/2/"
+        # The ID for the TV Show Title changed in Gotham
+        if Settings.getXbmcMajorVersion() > 12:
+            folderPathId = "videodb://tvshows/titles/ "
         if currentPath == None:
-            return xbmc.getInfoLabel( "container.folderpath" ) == "videodb://2/2/"
+            return xbmc.getInfoLabel( "container.folderpath" ) == folderPathId
         else:
-            return currentPath == "videodb://2/2/"
+            return currentPath == folderPathId
 
     @staticmethod
     def isPluginPath():
