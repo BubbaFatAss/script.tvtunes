@@ -94,7 +94,7 @@ class Settings():
                     # Convert from minutes to seconds, also reduce by 30 seconds
                     # as we want to ensure we have time to stop before the
                     # screensaver kicks in
-                    screenTimeOutSeconds = (int(result) * 60) - 30
+                    screenTimeOutSeconds = (int(result) * 60) - 10
                 else:
                     log("Settings: No Screensaver timeout found")
             
@@ -779,6 +779,13 @@ class TunesBackend( ):
                     # End playing cleanly (including any fade out) and then stop everything
                     self.themePlayer.endPlaying()
                     self.stop()
+                    
+                    # It may be possible that we stopped for the screen-saver about to kick in
+                    # If we are using Gotham or higher, it is possible for us to re-kick off the
+                    # screen-saver, otherwise the action of us stopping the theme will reset the
+                    # timeout and the user will have to wait longer
+                    if self.settings.isTimout() and (Settings.getXbmcMajorVersion() > 12):
+                        xbmc.executebuiltin("xbmc.ActivateScreensaver", True)
                     break
 
                 # There is a valid page selected and there is currently nothing playing
