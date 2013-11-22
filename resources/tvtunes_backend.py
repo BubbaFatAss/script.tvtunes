@@ -623,6 +623,19 @@ class WindowShowing():
         win = xbmcgui.Window(xbmcgui.getCurrentWindowId())
         return win.getProperty("TvTunesSupported").lower() == "movies"
 
+    # Works out if the custom window option to play the TV Theme is set
+    # and we have just opened a dialog over that
+    @staticmethod
+    def isTvTunesOverrideContinuePrevious():
+        if WindowShowing.isTvTunesOverrideTvShows() or WindowShowing.isTvTunesOverrideMovie():
+            # Check if this is a dialog, in which case we just continue playing
+            try: dialogid = xbmcgui.getCurrentWindowDialogId()
+            except: dialogid = 9999
+            if dialogid != 9999:
+                # Is a dialog so return True
+                return True
+        return False
+
     @staticmethod
     def isRecentEpisodesAdded():
         folderPathId = "videodb://5/"
@@ -769,7 +782,7 @@ class TunesBackend( ):
                     break
 
                 # There is a valid page selected and there is currently nothing playing
-                if self.isPlayingZone():
+                if self.isPlayingZone() and not WindowShowing.isTvTunesOverrideContinuePrevious():
                     newThemes = self.getThemes()
                     if( self.newThemeFiles != newThemes):
                         self.newThemeFiles = newThemes
