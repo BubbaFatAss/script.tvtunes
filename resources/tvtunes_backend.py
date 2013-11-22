@@ -583,27 +583,27 @@ class WindowShowing():
 
     @staticmethod
     def isVideoLibrary():
-        return xbmc.getCondVisibility("Window.IsVisible(videolibrary)")
+        return xbmc.getCondVisibility("Window.IsVisible(videolibrary)") or WindowShowing.isTvTunesOverrideTvShows() or WindowShowing.isTvTunesOverrideMovie()
 
     @staticmethod
     def isMovieInformation():
-        return xbmc.getCondVisibility("Window.IsVisible(movieinformation)")
+        return xbmc.getCondVisibility("Window.IsVisible(movieinformation)") or WindowShowing.isTvTunesOverrideMovie()
 
     @staticmethod
     def isTvShows():
-        return xbmc.getCondVisibility("Container.Content(tvshows)")
+        return xbmc.getCondVisibility("Container.Content(tvshows)") or WindowShowing.isTvTunesOverrideTvShows()
 
     @staticmethod
     def isSeasons():
-        return xbmc.getCondVisibility("Container.Content(Seasons)")
+        return xbmc.getCondVisibility("Container.Content(Seasons)") or WindowShowing.isTvTunesOverrideTvShows()
 
     @staticmethod
     def isEpisodes():
-        return xbmc.getCondVisibility("Container.Content(Episodes)")
+        return xbmc.getCondVisibility("Container.Content(Episodes)") or WindowShowing.isTvTunesOverrideTvShows()
 
     @staticmethod
     def isMovies():
-        return xbmc.getCondVisibility("Container.Content(movies)")
+        return xbmc.getCondVisibility("Container.Content(movies)") or WindowShowing.isTvTunesOverrideMovie()
 
     @staticmethod
     def isScreensaver():
@@ -614,9 +614,14 @@ class WindowShowing():
         return xbmc.getCondVisibility("Window.IsVisible(shutdownmenu)")
 
     @staticmethod
-    def isTvTunesEnabledWindow():
+    def isTvTunesOverrideTvShows():
         win = xbmcgui.Window(xbmcgui.getCurrentWindowId())
-        return win.getProperty("TvTunesSupported") == "true"
+        return win.getProperty("TvTunesSupported").lower() == "tvshows"
+
+    @staticmethod
+    def isTvTunesOverrideMovie():
+        win = xbmcgui.Window(xbmcgui.getCurrentWindowId())
+        return win.getProperty("TvTunesSupported").lower() == "movies"
 
     @staticmethod
     def isRecentEpisodesAdded():
@@ -631,7 +636,7 @@ class WindowShowing():
         folderPathId = "videodb://2/2/"
         # The ID for the TV Show Title changed in Gotham
         if Settings.getXbmcMajorVersion() > 12:
-            folderPathId = "videodb://tvshows/titles/ "
+            folderPathId = "videodb://tvshows/titles/"
         if currentPath == None:
             return xbmc.getInfoLabel( "container.folderpath" ) == folderPathId
         else:
@@ -643,7 +648,11 @@ class WindowShowing():
 
     @staticmethod
     def isMovieSet():
-        return xbmc.getCondVisibility("!IsEmpty(ListItem.DBID) + SubString(ListItem.Path,videodb://1/7/,left)")
+        folderPathId = "videodb://1/7/"
+        # The ID for the TV Show Title changed in Gotham
+        if Settings.getXbmcMajorVersion() > 12:
+            folderPathId = "videodb://movies/sets/"
+        return xbmc.getCondVisibility("!IsEmpty(ListItem.DBID) + SubString(ListItem.Path," + folderPathId + ",left)")
 
 
 ###############################################################
@@ -752,7 +761,7 @@ class TunesBackend( ):
                 # will be if:
                 # 1) A Video is selected to play
                 # 2) We exit to the main menu away from the video view
-                if (not WindowShowing.isVideoLibrary() and not WindowShowing.isTvTunesEnabledWindow()) or WindowShowing.isScreensaver() or self.settings.isTimout():
+                if (not WindowShowing.isVideoLibrary()) or WindowShowing.isScreensaver() or self.settings.isTimout():
                     log("TunesBackend: Video Library no longer visible")
                     # End playing cleanly (including any fade out) and then stop everything
                     self.themePlayer.endPlaying()
@@ -813,8 +822,6 @@ class TunesBackend( ):
     # Works out if the currently displayed area on the screen is something
     # that is deemed a zone where themes should be played
     def isPlayingZone(self):
-        if WindowShowing.isTvTunesEnabledWindow():
-            return True
         if WindowShowing.isRecentEpisodesAdded():
             return False
         if WindowShowing.isPluginPath():

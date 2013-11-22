@@ -1,3 +1,6 @@
+v3.2.3
+- Add Gotham Support
+
 v3.2.2
 - Improve complete search with stacked files
 - Update scraper to check for all theme file types

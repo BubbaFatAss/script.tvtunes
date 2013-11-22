@@ -97,7 +97,7 @@ class WindowShowing():
         folderPathId = "videodb://2/2/"
         # The ID for the TV Show Title changed in Gotham
         if WindowShowing.getXbmcMajorVersion() > 12:
-            folderPathId = "videodb://tvshows/titles/ "
+            folderPathId = "videodb://tvshows/titles/"
         if xbmc.getInfoLabel( "container.folderpath" ) == folderPathId:
             return True # TvShowTitles
         
