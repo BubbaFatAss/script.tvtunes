@@ -69,37 +69,53 @@ class Settings():
     # actually start the screensaver again, but until then there is
     # not mush we can do
     def _loadScreensaverSettings(self):
-        screenTimeOutSeconds = -1
-        pguisettings = xbmc.translatePath('special://profile/guisettings.xml')
+        return -1
 
-        log("Settings: guisettings.xml location = " + pguisettings)
+#####################################################################
+## IMPORTANT NOTE
+## --------------
+## The method _loadScreensaverSettings has been commented out
+## because it breaks the rules for getting Add-ons accepted into
+## the official repository, the bug still exists but can be solved
+## in one of two ways:
+## 1) After installation of the addon, uncomment the following method
+## 2) Set the "Fade out after playing for (minutes)" to less than the
+##    screen saver value in TvTunes setting
+## Option 2 is recommended as will not need re-applying after updates
+#####################################################################
 
-        # Make sure we found the file and it exists
-        if os.path.exists(pguisettings):
-            # Create an XML parser
-            elemTree = ElementTree()
-            elemTree.parse(pguisettings)
-            
-            # First check to see if any screensaver is set
-            isEnabled = elemTree.findtext('screensaver/mode')
-            if (isEnabled == None) or (isEnabled == ""):
-                log("Settings: No Screensaver enabled")
-            else:
-                log("Settings: Screensaver set to " + isEnabled)
-
-                # Get the screensaver setting in minutes
-                result = elemTree.findtext('screensaver/time')
-                if result != None:
-                    log("Settings: Screensaver timeout set to " + result)
-                    # Convert from minutes to seconds, also reduce by 30 seconds
-                    # as we want to ensure we have time to stop before the
-                    # screensaver kicks in
-                    screenTimeOutSeconds = (int(result) * 60) - 10
-                else:
-                    log("Settings: No Screensaver timeout found")
-            
-            del elemTree
-        return screenTimeOutSeconds
+#     def _loadScreensaverSettings(self):
+#         screenTimeOutSeconds = -1
+#         pguisettings = xbmc.translatePath('special://profile/guisettings.xml')
+# 
+#         log("Settings: guisettings.xml location = " + pguisettings)
+# 
+#         # Make sure we found the file and it exists
+#         if os.path.exists(pguisettings):
+#             # Create an XML parser
+#             elemTree = ElementTree()
+#             elemTree.parse(pguisettings)
+#             
+#             # First check to see if any screensaver is set
+#             isEnabled = elemTree.findtext('screensaver/mode')
+#             if (isEnabled == None) or (isEnabled == ""):
+#                 log("Settings: No Screensaver enabled")
+#             else:
+#                 log("Settings: Screensaver set to " + isEnabled)
+# 
+#                 # Get the screensaver setting in minutes
+#                 result = elemTree.findtext('screensaver/time')
+#                 if result != None:
+#                     log("Settings: Screensaver timeout set to " + result)
+#                     # Convert from minutes to seconds, also reduce by 30 seconds
+#                     # as we want to ensure we have time to stop before the
+#                     # screensaver kicks in
+#                     screenTimeOutSeconds = (int(result) * 60) - 10
+#                 else:
+#                     log("Settings: No Screensaver timeout found")
+#             
+#             del elemTree
+#         return screenTimeOutSeconds
 
     # Calculates the regular expression to use to search for theme files
     def _loadThemeFileRegEx(self):
