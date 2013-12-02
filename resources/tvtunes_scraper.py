@@ -218,6 +218,13 @@ class TvTunes:
                     theme_url = self.get_user_choice( theme_list , show[2] )
                 if theme_url:
                     self.download(theme_url , show[1])
+                else:
+                    # Give the user an option to stop searching the remaining themes
+                    # as they did not select one for this show, but only prompt
+                    # if there are more to be processed
+                    if count < total:
+                        if not xbmcgui.Dialog().yesno(__language__(32105), __language__(32119)):
+                            break
 
     def download(self , theme_url , path):
         log( "### download :" + theme_url )
@@ -249,10 +256,9 @@ class TvTunes:
             return False 
 
     def get_user_choice(self , theme_list , showname):
-        #### on cree la liste de choix de theme
         theme_url = False
         searchname = showname
-        searchdic = { "name" : "Manual Search..."}
+        searchdic = { "name" : __language__(32118)}
         theme_list.insert(0 , searchdic)
         while theme_url == False:
             select = xbmcgui.Dialog().select(__language__(32112) + ' ' + searchname, [ theme["name"] for theme in theme_list ])
@@ -261,7 +267,7 @@ class TvTunes:
                 #xbmcgui.Dialog().ok("Canceled" , "Download canceled by user" )
                 return False
             else:
-                if theme_list[select]["name"] == "Manual Search...":
+                if theme_list[select]["name"] == __language__(32118):
                     kb = xbmc.Keyboard(showname, __language__(32113), False)
                     kb.doModal()
                     result = kb.getText()
@@ -380,4 +386,4 @@ class TvTunes:
 
 if ( __name__ == "__main__" ):
     TvTunes()
-    xbmcgui.Dialog().ok(__language__(32115),__language__(32116) , __language__(32117))
+    xbmcgui.Dialog().ok(__language__(32105),__language__(32116) , __language__(32117))
