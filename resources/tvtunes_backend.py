@@ -186,13 +186,16 @@ class Settings():
         else:
             return False
     
-    def isPlayMovieList(self):
+    @staticmethod
+    def isPlayMovieList():
         return __addon__.getSetting("movielist") == 'true'
 
-    def isPlayTvShowList(self):
+    @staticmethod
+    def isPlayTvShowList():
         return __addon__.getSetting("tvlist") == 'true'
 
-    def getPlayDurationLimit(self):
+    @staticmethod
+    def getPlayDurationLimit():
         return int(float(__addon__.getSetting("endafter")))
 
     # Check if the video info button should be hidden
@@ -577,7 +580,7 @@ class Player(xbmc.Player):
     def checkEnding(self):
         if self.isPlayingAudio() and (self.startTime > 0):
             # Time in minutes to play for
-            durationLimit = self.settings.getPlayDurationLimit();
+            durationLimit = Settings.getPlayDurationLimit();
             if durationLimit > 0:
                 # Get the current time
                 currTime = time.time()
@@ -734,8 +737,8 @@ class DelayedStartTheme():
 
         # Check is the start playing should be delayed
         if delaySeconds < 1:
-            # Start playing straight away
-            return True
+            # Start playing straight away, but check for List playing built in delay first
+            return self._checkListPlayingDelay(themes)
 
         currentTime = int(time.time())
 
@@ -757,6 +760,27 @@ class DelayedStartTheme():
     def clear(self):
         self.themesToStart = None
         self.anchorTime = 0
+
+    # Method to support a small delay if running on the list screen
+    def _checkListPlayingDelay(self, themes):
+        # Check if we are playing themes on the list view, in which case we will want to delay them
+        if (Settings.isPlayMovieList() and WindowShowing.isMovies()) or (Settings.isPlayTvShowList() and WindowShowing.isTvShowTitles()):
+            log("DelayedStartTheme: Movie List playing delay detected, anchorTime = " + str(self.anchorTime))
+            if themes != self.themesToStart:
+                # Theme selection has changed
+                self.themesToStart = themes
+                # Reset the current time as we need the delay from here
+                self.anchorTime = 2 # for movie list delay, it is just a counter
+            else:
+                # reduce the anchor by one
+                self.anchorTime = self.anchorTime - 1
+                if self.anchorTime < 1:
+                    self.clear()
+                    return True
+            return False
+
+        # Default is to allow playing
+        return True
 
 #
 # Thread to run the program back-end in
@@ -869,10 +893,10 @@ class TunesBackend( ):
         if WindowShowing.isEpisodes():
             return True
         # Only valid is wanting theme on movie list
-        if WindowShowing.isMovies() and self.settings.isPlayMovieList():
+        if WindowShowing.isMovies() and Settings.isPlayMovieList():
             return True
         # Only valid is wanting theme on TV list
-        if WindowShowing.isTvShowTitles() and self.settings.isPlayTvShowList():
+        if WindowShowing.isTvShowTitles() and Settings.isPlayTvShowList():
             return True
         # Any other area is deemed to be a non play area
         return False

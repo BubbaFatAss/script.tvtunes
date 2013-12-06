@@ -1,5 +1,6 @@
 v4.0.2
 - Add ability to stop searching if doing a batch search
+- Add automatic 0.5 second (ish) delay on theme playing if on list view
 
 v4.0.1
 - Fixed issue with Ubuntu and settings slider values
