@@ -452,12 +452,13 @@ class Player(xbmc.Player):
         log("Player: Restoring player settings" )
         while self.isPlayingAudio():
             xbmc.sleep(1)
-        # restore repeat state
-        xbmc.executeJSONRPC('{ "jsonrpc": "2.0", "method": "Player.SetRepeat", "params": {"playerid": 0, "repeat": "%s" }, "id": 1 }' % self.repeat)
         # Force the volume to the starting volume
         xbmc.executebuiltin('XBMC.SetVolume(%d)' % self.original_volume, True)
+        # restore repeat state
+        xbmc.executeJSONRPC('{ "jsonrpc": "2.0", "method": "Player.SetRepeat", "params": {"playerid": 0, "repeat": "%s" }, "id": 1 }' % self.repeat)
         # Record the time that playing was started (0 is stopped)
         self.startTime = 0
+        log("Player: Restored volume to %d" % self.original_volume )
 
 
     def stop(self):
@@ -497,6 +498,11 @@ class Player(xbmc.Player):
                     xbmc.sleep(30)
 
                 for step in range (0,(numSteps-1)):
+                    # If the system is going to be shut down then we need to reset
+                    # everything as quickly as possible
+                    if WindowShowing.isShutdownMenu() or xbmc.abortRequested:
+                        log("Player: Shutdown menu detected, cancelling fade in")
+                        break
                     vol = cur_vol_perc + vol_step
                     log( "Player: fadeIn_vol: %s" % str(vol) )
                     xbmc.executebuiltin('XBMC.SetVolume(%d)' % vol, True)
@@ -564,7 +570,7 @@ class Player(xbmc.Player):
                 # If the system is going to be shut down then we need to reset
                 # everything as quickly as possible
                 if WindowShowing.isShutdownMenu() or xbmc.abortRequested:
-                    log("Player: Shutdown menu detected, cancelling fade")
+                    log("Player: Shutdown menu detected, cancelling fade out")
                     break
                 vol = cur_vol_perc - vol_step
                 log( "Player: fadeOut_vol: %s" % str(vol) )
