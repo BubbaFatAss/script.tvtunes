@@ -236,6 +236,14 @@ class Settings():
             log("Settings: XBMC Version %d (%s)" % (Settings.xbmcMajorVersion, xbmcVer))
         return Settings.xbmcMajorVersion
 
+    @staticmethod
+    def isThemeDirEnabled():
+        return __addon__.getSetting("searchSubDir") == 'true'
+
+    @staticmethod
+    def getThemeDirectory():
+        return __addon__.getSetting("subDirName")
+
 
 ##############################
 # Calculates file locations
@@ -249,14 +257,14 @@ class ThemeFiles():
         elif (pathList != None) and (len(pathList) > 0):
             self.themeFiles = []
             for aPath in pathList:
-                subThemeList = self._generateThemeFilelist(aPath)
+                subThemeList = self._generateThemeFilelistWithDirs(aPath)
                 # add these files to the existing list
                 self.themeFiles = self._mergeThemeLists(self.themeFiles, subThemeList)
             # If we were given a list, then we should shuffle the themes
             # as we don't always want the first path playing first
             self.forceShuffle = True
         else:
-            self.themeFiles = self._generateThemeFilelist(rawPath)
+            self.themeFiles = self._generateThemeFilelistWithDirs(rawPath)
 
     # Define the equals to be based off of the list of theme files
     def __eq__(self, other):
@@ -364,6 +372,20 @@ class ThemeFiles():
             workingPath = workingPath[:-1]
 
         return workingPath
+    #
+    # Handles the case where there is a theme directory set
+    #
+    def _generateThemeFilelistWithDirs(self, rawPath):
+        themeFiles = []
+        # Check the theme directory if it is set up
+        if Settings.isThemeDirEnabled():
+            themeDir = os.path.join( rawPath, Settings.getThemeDirectory() )
+            themeFiles = self._generateThemeFilelist(themeDir)
+        
+        # If no themes were found in the directory then search the normal location
+        if len(themeFiles) < 1:
+            themeFiles = self._generateThemeFilelist(rawPath)
+        return themeFiles
 
     #
     # Calculates the location of the theme file

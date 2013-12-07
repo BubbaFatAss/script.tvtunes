@@ -124,7 +124,16 @@ msgctxt "#32024"
 msgid "Delay Theme Start (Seconds)"
 msgstr ""
 
-#empty strings from id 32025 to 32100
+msgctxt "#32025"
+msgid "Support themes in sub directories"
+msgstr ""
+
+msgctxt "#32026"
+msgid "Directory Name"
+msgstr ""
+
+
+#empty strings from id 32027 to 32100
 
 msgctxt "#32101"
 msgid "ERROR"

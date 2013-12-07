@@ -118,6 +118,11 @@ class TvTunes:
         self.searchMovieDownload =  __addon__.getSetting('searchMovieDownload')
         if self.enable_custom_path == "true":
             self.custom_path = __addon__.getSetting("custom_path").decode("utf-8")
+        # Load the information about storing themes in sub-directories
+        self.isThemeDirEnabled = __addon__.getSetting("searchSubDir")
+        if self.isThemeDirEnabled == "true":
+            self.themeDir = __addon__.getSetting("subDirName")
+
         self.TVlist = self.listing()
         self.DIALOG_PROGRESS = xbmcgui.DialogProgress()
         # Only display the erase dialog if we would overwrite
@@ -169,6 +174,10 @@ class TvTunes:
     # Checks if a theme exists in a directory
     def _doesThemeExist(self, directory):
         log("## Checking directory: %s" % directory)
+        # Check for custom theme directory
+        if self.isThemeDirEnabled == "true":
+            directory = os.path.join(directory, self.themeDir)
+
         # check if the directory exists before searching
         if xbmcvfs.exists(directory):
             # Generate the regex
@@ -228,6 +237,11 @@ class TvTunes:
 
     def download(self , theme_url , path):
         log( "### download :" + theme_url )
+
+        # Check for custom theme directory
+        if self.isThemeDirEnabled == "true":
+            path = os.path.join(path, self.themeDir)
+
         theme_file = self.getNextThemeFileName(path)
         tmpdestination = xbmc.translatePath( 'special://profile/addon_data/%s/temp/%s' % ( __addonid__ , theme_file ) ).decode("utf-8")
         destination = os.path.join( path , theme_file )

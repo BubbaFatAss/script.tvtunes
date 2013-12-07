@@ -2,6 +2,7 @@ v4.0.2
 - Add ability to stop searching if doing a batch search
 - Add automatic 0.5 second (ish) delay on theme playing if on list view
 - Reduce the chance of volume reset issue on quick shutdown
+- Support themes stored in sub-directories
 
 v4.0.1
 - Fixed issue with Ubuntu and settings slider values
