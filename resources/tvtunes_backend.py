@@ -49,8 +49,6 @@ def normalize_string( text ):
 class Settings():
     # Value to calculate which version of XBMC we are using
     xbmcMajorVersion = 0
-    # Regex for the theme search
-    themeRegEx = ""
     # The time the screensaver is set to (-1 for not set)
     screensaverTime = 0
 
@@ -167,19 +165,23 @@ class Settings():
     
     # Calculates the regular expression to use to search for theme files
     @staticmethod
-    def getThemeFileRegEx():
-        if Settings.themeRegEx == "":
-            fileTypes = "mp3" # mp3 is the default that is always supported
-            if(__addon__.getSetting("wma") == 'true'):
-                fileTypes = fileTypes + "|wma"
-            if(__addon__.getSetting("flac") == 'true'):
-                fileTypes = fileTypes + "|flac"
-            if(__addon__.getSetting("m4a") == 'true'):
-                fileTypes = fileTypes + "|m4a"
-            if(__addon__.getSetting("wav") == 'true'):
-                fileTypes = fileTypes + "|wav"
-            Settings.themeRegEx = '(theme[ _A-Za-z0-9.-]*.(' + fileTypes + ')$)'
-        return Settings.themeRegEx
+    def getThemeFileRegEx(searchDir=None):
+        fileTypes = "mp3" # mp3 is the default that is always supported
+        if(__addon__.getSetting("wma") == 'true'):
+            fileTypes = fileTypes + "|wma"
+        if(__addon__.getSetting("flac") == 'true'):
+            fileTypes = fileTypes + "|flac"
+        if(__addon__.getSetting("m4a") == 'true'):
+            fileTypes = fileTypes + "|m4a"
+        if(__addon__.getSetting("wav") == 'true'):
+            fileTypes = fileTypes + "|wav"
+        themeRegEx = '(theme[ _A-Za-z0-9.-]*.(' + fileTypes + ')$)'
+        # If using the directory method then remove the requirement to have "theme" in the name
+        if (searchDir != None) and Settings.isThemeDirEnabled():
+            # Make sure this is checking the theme directory, not it's parent
+            if searchDir.endswith(Settings.getThemeDirectory()):
+                themeRegEx = '(.(' + fileTypes + ')$)'
+        return themeRegEx
     
     @staticmethod
     def isTimout():
@@ -430,13 +432,13 @@ class ThemeFiles():
 
     # Search for theme files in the given directory
     def _getThemeFiles(self, directory):
-        log( "ThemeFiles: Searching " + directory + " for " + Settings.getThemeFileRegEx() )
+        log( "ThemeFiles: Searching " + directory + " for " + Settings.getThemeFileRegEx(directory) )
         themeFiles = []
         # check if the directory exists before searching
         if xbmcvfs.exists(directory):
             dirs, files = xbmcvfs.listdir( directory )
             for aFile in files:
-                m = re.search(Settings.getThemeFileRegEx(), aFile, re.IGNORECASE)
+                m = re.search(Settings.getThemeFileRegEx(directory), aFile, re.IGNORECASE)
                 if m:
                     path = os.path.join( directory, aFile ).decode("utf-8")
                     log("ThemeFiles: Found match: " + path)
