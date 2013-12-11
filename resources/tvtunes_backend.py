@@ -3,6 +3,7 @@
 from traceback import print_exc
 import os
 import re
+import unicodedata
 import random
 import threading
 import time
@@ -34,14 +35,12 @@ def log(txt):
         message = u'%s: %s' % (__addonid__, txt)
         xbmc.log(msg=message.encode("utf-8"), level=xbmc.LOGDEBUG)
 
-def _unicode( text, encoding='utf-8' ):
-    try: text = unicode( text, encoding )
-    except: pass
-    return text
 
 def normalize_string( text ):
-    try: text = unicodedata.normalize( 'NFKD', _unicode( text.replace(":","").replace("/","-") ) ).encode( 'ascii', 'ignore' )
-    except: pass
+    try:
+        text = unicodedata.normalize( 'NFKD', unicode( text.replace(":","").replace("/","-"), 'utf-8' ) ).encode( 'ascii', 'ignore' )
+    except:
+        pass
     return text
 
 ##############################
@@ -242,6 +241,9 @@ class Settings():
 
     @staticmethod
     def isThemeDirEnabled():
+        # Theme sub directory only supported when not using a custom path
+        if Settings.isCustomPathEnabled():
+            return False
         return __addon__.getSetting("searchSubDir") == 'true'
 
     @staticmethod

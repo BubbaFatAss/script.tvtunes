@@ -118,10 +118,13 @@ class TvTunes:
         self.searchMovieDownload =  __addon__.getSetting('searchMovieDownload')
         if self.enable_custom_path == "true":
             self.custom_path = __addon__.getSetting("custom_path").decode("utf-8")
-        # Load the information about storing themes in sub-directories
-        self.isThemeDirEnabled = __addon__.getSetting("searchSubDir")
-        if self.isThemeDirEnabled == "true":
-            self.themeDir = __addon__.getSetting("subDirName")
+            self.isThemeDirEnabled = "false"
+        else:
+            # Load the information about storing themes in sub-directories
+            # Only use the Theme dir if custom path is not used
+            self.isThemeDirEnabled = __addon__.getSetting("searchSubDir")
+            if self.isThemeDirEnabled == "true":
+                self.themeDir = __addon__.getSetting("subDirName")
 
         self.TVlist = self.listing()
         self.DIALOG_PROGRESS = xbmcgui.DialogProgress()
