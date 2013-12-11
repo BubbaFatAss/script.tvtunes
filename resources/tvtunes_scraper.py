@@ -38,7 +38,7 @@ def _unicode( text, encoding='utf-8' ):
     return text
 
 def normalize_string( text ):
-    try: text = unicodedata.normalize( 'NFKD', _unicode( text.replace(":","").replace("/","-") ) ).encode( 'ascii', 'ignore' )
+    try: text = unicodedata.normalize( 'NFKD', _unicode( text.replace(":","").replace("/","-").replace("\\","-") ) ).encode( 'ascii', 'ignore' )
     except: pass
     return text
 
