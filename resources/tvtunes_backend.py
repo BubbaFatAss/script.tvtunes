@@ -7,7 +7,8 @@ import unicodedata
 import random
 import threading
 import time
-from xml.etree.ElementTree import ElementTree
+import traceback
+import xml.etree.ElementTree as ET
 #Modules XBMC
 import xbmc
 import xbmcgui
@@ -97,7 +98,7 @@ class Settings():
 #             # Make sure we found the file and it exists
 #             if os.path.exists(pguisettings):
 #                 # Create an XML parser
-#                 elemTree = ElementTree()
+#                 elemTree = ET.ElementTree()
 #                 elemTree.parse(pguisettings)
 #                 
 #                 # First check to see if any screensaver is set
@@ -168,7 +169,7 @@ class Settings():
     
     # Calculates the regular expression to use to search for theme files
     @staticmethod
-    def getThemeFileRegEx(searchDir=None):
+    def getThemeFileRegEx(searchDir=None, extensionOnly=False):
         fileTypes = "mp3" # mp3 is the default that is always supported
         if(__addon__.getSetting("wma") == 'true'):
             fileTypes = fileTypes + "|wma"
@@ -183,7 +184,10 @@ class Settings():
         if (searchDir != None) and Settings.isThemeDirEnabled():
             # Make sure this is checking the theme directory, not it's parent
             if searchDir.endswith(Settings.getThemeDirectory()):
-                themeRegEx = '(.(' + fileTypes + ')$)'
+                extensionOnly = True
+        # See if we do not want the theme keyword
+        if extensionOnly:
+            themeRegEx = '(.(' + fileTypes + ')$)'
         return themeRegEx
     
     @staticmethod
@@ -254,6 +258,98 @@ class Settings():
     @staticmethod
     def getThemeDirectory():
         return __addon__.getSetting("subDirName")
+
+#############################################
+# Reads TvTunes information from an NFO file
+#############################################
+class NfoReader():
+    def __init__( self, directory ):
+        self.themeFiles = []
+        self.themeDirs = []
+        self._loadNfoInfo(directory)
+
+    # Get any themes that were in the NFO file
+    def getThemeFiles(self):
+        return self.themeFiles
+
+    # Get any theme directories that were in the NFO file
+    def getThemeDirs(self):
+        return self.themeDirs
+
+    # Check for an NFO file for this show and reads details out of it
+    # if it exists
+    def _loadNfoInfo(self, directory):
+        # Find out the name of the NFO file
+        nfoFileName = os.path.join(directory, "tvtunes.nfo")
+        
+        log("NfoReader: Searching for NFO file: " + nfoFileName)
+        
+        # Return False if file does not exist
+        if not xbmcvfs.exists( nfoFileName ):
+            log("NfoReader: No NFO file found: " + nfoFileName)
+            return False
+
+        returnValue = False
+
+        try:
+            # Need to first load the contents of the NFO file into
+            # a string, this is because the XML File Parse option will
+            # not handle formats like smb://
+            nfoFile = xbmcvfs.File(nfoFileName)
+            nfoFileStr = nfoFile.read()
+            nfoFile.close()
+
+            # Create an XML parser
+            nfoXml = ET.ElementTree(ET.fromstring(nfoFileStr))
+            rootElement = nfoXml.getroot()
+            
+            log("NfoReader: Root element is = " + rootElement.tag)
+            
+            # Check which format if being used
+            if rootElement.tag == "tvtunes":
+                log("NfoReader: TvTunes format NFO detected")
+                #    <tvtunes>
+                #        <file>Who knows</file>
+                #    </tvtunes>
+
+                # There could be multiple file entries, so loop through all of them
+                for fileElem in nfoXml.findall('file'):
+                    file = None
+                    if fileElem != None:
+                        file = fileElem.text
+
+                    if (file != None) and (file != ""):
+                        if (not "/" in file) and (not "\\" in file):
+                            # Make it a full path if it is not already
+                            file = os.path.join(directory, file)
+                        log("NfoReader: file = " + file)
+                        self.themeFiles.append(file)
+
+                # There could be multiple directory entries, so loop through all of them
+                for dirElem in nfoXml.findall('directory'):
+                    dir = None
+                    if dirElem != None:
+                        dir = dirElem.text
+
+                    if (dir != None) and (dir != ""):
+                        log("NfoReader: directory = " + dir)
+                        self.themeDirs.append(dir)
+                        
+                returnValue = True
+            else:
+                self.displayName = None
+                self.orderKey = None
+                log("NfoReader: Unknown NFO format")
+    
+            del nfoXml
+
+        except:
+            log("NfoReader: Failed to process NFO: " + nfoFileName)
+            log("NfoReader: " + traceback.format_exc())
+            returnValue = False
+
+        return returnValue
+
 
 
 ##############################
@@ -435,14 +531,22 @@ class ThemeFiles():
         return thepath
 
     # Search for theme files in the given directory
-    def _getThemeFiles(self, directory):
-        log( "ThemeFiles: Searching " + directory + " for " + Settings.getThemeFileRegEx(directory) )
-        themeFiles = []
+    def _getThemeFiles(self, directory, extensionOnly=False):
+        # First read from the NFO file if it exists
+        nfoRead = NfoReader(directory)
+        themeFiles = nfoRead.getThemeFiles()
+        
+        # Get the theme directories that are referenced and process the data in them
+        for nfoDir in nfoRead.getThemeDirs():
+            # Do not want the theme keyword if looking at an entire directory
+            themeFiles = themeFiles + self._getThemeFiles(nfoDir, True)
+        
+        log( "ThemeFiles: Searching " + directory + " for " + Settings.getThemeFileRegEx(directory,extensionOnly) )
         # check if the directory exists before searching
         if xbmcvfs.exists(directory):
             dirs, files = xbmcvfs.listdir( directory )
             for aFile in files:
-                m = re.search(Settings.getThemeFileRegEx(directory), aFile, re.IGNORECASE)
+                m = re.search(Settings.getThemeFileRegEx(directory,extensionOnly), aFile, re.IGNORECASE)
                 if m:
                     path = os.path.join( directory, aFile ).decode("utf-8")
                     log("ThemeFiles: Found match: " + path)
