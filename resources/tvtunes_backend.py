@@ -348,20 +348,36 @@ class NfoReader():
 
                     if (playlistFile != None) and (playlistFile != ""):
                         if (not "/" in playlistFile) and (not "\\" in playlistFile):
-                            # Make it a full path if it is not already
-                            playlistFile = os.path.join(directory, playlistFile)
+                            # There is just the filename of the playlist without
+                            # a path, check if the file is local or if we should
+                            # read it from the user directory
+                            localFile = os.path.join(directory, playlistFile)
+                            if xbmcvfs.exists(localFile):
+                                # Make it a full path if it is not already
+                                playlistFile = localFile
+                            else:
+                                # default to the music playlist directory if not local
+                                # Check if there is an extension on the name
+                                fileExt = os.path.splitext( playlistFile )[1]
+                                if fileExt == None or fileExt == "":
+                                    playlistFile = playlistFile + ".m3u"
+                                playlistFile = os.path.join(xbmc.translatePath("special://musicplaylists"), playlistFile)
                         log("NfoReader: playlist file = " + playlistFile)
                         # Load the playlist into the Playlist object
-                        xbmcPlaylist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
-                        xbmcPlaylist.load(playlistFile)
-                        i = 0
-                        while i < xbmcPlaylist.size():  
-                            # get the filename from the playlist
-                            file = xbmcPlaylist[i].getfilename()
-                            i = i + 1
-                            if (file != None) and (file != ""):
-                                log("NfoReader: file from playlist = " + file)
-                                self.themeFiles.append(file)                            
+                        # An exception if thrown if the file does not exist
+                        try:
+                            xbmcPlaylist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
+                            xbmcPlaylist.load(playlistFile)
+                            i = 0
+                            while i < xbmcPlaylist.size():  
+                                # get the filename from the playlist
+                                file = xbmcPlaylist[i].getfilename()
+                                i = i + 1
+                                if (file != None) and (file != ""):
+                                    log("NfoReader: file from playlist = " + file)
+                                    self.themeFiles.append(file)                            
+                        except:
+                            log("NfoReader: playlist file not found = " + playlistFile)
 
                 returnValue = True
             else:
