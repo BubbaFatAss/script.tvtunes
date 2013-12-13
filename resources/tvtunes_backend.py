@@ -390,7 +390,8 @@ class ThemeFiles():
         themeFiles = []
         # Check the theme directory if it is set up
         if Settings.isThemeDirEnabled():
-            themeDir = os.path.join( rawPath, Settings.getThemeDirectory() )
+            themeDir = self._getUsablePath(rawPath)
+            themeDir = os.path.join( themeDir, Settings.getThemeDirectory() )
             themeFiles = self._generateThemeFilelist(themeDir)
         
         # If no themes were found in the directory then search the normal location

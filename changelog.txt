@@ -1,5 +1,6 @@
 v4.1.1
 - Fixed colon in movie name for custom path
+- Support Movie Sets when using Themes sub-directory
 
 v4.1.0
 - Add ability to stop searching if doing a batch search
