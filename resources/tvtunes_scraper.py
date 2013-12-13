@@ -38,8 +38,13 @@ def _unicode( text, encoding='utf-8' ):
     return text
 
 def normalize_string( text ):
-    try: text = unicodedata.normalize( 'NFKD', _unicode( text.replace(":","").replace("/","-").replace("\\","-") ) ).encode( 'ascii', 'ignore' )
-    except: pass
+    try:
+        text = text.replace(":","")
+        text = text.replace("/","-")
+        text = text.replace("\\","-")
+        text = unicodedata.normalize( 'NFKD', unicode( text, 'utf-8' ) ).encode( 'ascii', 'ignore' )
+    except:
+        pass
     return text
 
 def get_html_source( url , save=False):

@@ -38,7 +38,10 @@ def log(txt):
 
 def normalize_string( text ):
     try:
-        text = unicodedata.normalize( 'NFKD', unicode( text.replace(":","").replace("/","-").replace("\\","-"), 'utf-8' ) ).encode( 'ascii', 'ignore' )
+        text = text.replace(":","")
+        text = text.replace("/","-")
+        text = text.replace("\\","-")
+        text = unicodedata.normalize( 'NFKD', unicode( text, 'utf-8' ) ).encode( 'ascii', 'ignore' )
     except:
         pass
     return text
