@@ -309,7 +309,9 @@ class NfoReader():
             if rootElement.tag == "tvtunes":
                 log("NfoReader: TvTunes format NFO detected")
                 #    <tvtunes>
-                #        <file>Who knows</file>
+                #        <file>theme.mp3</file>
+                #        <directory>c:\my\themes</directory>
+                #        <playlistfile>playlist.m3u</playlistfile>
                 #    </tvtunes>
 
                 # There could be multiple file entries, so loop through all of them
@@ -332,9 +334,35 @@ class NfoReader():
                         dir = dirElem.text
 
                     if (dir != None) and (dir != ""):
+                        if (not "/" in dir) and (not "\\" in dir):
+                            # Make it a full path if it is not already
+                            dir = os.path.join(directory, dir)
                         log("NfoReader: directory = " + dir)
                         self.themeDirs.append(dir)
-                        
+
+                # Check for the playlist files
+                for playlistFileElem in nfoXml.findall('playlistfile'):
+                    playlistFile = None
+                    if playlistFileElem != None:
+                        playlistFile = playlistFileElem.text
+
+                    if (playlistFile != None) and (playlistFile != ""):
+                        if (not "/" in playlistFile) and (not "\\" in playlistFile):
+                            # Make it a full path if it is not already
+                            playlistFile = os.path.join(directory, playlistFile)
+                        log("NfoReader: playlist file = " + playlistFile)
+                        # Load the playlist into the Playlist object
+                        xbmcPlaylist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
+                        xbmcPlaylist.load(playlistFile)
+                        i = 0
+                        while i < xbmcPlaylist.size():  
+                            # get the filename from the playlist
+                            file = xbmcPlaylist[i].getfilename()
+                            i = i + 1
+                            if (file != None) and (file != ""):
+                                log("NfoReader: file from playlist = " + file)
+                                self.themeFiles.append(file)                            
+
                 returnValue = True
             else:
                 self.displayName = None
