@@ -1,3 +1,6 @@
+v4.2.1
+- Handle invalid link to playlist in nfo better
+
 v4.2.0
 - Support of tvtunes.nfo files
 
