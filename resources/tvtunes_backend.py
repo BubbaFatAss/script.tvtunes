@@ -47,6 +47,22 @@ def normalize_string( text ):
         pass
     return text
 
+# There has been problems with calling join with non ascii characters,
+# so we have this method to try and do the conversion for us
+def os_path_join( dir, file ):
+    # Convert each argument - if an error, then it will use the default value
+    # that was passed in
+    try:
+        dir = dir.decode("utf-8")
+    except:
+        pass
+    try:
+        file = file.decode("utf-8")
+    except:
+        pass
+    return os.path.join(dir, file)
+
+
 ##############################
 # Stores Various Settings
 ##############################
@@ -280,7 +296,7 @@ class NfoReader():
     # if it exists
     def _loadNfoInfo(self, directory):
         # Find out the name of the NFO file
-        nfoFileName = os.path.join(directory, "tvtunes.nfo")
+        nfoFileName = os_path_join(directory, "tvtunes.nfo")
         
         log("NfoReader: Searching for NFO file: %s" % nfoFileName)
         
@@ -323,7 +339,7 @@ class NfoReader():
                     if (file != None) and (file != ""):
                         if (not "/" in file) and (not "\\" in file):
                             # Make it a full path if it is not already
-                            file = os.path.join(directory, file)
+                            file = os_path_join(directory, file)
                         log("NfoReader: file = %s" % file)
                         self.themeFiles.append(file)
 
@@ -336,7 +352,7 @@ class NfoReader():
                     if (dir != None) and (dir != ""):
                         if (not "/" in dir) and (not "\\" in dir):
                             # Make it a full path if it is not already
-                            dir = os.path.join(directory, dir)
+                            dir = os_path_join(directory, dir)
                         log("NfoReader: directory = %s" % dir)
                         self.themeDirs.append(dir)
 
@@ -355,13 +371,13 @@ class NfoReader():
                             fileExt = os.path.splitext( playlistFile )[1]
                             if fileExt == None or fileExt == "":
                                 playlistFile = playlistFile + ".m3u"
-                            localFile = os.path.join(directory, playlistFile)
+                            localFile = os_path_join(directory, playlistFile)
                             if xbmcvfs.exists(localFile):
                                 # Make it a full path if it is not already
                                 playlistFile = localFile
                             else:
                                 # default to the music playlist directory if not local
-                                playlistFile = os.path.join(xbmc.translatePath("special://musicplaylists"), playlistFile)
+                                playlistFile = os_path_join(xbmc.translatePath("special://musicplaylists"), playlistFile)
                                 
                         log("NfoReader: playlist file = %s" % playlistFile)
 
@@ -536,7 +552,7 @@ class ThemeFiles():
         # Check the theme directory if it is set up
         if Settings.isThemeDirEnabled():
             themeDir = self._getUsablePath(rawPath)
-            themeDir = os.path.join( themeDir, Settings.getThemeDirectory() )
+            themeDir = os_path_join( themeDir, Settings.getThemeDirectory() )
             themeFiles = self._generateThemeFilelist(themeDir)
         
         # If no themes were found in the directory then search the normal location
@@ -597,7 +613,7 @@ class ThemeFiles():
             for aFile in files:
                 m = re.search(Settings.getThemeFileRegEx(directory,extensionOnly), aFile, re.IGNORECASE)
                 if m:
-                    path = os.path.join( directory, aFile ).decode("utf-8")
+                    path = os_path_join( directory, aFile )
                     log("ThemeFiles: Found match: %s" % path)
                     # Add the theme file to the list
                     themeFiles.append(path)
@@ -1116,7 +1132,7 @@ class TunesBackend( ):
             else:
                 videotitle = xbmc.getInfoLabel( "ListItem.Title" )
             videotitle = normalize_string( videotitle )
-            themePath = os.path.join(Settings.getCustomPath(), videotitle).decode("utf-8")
+            themePath = os_path_join(Settings.getCustomPath(), videotitle)
 
         # Looking at the TV Show information page
         elif WindowShowing.isMovieInformation() and (WindowShowing.isTvShowTitles() or WindowShowing.isTvShows()):
@@ -1135,7 +1151,7 @@ class TunesBackend( ):
                 # rather than the video file
                 for aKey in movieSetMap.keys():
                     videotitle = normalize_string(aKey)
-                    movieSetMap[aKey] = os.path.join(Settings.getCustomPath(), videotitle).decode("utf-8")
+                    movieSetMap[aKey] = os_path_join(Settings.getCustomPath(), videotitle)
  
             if len(movieSetMap) < 1:
                 themefile = ThemeFiles("")
