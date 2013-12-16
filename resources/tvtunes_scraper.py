@@ -158,23 +158,29 @@ class TvTunes:
             videoName = xbmc.getInfoLabel( "ListItem.TVShowTitle" )
             if videoPath == None or videoPath == "":
                 videoPath = xbmc.getInfoLabel( "ListItem.FilenameAndPath" )
+            log("runSolo: TV Show detected %s" % videoPath)
         else:
             videoPath = xbmc.getInfoLabel( "ListItem.FilenameAndPath" )
             videoName = xbmc.getInfoLabel( "ListItem.Title" )
             if videoPath == None or videoPath == "":
                 videoPath = xbmc.getInfoLabel( "ListItem.Path" )
+            log("runSolo: Movie detected %s" % videoPath)
         
         if self.enable_custom_path == "true":
             tvshow = videoName.replace(":","")
             tvshow = normalize_string( tvshow )
             self.scan(normalize_string( videoName ),os.path.join(self.custom_path, tvshow).decode("utf-8"))
         else:
+            log("runSolo: Solo dir = %s" % videoPath)
             # Need to clean the path if we are going to store the file there
             # Handle stacked files that have a custom file name format
             if videoPath.startswith("stack://"):
                 videoPath = videoPath.replace("stack://", "").split(" , ", 1)[0]
             # Need to remove the filename from the end  as we just want the directory
-            if not os.path.isdir(videoPath):
+            # if not os.path.isdir(videoPath):
+            fileExt = os.path.splitext( videoPath )[1]
+            # If this is a file, then get it's parent directory
+            if fileExt != None and fileExt != "":
                 videoPath = os.path.dirname( videoPath )
 
             self.scan(normalize_string( videoName ),videoPath.decode("utf-8"))
