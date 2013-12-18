@@ -379,6 +379,7 @@ class NfoReader():
 
         return returnValue
 
+    # Adds tracks in a playlist to the list of theme files to play
     def _addFilesFromPlaylist(self, playlistFile, directory):
         if (playlistFile == None) or (playlistFile == ""):
             return
@@ -428,6 +429,7 @@ class NfoReader():
             log("NfoReader: playlist file not found = %s" % playlistFile)
 
 
+    # Adds tracks in a Smart playlist to the list of theme files to play
     def _addFilesFromSmartPlaylist(self, playlistFile):
         if not "/" in playlistFile:
             playlistFile = "special://musicplaylists/" + playlistFile
