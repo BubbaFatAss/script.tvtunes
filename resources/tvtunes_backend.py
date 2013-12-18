@@ -435,7 +435,6 @@ class NfoReader():
         json_query = xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "Files.GetDirectory", "params": { "directory": "%s", "media": "music" },  "id": 1}' % playlistFile)
         json_query = unicode(json_query, 'utf-8', errors='ignore')
         json_query = simplejson.loads(json_query)
-        log("*** ROB *** PLAYLIST: %s" % json_query)
 
         if "result" in json_query and json_query['result'].has_key('files'):
             # Get the list of movies paths from the movie set
