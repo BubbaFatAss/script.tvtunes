@@ -362,43 +362,7 @@ class NfoReader():
                     if playlistFileElem != None:
                         playlistFile = playlistFileElem.text
 
-                    if (playlistFile != None) and (playlistFile != ""):
-                        if (not "/" in playlistFile) and (not "\\" in playlistFile):
-                            # There is just the filename of the playlist without
-                            # a path, check if the file is local or if we should
-                            # read it from the user directory
-                            # Check if there is an extension on the name
-                            fileExt = os.path.splitext( playlistFile )[1]
-                            if fileExt == None or fileExt == "":
-                                playlistFile = playlistFile + ".m3u"
-                            localFile = os_path_join(directory, playlistFile)
-                            if xbmcvfs.exists(localFile):
-                                # Make it a full path if it is not already
-                                playlistFile = localFile
-                            else:
-                                # default to the music playlist directory if not local
-                                playlistFile = os_path_join(xbmc.translatePath("special://musicplaylists"), playlistFile)
-                                
-                        log("NfoReader: playlist file = %s" % playlistFile)
-
-                        if xbmcvfs.exists(playlistFile):
-                            # Load the playlist into the Playlist object
-                            # An exception if thrown if the file does not exist
-                            try:
-                                xbmcPlaylist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
-                                xbmcPlaylist.load(playlistFile)
-                                i = 0
-                                while i < xbmcPlaylist.size():  
-                                    # get the filename from the playlist
-                                    file = xbmcPlaylist[i].getfilename()
-                                    i = i + 1
-                                    if (file != None) and (file != ""):
-                                        log("NfoReader: file from playlist = %s" % file)
-                                        self.themeFiles.append(file)                            
-                            except:
-                                log("NfoReader: playlist file processing error = %s" % playlistFile)
-                        else:
-                            log("NfoReader: playlist file not found = %s" % playlistFile)
+                    self._addFilesFromPlaylist(playlistFile, directory)
 
                 returnValue = True
             else:
@@ -415,6 +379,70 @@ class NfoReader():
 
         return returnValue
 
+    def _addFilesFromPlaylist(self, playlistFile, directory):
+        if (playlistFile == None) or (playlistFile == ""):
+            return
+
+        fileExt = os.path.splitext( playlistFile )[1]
+        
+        # Check if dealing with a Smart Playlist
+        if fileExt == ".xsp":
+            # Process the Smart Playlist
+            self._addFilesFromSmartPlaylist(playlistFile)
+            return
+        
+        if (not "/" in playlistFile) and (not "\\" in playlistFile):
+            # There is just the filename of the playlist without
+            # a path, check if the file is local or if we should
+            # read it from the user directory
+            # Check if there is an extension on the name
+            if fileExt == None or fileExt == "":
+                playlistFile = playlistFile + ".m3u"
+            localFile = os_path_join(directory, playlistFile)
+            if xbmcvfs.exists(localFile):
+                # Make it a full path if it is not already
+                playlistFile = localFile
+            else:
+                # default to the music playlist directory if not local
+                playlistFile = os_path_join(xbmc.translatePath("special://musicplaylists"), playlistFile)
+                
+        log("NfoReader: playlist file = %s" % playlistFile)
+
+        if xbmcvfs.exists(playlistFile):
+            # Load the playlist into the Playlist object
+            # An exception if thrown if the file does not exist
+            try:
+                xbmcPlaylist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
+                xbmcPlaylist.load(playlistFile)
+                i = 0
+                while i < xbmcPlaylist.size():  
+                    # get the filename from the playlist
+                    file = xbmcPlaylist[i].getfilename()
+                    i = i + 1
+                    if (file != None) and (file != ""):
+                        log("NfoReader: file from playlist = %s" % file)
+                        self.themeFiles.append(file)      
+            except:
+                log("NfoReader: playlist file processing error = %s" % playlistFile)
+        else:
+            log("NfoReader: playlist file not found = %s" % playlistFile)
+
+
+    def _addFilesFromSmartPlaylist(self, playlistFile):
+        if not "/" in playlistFile:
+            playlistFile = "special://musicplaylists/" + playlistFile
+
+        json_query = xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "Files.GetDirectory", "params": { "directory": "%s", "media": "music" },  "id": 1}' % playlistFile)
+        json_query = unicode(json_query, 'utf-8', errors='ignore')
+        json_query = simplejson.loads(json_query)
+        log("*** ROB *** PLAYLIST: %s" % json_query)
+
+        if "result" in json_query and json_query['result'].has_key('files'):
+            # Get the list of movies paths from the movie set
+            items = json_query['result']['files']
+            for item in items:
+                log("NfoReader: Adding From Smart Playlist: %s" % item['file'])
+                self.themeFiles.append(item['file'])
 
 
 ##############################
