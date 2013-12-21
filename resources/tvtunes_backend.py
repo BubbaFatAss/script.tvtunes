@@ -239,6 +239,10 @@ class Settings():
     def getPlayDurationLimit():
         return int(float(__addon__.getSetting("endafter")))
 
+    @staticmethod
+    def getTrackLengthLimit():
+        return int(float(__addon__.getSetting("trackLengthLimit")))
+
     # Check if the video info button should be hidden
     @staticmethod
     def hideVideoInfoButton():
@@ -670,6 +674,16 @@ class Player(xbmc.Player):
         # Record the time that playing was started
         # 0 is not playing
         self.startTime = 0
+
+        # Record the number of items in the playlist
+        self.playlistSize = 1
+        
+        # Time the track started playing
+        self.trackEndTime = -1
+        
+        # Record the number of tracks left to play in the playlist
+        # (Only used if skipping through tracks)
+        self.remainingTracks = -1
         
         # Save off the current repeat state before we started playing anything
         if xbmc.getCondVisibility('Playlist.IsRepeat'):
@@ -767,8 +781,21 @@ class Player(xbmc.Player):
                 xbmc.executeJSONRPC('{ "jsonrpc": "2.0", "method": "Player.SetRepeat", "params": {"playerid": 0, "repeat": "off" }, "id": 1 }')
 
             # Record the time that playing was started
-            self.startTime = time.time()
-    
+            self.startTime = int(time.time())
+            
+            # Save off the number of items in the playlist
+            if item != None:
+                self.playlistSize = item.size()
+                log("Player: Playlist size = %d" % self.playlistSize)
+                # Check if we are limiting each track in the list
+                if not Settings.isLoop():
+                    # Already started laying the first, so the remaining number of
+                    # tracks is one less than the total
+                    self.remainingTracks = self.playlistSize - 1;
+                self._setNextSkipTrackTime(self.startTime)
+            else:
+                self.playlistSize = 1
+
 
     def _getVolume(self):
         try:
@@ -828,18 +855,45 @@ class Player(xbmc.Player):
     # Checks if the play duration has been exceeded and then stops playing 
     def checkEnding(self):
         if self.isPlayingAudio() and (self.startTime > 0):
+            # Get the current time
+            currTime = int(time.time())
+
             # Time in minutes to play for
             durationLimit = Settings.getPlayDurationLimit();
             if durationLimit > 0:
-                # Get the current time
-                currTime = time.time()
-
                 expectedEndTime = self.startTime + (60 * durationLimit)
                 
                 if currTime > expectedEndTime:
                     self.endPlaying(slowFade=True)
+                    return
 
+            # Check for the case where only a given amount of time of the track will be played
+            # Only skip forward if there is a track left to play - otherwise just keep
+            # playing the last track
+            if (self.playlistSize > 1) and (self.remainingTracks != 0):
+                trackLimit = Settings.getTrackLengthLimit()
+                if trackLimit > 0:
+                    if currTime > self.trackEndTime:
+                        log("Player: Skipping to next track after %s" % self.getPlayingFile())
+                        self.playnext()
+                        if self.remainingTracks != -1:
+                            self.remainingTracks = self.remainingTracks - 1
+                        self._setNextSkipTrackTime(currTime)
 
+    # Calculates the next time that "playnext" on a playlist should be called
+    def _setNextSkipTrackTime(self, currentTime):
+        trackLimit = Settings.getTrackLengthLimit()
+        if trackLimit < 1:
+            self.trackEndTime = -1
+            return
+        self.trackEndTime = currentTime + trackLimit
+        trackLength = int(self.getTotalTime())
+        log("Player: track length = %d" % trackLength)
+        if trackLimit > trackLength and (Settings.isLoop() or self.remainingTracks > 0):
+            self.remainingTracks = self.remainingTracks - 1
+            self.trackEndTime = self.trackEndTime + trackLength
+        
+        
 
 ###############################################################
 # Class to make it easier to see which screen is being checked
