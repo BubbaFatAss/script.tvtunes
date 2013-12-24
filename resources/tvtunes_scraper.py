@@ -326,7 +326,8 @@ class TvTunes:
         log( "### Search for %s" % showname )
         theme_list = []
         next = True
-        url = self.search_url % urllib.quote_plus(showname)
+        # Prevent the erro if there are invalid characters by encoding as utf-8
+        url = self.search_url % urllib.quote_plus(showname.encode("utf-8"))
         urlpage = ""
         while next == True:
             ### on recup le result de la recherche
