@@ -136,7 +136,6 @@ msgctxt "#32027"
 msgid "Limit track duration when multiple themes (seconds)"
 msgstr ""
 
-
 #empty strings from id 32028 to 32100
 
 msgctxt "#32101"

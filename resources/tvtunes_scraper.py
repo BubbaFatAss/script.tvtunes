@@ -22,7 +22,7 @@ __language__  = __addon__.getLocalizedString
 def log(txt):
     if isinstance (txt,str):
         txt = txt.decode("utf-8")
-    message = u'%s: %s' % (__addonid__, txt)
+    message = u'%s: [Scraper] %s' % (__addonid__, txt)
     xbmc.log(msg=message.encode("utf-8"), level=xbmc.LOGDEBUG)
 
 try:
