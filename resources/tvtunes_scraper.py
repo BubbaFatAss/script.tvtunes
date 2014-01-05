@@ -12,6 +12,7 @@ import xbmcvfs
 # Following includes required for GoEar support
 import urllib2
 from BeautifulSoup import BeautifulSoup
+import HTMLParser
 
 if sys.version_info < (2, 7):
     import simplejson
@@ -423,7 +424,9 @@ class TvTunesScraper:
 ###########################################################
 class ThemeItemDetails():
     def __init__(self, trackName, trackUrlTag, trackLength="", trackQuality=""):
-        self.trackName = trackName
+        # Remove any HTML characters from the name
+        h = HTMLParser.HTMLParser()
+        self.trackName = h.unescape(trackName)
         self.trackUrlTag = trackUrlTag
         self.trackLength = trackLength
         self.trackQuality = trackQuality
