@@ -357,12 +357,12 @@ class TvTunesScraper:
                 return False
             else:
                 if select == 0:
+                    # Manual search selected
                     kb = xbmc.Keyboard(showname, __language__(32113), False)
                     kb.doModal()
                     result = kb.getText()
-                    theme_list = self.searchThemeList(result)
+                    theme_list = self.searchThemeList(result, True)
                     searchname = result
-#                    theme_list.insert(0 , searchdic)
                 else:
                     # Not the first entry selected, so change the select option
                     # so the index value matches the theme list
@@ -390,7 +390,7 @@ class TvTunesScraper:
 
         return theme_url
 
-    def searchThemeList(self , showname):
+    def searchThemeList(self , showname, manual=False):
         log("searchThemeList: Search for %s" % showname )
 
         theme_list = []
@@ -398,7 +398,10 @@ class TvTunesScraper:
         # Check if the search engine being used is GoEar
         if Settings.isGoEarSearch():
             searchListing = GoearListing()
-            theme_list = searchListing.search(showname)
+            if manual:
+                theme_list = searchListing.search(showname)
+            else:
+                theme_list = searchListing.themeSearch(showname)
         else:
             # Default to Television Tunes
             searchListing = TelevisionTunesListing()
@@ -437,7 +440,20 @@ class ThemeItemDetails():
         if Settings.isGoEarSearch():
             # GoEar download URL
             self.download_url = "http://www.goear.com/action/sound/get/%s"
-        
+
+    # Checks if the theme this points to is the same
+    def __eq__(self, other):
+        if other == None:
+            return False
+        # Check if the URL is the same as that will make it unique
+        return self.trackUrlTag == other.trackUrlTag
+
+    # lt defined for sorting order only
+    def __lt__(self, other):
+        # Order just on the name of the file
+        return self.trackName < other.trackName
+
+
     # Get the raw track name
     def getName(self):
         return self.trackName
@@ -547,7 +563,28 @@ class GoearListing():
     def __init__(self):
         self.baseUrl = "http://www.goear.com/search/"
         self.themeDetailsList = []
-    
+
+    # Searches for a given subset of themes, trying to reduce the list
+    def themeSearch(self, name):
+        self.search(name + "-OST")
+        self.search(name + "-main-theme")
+        self.search(name + "-soundtrack")
+        self.search(name + "-tema-principal")  # Spanish for main theme
+        self.search(name + "-BSO ") # Spanish for OST (original soundtrack/banda sonora original)
+        self.search(name + "-banda-sonora") # Spanish for Soundtrack
+
+        # If no entries found doing the custom search then just search for the name only
+        if len(self.themeDetailsList) < 1:
+            self.search(name)
+        else:
+            # We only sort the returned data if it is a result of us doing multiple searches
+            # The case where we just did a single "default" search we leave the list as
+            # it was returned to us, this is because it will be returned in "relevance" order
+            # already, so we want the best matches at the top
+            self.themeDetailsList.sort()
+        
+        return self.themeDetailsList
+
     # Perform the search for the theme
     def search(self, name):
         self.themeDetailsList = []
