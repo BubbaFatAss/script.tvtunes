@@ -154,6 +154,8 @@ class TvTunesScraper:
             # If not running in solo mode, look for everything
             self.Videolist = self.getAllVideos()
 
+        self.isGoEarSearch = Settings.isGoEarSearch()
+
         # Now we have the list of programs to search for, perform the scan
         self.scan()
         self.DIALOG_PROGRESS.close()
@@ -346,6 +348,11 @@ class TvTunesScraper:
             displayList = []
             # start with the custom option to manual search
             displayList.insert(0, __language__(32118))
+            if self.isGoEarSearch:
+                displayList.insert(1, __language__(32120) % "televisiontunes.com")
+            else:
+                displayList.insert(1, __language__(32120) % "goear.com")
+
             # Now add all the other entries
             for theme in theme_list:
                 displayList.append(theme.getDisplayString())
@@ -363,10 +370,14 @@ class TvTunesScraper:
                     result = kb.getText()
                     theme_list = self.searchThemeList(result, True)
                     searchname = result
+                elif select == 1:
+                    # Search using the alternative engine 
+                    self.isGoEarSearch = not self.isGoEarSearch
+                    theme_list = self.searchThemeList(searchname)
                 else:
                     # Not the first entry selected, so change the select option
                     # so the index value matches the theme list
-                    select = select - 1
+                    select = select - 2
                     theme_url = theme_list[select].getMediaURL()
                     log( "getUserChoice: Theme URL = %s" % theme_url )
                     
@@ -396,7 +407,7 @@ class TvTunesScraper:
         theme_list = []
 
         # Check if the search engine being used is GoEar
-        if Settings.isGoEarSearch():
+        if self.isGoEarSearch:
             searchListing = GoearListing()
             if manual:
                 theme_list = searchListing.search(showname)
@@ -426,18 +437,19 @@ class TvTunesScraper:
 # Holds the details of each theme retrieved from a search
 ###########################################################
 class ThemeItemDetails():
-    def __init__(self, trackName, trackUrlTag, trackLength="", trackQuality=""):
+    def __init__(self, trackName, trackUrlTag, trackLength="", trackQuality="", isGoEarSearch=False):
         # Remove any HTML characters from the name
         h = HTMLParser.HTMLParser()
         self.trackName = h.unescape(trackName)
         self.trackUrlTag = trackUrlTag
         self.trackLength = trackLength
         self.trackQuality = trackQuality
+        self.isGoEarSearch = isGoEarSearch
 
         # Television Tunes download URL (default)
         self.download_url = "http://www.televisiontunes.com/download.php?f=%s"
 
-        if Settings.isGoEarSearch():
+        if self.isGoEarSearch:
             # GoEar download URL
             self.download_url = "http://www.goear.com/action/sound/get/%s"
 
@@ -467,7 +479,7 @@ class ThemeItemDetails():
         audio_id = ""
 
         # Check if the search engine being used is GoEar
-        if Settings.isGoEarSearch():
+        if self.isGoEarSearch:
             # The URL will be of the format:
             #  http://www.goear.com/listen/1ed51e2/together-the-firm
             # We want the ID out of the middle
@@ -683,7 +695,7 @@ class GoearListing():
             if trackQualityTag != None:
                 trackQuality = " (" + trackQualityTag.contents[0] + "kbps)"
         
-            themeScraperEntry = ThemeItemDetails(trackName, trackUrl, trackLength, trackQuality)
+            themeScraperEntry = ThemeItemDetails(trackName, trackUrl, trackLength, trackQuality, True)
             log("GoearListing: Theme Details = %s" % themeScraperEntry.getDisplayString())
             log("GoearListing: Theme URL = %s" % themeScraperEntry.getMediaURL() )
             self.themeDetailsList.append(themeScraperEntry)
@@ -691,4 +703,3 @@ class GoearListing():
 
 if ( __name__ == "__main__" ):
     TvTunesScraper()
-#    xbmcgui.Dialog().ok(__language__(32105),__language__(32116) , __language__(32117))
