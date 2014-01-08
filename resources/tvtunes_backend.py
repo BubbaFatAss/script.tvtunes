@@ -1119,7 +1119,8 @@ class TunesBackend( ):
                 if (not WindowShowing.isVideoLibrary()) or WindowShowing.isScreensaver() or Settings.isTimout():
                     log("TunesBackend: Video Library no longer visible")
                     # End playing cleanly (including any fade out) and then stop everything
-                    self.themePlayer.endPlaying()
+                    if TvTunesStatus.isAlive():
+                        self.themePlayer.endPlaying()
                     self.stop()
                     
                     # It may be possible that we stopped for the screen-saver about to kick in
@@ -1168,7 +1169,7 @@ class TunesBackend( ):
                     self.prevThemeFiles.clear()
                     self.delayedStart.clear()
                     log( "TunesBackend: end playing" )
-                    if self.themePlayer.isPlaying():
+                    if self.themePlayer.isPlaying() and TvTunesStatus.isAlive():
                         self.themePlayer.endPlaying()
                     TvTunesStatus.setAliveState(False)
 
@@ -1317,8 +1318,8 @@ class TunesBackend( ):
         if TvTunesStatus.isAlive() and not self.themePlayer.isPlayingVideo(): 
             log("TunesBackend: stop playing")
             self.themePlayer.stop()
-        while self.themePlayer.isPlayingAudio():
-            xbmc.sleep(50)
+            while self.themePlayer.isPlayingAudio():
+                xbmc.sleep(50)
         TvTunesStatus.setAliveState(False)
         TvTunesStatus.clearRunningState()
 
