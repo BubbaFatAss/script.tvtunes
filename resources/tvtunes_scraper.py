@@ -584,6 +584,10 @@ class GoearListing():
         self.search(name + "-tema-principal")  # Spanish for main theme
         self.search(name + "-BSO ") # Spanish for OST (original soundtrack/banda sonora original)
         self.search(name + "-banda-sonora") # Spanish for Soundtrack
+        self.search(name + "-tv")
+        self.search(name + "-movie")
+        self.search(name + "-pelicula") # Spanish for movie
+
 
         # If no entries found doing the custom search then just search for the name only
         if len(self.themeDetailsList) < 1:
@@ -599,7 +603,6 @@ class GoearListing():
 
     # Perform the search for the theme
     def search(self, name):
-        self.themeDetailsList = []
         # User - instead of spaces
         searchName = name.replace(" ", "-")
         fullUrl = self.baseUrl + searchName
