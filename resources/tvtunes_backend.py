@@ -1294,7 +1294,8 @@ class TunesBackend( ):
             fastFadeNeeded = False
             # Check if a theme is already playing, if there is we will need
             # to stop it before playing the new theme
-            if self.prevThemeFiles.hasThemes() and self.themePlayer.isPlayingAudio():
+            # Stop any audio playing
+            if self.themePlayer.isPlayingAudio(): # and self.prevThemeFiles.hasThemes()
                 fastFadeNeeded = True
                 log("TunesBackend: Stopping previous theme: %s" % self.prevThemeFiles.getPath())
                 self.themePlayer.endPlaying(fastFade=fastFadeNeeded)
