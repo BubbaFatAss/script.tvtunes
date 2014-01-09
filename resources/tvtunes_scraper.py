@@ -699,9 +699,10 @@ class GoearListing():
                 trackQuality = " (" + trackQualityTag.contents[0] + "kbps)"
         
             themeScraperEntry = ThemeItemDetails(trackName, trackUrl, trackLength, trackQuality, True)
-            log("GoearListing: Theme Details = %s" % themeScraperEntry.getDisplayString())
-            log("GoearListing: Theme URL = %s" % themeScraperEntry.getMediaURL() )
-            self.themeDetailsList.append(themeScraperEntry)
+            if not (themeScraperEntry in self.themeDetailsList):
+                log("GoearListing: Theme Details = %s" % themeScraperEntry.getDisplayString())
+                log("GoearListing: Theme URL = %s" % themeScraperEntry.getMediaURL() )
+                self.themeDetailsList.append(themeScraperEntry)
 
 
 if ( __name__ == "__main__" ):
