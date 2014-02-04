@@ -69,6 +69,10 @@ class WindowShowing():
         return WindowShowing.xbmcMajorVersion
 
     @staticmethod
+    def isMovieInformation():
+        return xbmc.getCondVisibility("Window.IsVisible(movieinformation)")
+
+    @staticmethod
     def isTv():
         if xbmc.getCondVisibility("Container.Content(tvshows)"):
             return True
@@ -171,18 +175,21 @@ class TvTunesScraper:
         # The solo option is only available from the info screen
         # Looking at the TV Show information page
         if WindowShowing.isTv():
-            videoPath = xbmc.getInfoLabel( "ListItem.Path" )
             videoName = xbmc.getInfoLabel( "ListItem.TVShowTitle" )
-            if videoPath == None or videoPath == "":
-                videoPath = xbmc.getInfoLabel( "ListItem.FilenameAndPath" )
-            log("getSoloVideo: TV Show detected %s" % videoPath)
+            log("getSoloVideo: TV Show detected %s" % videoName)
         else:
-            videoPath = xbmc.getInfoLabel( "ListItem.FilenameAndPath" )
             videoName = xbmc.getInfoLabel( "ListItem.Title" )
-            if videoPath == None or videoPath == "":
-                videoPath = xbmc.getInfoLabel( "ListItem.Path" )
-            log("getSoloVideo: Movie detected %s" % videoPath)
-        
+            log("getSoloVideo: Movie detected %s" % videoName)
+
+        # Now get the video path
+        videoPath = None
+        if WindowShowing.isMovieInformation() and WindowShowing.isTv():
+            videoPath = xbmc.getInfoLabel( "ListItem.FilenameAndPath" )
+        if videoPath == None or videoPath == "":
+            videoPath = xbmc.getInfoLabel( "ListItem.Path" )
+        log("getSoloVideo: Video Path %s" % videoPath)
+
+
         if Settings.isCustomPathEnabled():
             videoPath = os.path.join(Settings.getCustomPath(), normVideoName)
         else:
