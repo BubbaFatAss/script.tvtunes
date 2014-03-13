@@ -915,7 +915,7 @@ class WindowShowing():
 
     @staticmethod
     def isVideoLibrary():
-        return xbmc.getCondVisibility("Window.IsVisible(videolibrary)") or WindowShowing.isTvTunesOverrideTvShows() or WindowShowing.isTvTunesOverrideMovie()
+        return xbmc.getCondVisibility("Window.IsVisible(videolibrary)") or WindowShowing.isTvTunesOverrideTvShows() or WindowShowing.isTvTunesOverrideMovie() or WindowShowing.isTvTunesOverrideContinuePlaying()
 
     @staticmethod
     def isMovieInformation():
@@ -955,10 +955,19 @@ class WindowShowing():
         win = xbmcgui.Window(xbmcgui.getCurrentWindowId())
         return win.getProperty("TvTunesSupported").lower() == "movies"
 
+    @staticmethod
+    def isTvTunesOverrideContinuePlaying():
+        # Check the home screen for the forced continue playing flag
+        return xbmcgui.Window( 12000 ).getProperty( "TvTunesContinuePlaying" ).lower() == "true"
+
     # Works out if the custom window option to play the TV Theme is set
     # and we have just opened a dialog over that
     @staticmethod
     def isTvTunesOverrideContinuePrevious():
+        # Check the master override that forces the existing playing theme
+        if WindowShowing.isTvTunesOverrideContinuePlaying():
+            return True
+
         if WindowShowing.isTvTunesOverrideTvShows() or WindowShowing.isTvTunesOverrideMovie():
             # Check if this is a dialog, in which case we just continue playing
             try: dialogid = xbmcgui.getCurrentWindowDialogId()
@@ -1116,6 +1125,12 @@ class TunesBackend( ):
                 return
 
             while (not self._stop):
+                # Check the forced TV Tunes status at the start of the loop, if this is True
+                # then we don't want to stop themes until the next iteration, this stops the case
+                # where some checks are done and the value changes part was through a single
+                # loop iteration
+                isForcedTvTunesContinue = WindowShowing.isTvTunesOverrideContinuePlaying()
+                
                 # If shutdown is in progress, stop quickly (no fade out)
                 if WindowShowing.isShutdownMenu() or xbmc.abortRequested:
                     self.stop()
@@ -1172,7 +1187,7 @@ class TunesBackend( ):
                 # to an area where the theme is no longer played, so it will trigger a stop and
                 # reset everything to highlight that nothing is playing
                 # Note: TvTunes is still running in this case, just not playing a theme
-                if not self.isPlayingZone():
+                if (not self.isPlayingZone()) and (not isForcedTvTunesContinue):
                     log( "TunesBackend: reinit condition" )
                     self.newThemeFiles.clear()
                     self.oldThemeFiles.clear()
@@ -1195,6 +1210,8 @@ class TunesBackend( ):
     # Works out if the currently displayed area on the screen is something
     # that is deemed a zone where themes should be played
     def isPlayingZone(self):
+        if WindowShowing.isTvTunesOverrideContinuePlaying():
+            return True
         if WindowShowing.isRecentEpisodesAdded():
             return False
         if WindowShowing.isPluginPath():
