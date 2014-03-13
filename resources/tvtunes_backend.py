@@ -958,7 +958,11 @@ class WindowShowing():
     @staticmethod
     def isTvTunesOverrideContinuePlaying():
         # Check the home screen for the forced continue playing flag
-        return xbmcgui.Window( 12000 ).getProperty( "TvTunesContinuePlaying" ).lower() == "true"
+        if xbmcgui.Window( 12000 ).getProperty( "TvTunesContinuePlaying" ).lower() == "true":
+            # Only pay attention to the forced playing it there is actually audio playing
+            if not Player().isPlayingAudio():
+                return True
+        return False
 
     # Works out if the custom window option to play the TV Theme is set
     # and we have just opened a dialog over that
