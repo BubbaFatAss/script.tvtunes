@@ -959,6 +959,14 @@ class WindowShowing():
     def isTvTunesOverrideContinuePlaying():
         # Check the home screen for the forced continue playing flag
         if xbmcgui.Window( 12000 ).getProperty( "TvTunesContinuePlaying" ).lower() == "true":
+            # Never allow continues playing on the Home Screen
+            if WindowShowing.isHome():
+                # An addon may have forgotten to undet the flag, or crashed
+                # force the unsetting of the flag
+                log("WindowShowing: Removing TvTunesContinuePlaying property when on Home screen")
+                xbmcgui.Window( 12000 ).clearProperty( "TvTunesContinuePlaying" )
+                return False
+            
             # Only pay attention to the forced playing if there is actually audio playing
             if xbmc.Player().isPlayingAudio():
                 return True
