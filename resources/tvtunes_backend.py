@@ -587,7 +587,17 @@ class ThemeFiles():
             themeDir = self._getUsablePath(rawPath)
             themeDir = os_path_join( themeDir, Settings.getThemeDirectory() )
             themeFiles = self._generateThemeFilelist(themeDir)
-        
+
+        # Check for the case where there is a DVD directory and the themes
+        # directory is above it
+        if len(themeFiles) < 1:
+            if 'VIDEO_TS' in rawPath:
+                log( "ThemeFiles: Found VIDEO_TS in path: Correcting the path for DVDR tv shows" )
+                themeDir = self._getUsablePath(rawPath)
+                themeDir = self._updir( themeDir, 1 )
+                themeDir = os_path_join( themeDir, Settings.getThemeDirectory() )
+                themeFiles = self._generateThemeFilelist(themeDir)
+
         # If no themes were found in the directory then search the normal location
         if len(themeFiles) < 1:
             themeFiles = self._generateThemeFilelist(rawPath)
@@ -600,19 +610,21 @@ class ThemeFiles():
         # Get the full path with any network alterations
         workingPath = self._getUsablePath(rawPath)
 
-        #######hack for TV shows stored as ripped disc folders
-        if 'VIDEO_TS' in workingPath:
-            log( "### FOUND VIDEO_TS IN PATH: Correcting the path for DVDR tv shows" )
-            workingPath = self._updir( workingPath, 3 )
-            themeList = self._getThemeFiles(workingPath)
-            if len(themeList) < 1:
-                workingPath = self._updir(workingPath,1)
+        themeList = self._getThemeFiles(workingPath)
+
+        # If no themes have been found
+        if len(themeList) < 1:
+            #######hack for TV shows stored as ripped disc folders
+            if 'VIDEO_TS' in workingPath:
+                log( "ThemeFiles: Found VIDEO_TS in path: Correcting the path for DVDR tv shows" )
+                workingPath = self._updir( workingPath, 1 )
                 themeList = self._getThemeFiles(workingPath)
-        #######end hack
-        else:
-            themeList = self._getThemeFiles(workingPath)
-            # If no theme files were found in this path, look at the parent directory
-            if len(themeList) < 1:
+                if len(themeList) < 1:
+                    workingPath = self._updir(workingPath,1)
+                    themeList = self._getThemeFiles(workingPath)
+            #######end hack
+            else:
+                # If no theme files were found in this path, look at the parent directory
                 workingPath = self._updir( workingPath, 1 )
                 themeList = self._getThemeFiles(workingPath)
 
