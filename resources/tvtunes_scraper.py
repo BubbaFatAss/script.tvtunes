@@ -269,7 +269,7 @@ class TvTunesScraper:
                 if (workingPath[-1] == os.sep) or (workingPath[-1] == os.altsep):
                     workingPath = workingPath[:-1]
                 # If not check to see if we have a DVD VOB
-                if os.path.split(workingPath)[1] == 'VIDEO_TS':
+                if (os.path.split(workingPath)[1] == 'VIDEO_TS') or (os.path.split(workingPath)[1] == 'BDMV'):
                     # Check the parent of the DVD Dir
                     themeDir = os.path.split(workingPath)[0]
                     themeDir = os.path.join(themeDir, Settings.getThemeDirectory())
@@ -340,7 +340,7 @@ class TvTunesScraper:
                 if (workingPath[-1] == os.sep) or (workingPath[-1] == os.altsep):
                     workingPath = workingPath[:-1]
                 # If not check to see if we have a DVD VOB
-                if os.path.split(workingPath)[1] == 'VIDEO_TS':
+                if (os.path.split(workingPath)[1] == 'VIDEO_TS') or (os.path.split(workingPath)[1] == 'BDMV'):
                     log("DVD image detected")
                     # Check the parent of the DVD Dir
                     themeDir = os.path.split(workingPath)[0]

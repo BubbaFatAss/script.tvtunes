@@ -591,7 +591,7 @@ class ThemeFiles():
         # Check for the case where there is a DVD directory and the themes
         # directory is above it
         if len(themeFiles) < 1:
-            if 'VIDEO_TS' in rawPath:
+            if ('VIDEO_TS' in rawPath) or ('BDMV' in rawPath):
                 log( "ThemeFiles: Found VIDEO_TS in path: Correcting the path for DVDR tv shows" )
                 themeDir = self._getUsablePath(rawPath)
                 themeDir = self._updir( themeDir, 1 )
@@ -615,8 +615,8 @@ class ThemeFiles():
         # If no themes have been found
         if len(themeList) < 1:
             #######hack for TV shows stored as ripped disc folders
-            if 'VIDEO_TS' in workingPath:
-                log( "ThemeFiles: Found VIDEO_TS in path: Correcting the path for DVDR tv shows" )
+            if ('VIDEO_TS' in workingPath) or ('BDMV' in workingPath):
+                log( "ThemeFiles: Found VIDEO_TS or BDMV in path: Correcting the path for DVDR tv shows" )
                 workingPath = self._updir( workingPath, 1 )
                 themeList = self._getThemeFiles(workingPath)
                 if len(themeList) < 1:
