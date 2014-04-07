@@ -1,5 +1,5 @@
 v4.3.6
-- update language files from Transifex
+- Notify user if unable to contact goear.com when searching for themes
 
 v4.3.5
 - Add support for themes to play in the Music Video library

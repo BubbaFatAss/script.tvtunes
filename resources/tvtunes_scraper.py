@@ -22,6 +22,7 @@ else:
 __addon__     = xbmcaddon.Addon(id='script.tvtunes')
 __addonid__   = __addon__.getAddonInfo('id')
 __language__  = __addon__.getLocalizedString
+__icon__      = __addon__.getAddonInfo('icon')
 
 def log(txt):
     if isinstance (txt,str):
@@ -661,31 +662,52 @@ class GoearListing():
         # Load the output of the search request into Soup
         soup = self._getPageContents(fullUrl)
 
-        # Get all the pages for this set of search results
-        urlPageList = self._getSearchPages(soup)
-
-        # The first page is always /0 on the URL, so we should check this
-        self._getEntries(soup)
-        
-        for page in urlPageList:
-            # Already processed the first page, no need to retrieve it again
-            if page == (fullUrl + "/0"):
-                continue
-            # Get the next page and read the tracks from it
-            soup = self._getPageContents(page)
+        if soup != None:
+            # Get all the pages for this set of search results
+            urlPageList = self._getSearchPages(soup)
+    
+            # The first page is always /0 on the URL, so we should check this
             self._getEntries(soup)
+            
+            for page in urlPageList:
+                # Already processed the first page, no need to retrieve it again
+                if page == (fullUrl + "/0"):
+                    continue
+                # Get the next page and read the tracks from it
+                soup = self._getPageContents(page)
+                if soup != None:
+                    self._getEntries(soup)
         
         return self.themeDetailsList
 
+    # Reads a web page
     def _getPageContents(self, fullUrl):
         # Start by calling the search URL
         req = urllib2.Request(fullUrl)
         req.add_header('User-Agent', ' Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3')
-        response = urllib2.urlopen(req)
-        # Holds the webpage that was read via the response.read() command
-        doc = response.read()
-        # Closes the connection after we have read the webpage.
-        response.close()
+        
+        requestFailed = True
+        maxAttempts = 3
+        
+        while requestFailed and (maxAttempts > 0):
+            maxAttempts = maxAttempts - 1
+            try:
+                response = urllib2.urlopen(req)
+                # Holds the webpage that was read via the response.read() command
+                doc = response.read()
+                # Closes the connection after we have read the webpage.
+                response.close()
+                
+                requestFailed = False
+            except:
+                # If we get an exception we have failed to perform the http request
+                # we will try again before giving up
+                log("GoearListing: Request failed for %s" % fullUrl)
+
+        if requestFailed:
+            # pop up a notification, and then return than none were found
+            xbmc.executebuiltin('Notification(%s, %s, %d, %s)' % (__language__(32105), __language__(32994), 5, __icon__))
+            return None
 
         # Load the output of the search request into Soup
         return BeautifulSoup(''.join(doc))
