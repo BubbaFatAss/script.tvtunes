@@ -1,3 +1,6 @@
+v4.3.6
+- update language files from Transifex
+
 v4.3.5
 - Add support for themes to play in the Music Video library
 
