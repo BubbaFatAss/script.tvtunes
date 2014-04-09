@@ -319,7 +319,7 @@ class NfoReader():
             # Need to first load the contents of the NFO file into
             # a string, this is because the XML File Parse option will
             # not handle formats like smb://
-            nfoFile = xbmcvfs.File(nfoFileName)
+            nfoFile = xbmcvfs.File(nfoFileName, 'r')
             nfoFileStr = nfoFile.read()
             nfoFile.close()
 
@@ -345,7 +345,7 @@ class NfoReader():
                         file = fileElem.text
 
                     if (file != None) and (file != ""):
-                        if (not "/" in file) and (not "\\" in file):
+                        if file.startswith('..') or ((not "/" in file) and (not "\\" in file)):
                             # Make it a full path if it is not already
                             file = os_path_join(directory, file)
                         log("NfoReader: file = %s" % file)
@@ -358,7 +358,7 @@ class NfoReader():
                         dir = dirElem.text
 
                     if (dir != None) and (dir != ""):
-                        if (not "/" in dir) and (not "\\" in dir):
+                        if dir.startswith('..') or ((not "/" in dir) and (not "\\" in dir)):
                             # Make it a full path if it is not already
                             dir = os_path_join(directory, dir)
                         log("NfoReader: directory = %s" % dir)
