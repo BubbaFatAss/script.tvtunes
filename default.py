@@ -42,4 +42,6 @@ elif params.get("mode", False ) == "solo":
     xbmc.executebuiltin('XBMC.RunScript(%s,mode=solo)' % (os.path.join(__resource__ , "tvtunes_scraper.py")))
 
 else: 
-    xbmc.executebuiltin('XBMC.RunScript(%s)' % os.path.join( __resource__ , "tvtunes_scraper.py"))
+    # Default to the plugin method
+#    xbmc.executebuiltin('XBMC.RunScript(%s)' % os.path.join( __resource__ , "tvtunes_scraper.py"))
+    xbmc.executebuiltin('XBMC.RunScript(%s)' % os.path.join( __cwd__ , "plugin.py"))
