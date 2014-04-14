@@ -62,6 +62,16 @@ def os_path_join( dir, file ):
         pass
     return os.path.join(dir, file)
 
+# Get the contents of the directory
+def list_dir(dirpath):
+    # There is a problem with the afp protocol that means if a directory not ending
+    # in a / is given, an error happens as it just appends the filename to the end
+    # without actually checking there is a directory end character
+    #    http://forum.xbmc.org/showthread.php?tid=192255&pid=1681373#pid1681373
+    if dirpath.startswith('afp://') and (not dirpath.endswith('/')):
+        dirpath = os_path_join(dirpath, '/')
+    return xbmcvfs.listdir( dirpath )
+
 
 ##############################
 # Stores Various Settings
@@ -658,7 +668,7 @@ class ThemeFiles():
         log( "ThemeFiles: Searching %s for %s" % (directory, Settings.getThemeFileRegEx(directory,extensionOnly)) )
         # check if the directory exists before searching
         if xbmcvfs.exists(directory):
-            dirs, files = xbmcvfs.listdir( directory )
+            dirs, files = list_dir( directory )
             for aFile in files:
                 m = re.search(Settings.getThemeFileRegEx(directory,extensionOnly), aFile, re.IGNORECASE)
                 if m:
