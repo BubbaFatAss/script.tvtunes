@@ -23,12 +23,21 @@ __addon__     = xbmcaddon.Addon(id='script.tvtunes')
 __addonid__   = __addon__.getAddonInfo('id')
 __language__  = __addon__.getLocalizedString
 __icon__      = __addon__.getAddonInfo('icon')
+__cwd__       = __addon__.getAddonInfo('path').decode("utf-8")
+__resource__  = xbmc.translatePath( os.path.join( __cwd__, 'resources' ).encode("utf-8") ).decode("utf-8")
+__lib__  = xbmc.translatePath( os.path.join( __resource__, 'lib' ).encode("utf-8") ).decode("utf-8")
 
-def log(txt):
-    if isinstance (txt,str):
-        txt = txt.decode("utf-8")
-    message = u'%s: [Scraper] %s' % (__addonid__, txt)
-    xbmc.log(msg=message.encode("utf-8"), level=xbmc.LOGDEBUG)
+sys.path.append(__resource__)
+sys.path.append(__lib__)
+
+# Import the common settings
+from settings import Settings
+from settings import log
+from settings import os_path_join
+from settings import os_path_split
+from settings import list_dir
+from settings import normalize_string
+
 
 try:
     # parse sys.argv for params
@@ -38,36 +47,10 @@ except:
     params = {} 
 
 
-def normalize_string( text ):
-    try:
-        text = text.replace(":","")
-        text = text.replace("/","-")
-        text = text.replace("\\","-")
-        text = unicodedata.normalize( 'NFKD', unicode( text, 'utf-8' ) ).encode( 'ascii', 'ignore' )
-    except:
-        pass
-    return text
-
 ###############################################################
 # Class to make it easier to see which screen is being checked
 ###############################################################
 class WindowShowing():
-    xbmcMajorVersion = 0
-
-    @staticmethod
-    def getXbmcMajorVersion():
-        if WindowShowing.xbmcMajorVersion == 0:
-            xbmcVer = xbmc.getInfoLabel('system.buildversion')
-            log("WindowShowing: XBMC Version = " + xbmcVer)
-            WindowShowing.xbmcMajorVersion = 12
-            try:
-                # Get just the major version number
-                WindowShowing.xbmcMajorVersion = int(xbmcVer.split(".", 1)[0])
-            except:
-                # Default to frodo as the default version if we fail to find it
-                log("WindowShowing: Failed to get XBMC version")
-            log("WindowShowing: XBMC Version %d (%s)" % (WindowShowing.xbmcMajorVersion, xbmcVer))
-        return WindowShowing.xbmcMajorVersion
 
     @staticmethod
     def isMovieInformation():
@@ -84,53 +67,12 @@ class WindowShowing():
 
         folderPathId = "videodb://2/2/"
         # The ID for the TV Show Title changed in Gotham
-        if WindowShowing.getXbmcMajorVersion() > 12:
+        if Settings.getXbmcMajorVersion() > 12:
             folderPathId = "videodb://tvshows/titles/"
         if xbmc.getInfoLabel( "container.folderpath" ) == folderPathId:
             return True # TvShowTitles
         
         return False
-
-########################################
-# Class to read all the settings from
-########################################
-class Settings():
-    @staticmethod
-    def isCustomPathEnabled():
-        return __addon__.getSetting("custom_path_enable") == 'true'
-
-    @staticmethod
-    def getCustomPath():
-        return __addon__.getSetting("custom_path").decode("utf-8")
-
-    @staticmethod
-    def isThemeDirEnabled():
-        # Theme sub directory only supported when not using a custom path
-        if Settings.isCustomPathEnabled():
-            return False
-        return __addon__.getSetting("searchSubDir") == 'true'
-
-    @staticmethod
-    def getThemeDirectory():
-        # Load the information about storing themes in sub-directories
-        # Only use the Theme dir if custom path is not used
-        return __addon__.getSetting("subDirName")
-
-    @staticmethod
-    def isExactMatchEnabled():
-        return __addon__.getSetting("exact_match") == 'true'
-    
-    @staticmethod
-    def isMultiThemesSupported():
-        return __addon__.getSetting("multiThemeDownload") == 'true'
-
-    @staticmethod
-    def isMovieDownloadEnabled():
-        return __addon__.getSetting("searchMovieDownload") == 'true'
-
-    @staticmethod
-    def isGoEarSearch():
-        return __addon__.getSetting("themeSearchSource") == 'goear.com'
 
 
 #################################
@@ -195,7 +137,7 @@ class TvTunesScraper:
         log("getSoloVideo: videoName = %s" % normVideoName )
 
         if Settings.isCustomPathEnabled():
-            videoPath = os.path.join(Settings.getCustomPath(), normVideoName)
+            videoPath = os_path_join(Settings.getCustomPath(), normVideoName)
         else:
             log("getSoloVideo: Solo dir = %s" % videoPath)
             # Need to clean the path if we are going to store the file there
@@ -226,7 +168,7 @@ class TvTunesScraper:
                 tvshow = item['title'].replace(":","")
                 tvshow = normalize_string( tvshow )
                 if Settings.isCustomPathEnabled():
-                    path = os.path.join(Settings.getCustomPath(), tvshow).decode("utf-8")
+                    path = os_path_join(Settings.getCustomPath(), tvshow).decode("utf-8")
                 else:
                     # The file is actually the path for a TV Show
                     path = item['file']
@@ -244,7 +186,7 @@ class TvTunesScraper:
                     movie = item['title'].replace(":","")
                     movie = normalize_string( movie )
                     if Settings.isCustomPathEnabled():
-                        path = os.path.join(Settings.getCustomPath(), movie).decode("utf-8")
+                        path = os_path_join(Settings.getCustomPath(), movie).decode("utf-8")
                     else:
                         path = item['file']
                         # Handle stacked files that have a custom file name format
@@ -261,7 +203,7 @@ class TvTunesScraper:
         log("doesThemeExist: Checking directory: %s" % directory)
         # Check for custom theme directory
         if Settings.isThemeDirEnabled():
-            themeDir = os.path.join(directory, Settings.getThemeDirectory())
+            themeDir = os_path_join(directory, Settings.getThemeDirectory())
             # Check if this directory exists
             if not xbmcvfs.exists(themeDir):
                 workingPath = directory
@@ -270,27 +212,18 @@ class TvTunesScraper:
                 if (workingPath[-1] == os.sep) or (workingPath[-1] == os.altsep):
                     workingPath = workingPath[:-1]
                 # If not check to see if we have a DVD VOB
-                if (os.path.split(workingPath)[1] == 'VIDEO_TS') or (os.path.split(workingPath)[1] == 'BDMV'):
+                if (os_path_split(workingPath)[1] == 'VIDEO_TS') or (os_path_split(workingPath)[1] == 'BDMV'):
                     # Check the parent of the DVD Dir
-                    themeDir = os.path.split(workingPath)[0]
-                    themeDir = os.path.join(themeDir, Settings.getThemeDirectory())
+                    themeDir = os_path_split(workingPath)[0]
+                    themeDir = os_path_join(themeDir, Settings.getThemeDirectory())
             directory = themeDir
 
         # check if the directory exists before searching
         if xbmcvfs.exists(directory):
             # Generate the regex
-            fileTypes = "mp3" # mp3 is the default that is always supported
-            if(__addon__.getSetting("wma") == 'true'):
-                fileTypes = fileTypes + "|wma"
-            if(__addon__.getSetting("flac") == 'true'):
-                fileTypes = fileTypes + "|flac"
-            if(__addon__.getSetting("m4a") == 'true'):
-                fileTypes = fileTypes + "|m4a"
-            if(__addon__.getSetting("wav") == 'true'):
-                fileTypes = fileTypes + "|wav"
-            themeFileRegEx = '(theme[ _A-Za-z0-9.-]*.(' + fileTypes + ')$)'
+            themeFileRegEx = Settings.getThemeFileRegEx()
 
-            dirs, files = xbmcvfs.listdir( directory )
+            dirs, files = list_dir( directory )
             for aFile in files:
                 m = re.search(themeFileRegEx, aFile, re.IGNORECASE)
                 if m:
@@ -305,7 +238,7 @@ class TvTunesScraper:
         for show in self.Videolist:
             count = count + 1
             if (not self.ERASE and self._doesThemeExist(show[1])) and (not Settings.isMultiThemesSupported()):
-                log("scan: %s already exists, ERASE is set to %s" % ( os.path.join(show[1],"theme.*"), [False,True][self.ERASE] ) )
+                log("scan: %s already exists, ERASE is set to %s" % ( os_path_join(show[1],"theme.*"), [False,True][self.ERASE] ) )
             else:
                 self.DIALOG_PROGRESS.update( (count*100)/total , __language__(32107) + ' ' + show[0] , ' ')
                 if self.DIALOG_PROGRESS.iscanceled():
@@ -333,7 +266,7 @@ class TvTunesScraper:
 
         # Check for custom theme directory
         if Settings.isThemeDirEnabled():
-            themeDir = os.path.join(path, Settings.getThemeDirectory())
+            themeDir = os_path_join(path, Settings.getThemeDirectory())
             if not xbmcvfs.exists(themeDir):
                 workingPath = path
                 # If the path currently ends in the directory separator
@@ -341,18 +274,18 @@ class TvTunesScraper:
                 if (workingPath[-1] == os.sep) or (workingPath[-1] == os.altsep):
                     workingPath = workingPath[:-1]
                 # If not check to see if we have a DVD VOB
-                if (os.path.split(workingPath)[1] == 'VIDEO_TS') or (os.path.split(workingPath)[1] == 'BDMV'):
+                if (os_path_split(workingPath)[1] == 'VIDEO_TS') or (os_path_split(workingPath)[1] == 'BDMV'):
                     log("DVD image detected")
                     # Check the parent of the DVD Dir
-                    themeDir = os.path.split(workingPath)[0]
-                    themeDir = os.path.join(themeDir, Settings.getThemeDirectory())
+                    themeDir = os_path_split(workingPath)[0]
+                    themeDir = os_path_join(themeDir, Settings.getThemeDirectory())
             path = themeDir
 
         log("target directory: %s" % path )
 
         theme_file = self.getNextThemeFileName(path)
         tmpdestination = xbmc.translatePath( 'special://profile/addon_data/%s/temp/%s' % ( __addonid__ , theme_file ) ).decode("utf-8")
-        destination = os.path.join( path , theme_file )
+        destination = os_path_join( path , theme_file )
         try:
             def _report_hook( count, blocksize, totalsize ):
                 percent = int( float( count * blocksize * 100 ) / totalsize )
@@ -464,9 +397,9 @@ class TvTunesScraper:
     # Calculates the next filename to use when downloading multiple themes
     def getNextThemeFileName(self, path):
         themeFileName = "theme.mp3"
-        if Settings.isMultiThemesSupported() and xbmcvfs.exists(os.path.join(path,"theme.mp3")):
+        if Settings.isMultiThemesSupported() and xbmcvfs.exists(os_path_join(path,"theme.mp3")):
             idVal = 1
-            while xbmcvfs.exists(os.path.join(path,"theme" + str(idVal) + ".mp3")):
+            while xbmcvfs.exists(os_path_join(path,"theme" + str(idVal) + ".mp3")):
                 idVal = idVal + 1
             themeFileName = "theme" + str(idVal) + ".mp3"
         log("Next Theme Filename = " + themeFileName)
@@ -599,7 +532,7 @@ class TelevisionTunesListing():
     
             htmlsource = sock.read()
             if save:
-                file( os.path.join( CACHE_PATH , save ) , "w" ).write( htmlsource )
+                file( os_path_join( CACHE_PATH , save ) , "w" ).write( htmlsource )
             sock.close()
             return htmlsource
         except:
