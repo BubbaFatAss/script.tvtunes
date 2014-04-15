@@ -21,7 +21,7 @@
 		<setting id="showVideoInfoButton" type="bool" label="32020" default="true"/>
 		<setting id="themeSearchSource" type="labelenum" label="32028" values="televisiontunes.com|goear.com" default="goear.com" />
 		<setting label="32022" type="lsep"/>
-		<setting label="32023" type="action" action="RunScript($CWD/resources/tvtunes_scraper.py)"/>
+		<setting label="32023" type="action" action="RunScript($CWD/default.py)"/>
 	</category>
 	<category label="32993">
 		<setting id="smb_share" type="bool" label="32003" default="false"/>

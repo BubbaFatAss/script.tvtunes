@@ -316,12 +316,18 @@ class ThemeFiles():
         if workingPath.startswith("stack://"):
             workingPath = workingPath.replace("stack://", "").split(" , ", 1)[0]
         
-        if Settings.isSmbEnabled() and workingPath.startswith("smb://") : 
-            log( "### Try authentication share" )
-            workingPath = workingPath.replace("smb://", "smb://%s:%s@" % (Settings.getSmbUser(), Settings.getSmbPassword()) )
-            log( "### %s" % workingPath )
+        if Settings.isSmbEnabled():
+            if workingPath.startswith("smb://"):
+                log( "### Try authentication share" )
+                workingPath = workingPath.replace("smb://", "smb://%s:%s@" % (Settings.getSmbUser(), Settings.getSmbPassword()) )
+                log( "### %s" % workingPath )
+            # Also handle the apple format
+            elif workingPath.startswith("afp://"):
+                log( "### Try authentication share" )
+                workingPath = workingPath.replace("afp://", "afp://%s:%s@" % (Settings.getSmbUser(), Settings.getSmbPassword()) )
+                log( "### %s" % workingPath )
     
-        #######hack for episodes stored as rar files
+        # handle episodes stored as rar files
         if workingPath.startswith("rar://"):
             workingPath = workingPath.replace("rar://","")
         

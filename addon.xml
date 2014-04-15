@@ -9,7 +9,7 @@
 		<provides>executable</provides>
 	</extension>
 	<extension point="xbmc.python.pluginsource" library="plugin.py">
-		<provides>audio video</provides>
+		<provides>video</provides>
 	</extension>
 	<extension point="xbmc.addon.metadata">
 	

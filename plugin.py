@@ -19,7 +19,8 @@ else:
 
 
 __addon__    = xbmcaddon.Addon(id='script.tvtunes')
-__icon__      = __addon__.getAddonInfo('icon')
+__icon__     = __addon__.getAddonInfo('icon')
+__fanart__   = __addon__.getAddonInfo('fanart')
 __cwd__      = __addon__.getAddonInfo('path').decode("utf-8")
 __resource__ = xbmc.translatePath( os.path.join( __cwd__, 'resources' ).encode("utf-8") ).decode("utf-8")
 __lib__      = xbmc.translatePath( os.path.join( __resource__, 'lib' ).encode("utf-8") ).decode("utf-8")
@@ -35,6 +36,8 @@ from settings import os_path_join
 from settings import os_path_split
 from settings import list_dir
 from settings import normalize_string
+
+from fetcher import TvTunesFetcher
 
 
 ###################################################################
@@ -59,14 +62,17 @@ class MenuNavigator():
         url = self._build_url({'mode': 'folder', 'foldername': MenuNavigator.MOVIES})
 #        li = xbmcgui.ListItem(__addon__.getLocalizedString(32100), iconImage=MediaFiles.MusicLibraryIcon)
         li = xbmcgui.ListItem("Movies", iconImage=__icon__)
+        li.setProperty( "Fanart_Image", __fanart__ )
         xbmcplugin.addDirectoryItem(handle=self.addon_handle, url=url, listitem=li, isFolder=True)
     
         url = self._build_url({'mode': 'folder', 'foldername': MenuNavigator.TVSHOWS})
         li = xbmcgui.ListItem("TV Shows", iconImage=__icon__)
+        li.setProperty( "Fanart_Image", __fanart__ )
         xbmcplugin.addDirectoryItem(handle=self.addon_handle, url=url, listitem=li, isFolder=True)
 
         url = self._build_url({'mode': 'folder', 'foldername': MenuNavigator.MUSICVIDEOS})
         li = xbmcgui.ListItem("Music Videos", iconImage=__icon__)
+        li.setProperty( "Fanart_Image", __fanart__ )
         xbmcplugin.addDirectoryItem(handle=self.addon_handle, url=url, listitem=li, isFolder=True)
      
         xbmcplugin.endOfDirectory(self.addon_handle)
@@ -102,7 +108,7 @@ class MenuNavigator():
                     path = os.path.dirname( path )
 
             # Create the list-item for this video            
-            li = xbmcgui.ListItem(videoItem['title'], path="", iconImage=videoItem['thumbnail'])
+            li = xbmcgui.ListItem(videoItem['title'], iconImage=videoItem['thumbnail'])
             # Set the background image
             if videoItem['fanart'] != None:
                 li.setProperty( "Fanart_Image", videoItem['fanart'] )
@@ -110,7 +116,8 @@ class MenuNavigator():
             # This will normally put a tick on the GUI
             if self._doesThemeExist(path):
                 li.setInfo('video', { 'PlayCount': 1 })
-            xbmcplugin.addDirectoryItem(handle=self.addon_handle, url=videoItem['file'], listitem=li, isFolder=False)
+            url = self._build_url({'mode': 'findtheme', 'foldername': target, 'path': path.encode("utf-8"), 'title': videoItem['title'].encode("utf-8")})
+            xbmcplugin.addDirectoryItem(handle=self.addon_handle, url=url, listitem=li, isFolder=False)
 
         xbmcplugin.endOfDirectory(self.addon_handle)
 
@@ -169,6 +176,11 @@ class MenuNavigator():
                 if m:
                     log("doesThemeExist: Found match: " + aFile)
                     return True
+        # Check if an NFO file exists
+        nfoFileName = os_path_join(directory, "tvtunes.nfo")
+        if xbmcvfs.exists(nfoFileName):
+            log("doesThemeExist: Found match: " + nfoFileName)
+            return True
         return False
 
 
@@ -181,9 +193,6 @@ if __name__ == '__main__':
     base_url = sys.argv[0]
     addon_handle = int(sys.argv[1])
     args = urlparse.parse_qs(sys.argv[2][1:])
-
-    # Record what the plugin deals with, audio in our case
-    xbmcplugin.setContent(addon_handle, 'audio')
 
     # Get the current mode from the arguments, if none set, then use None
     mode = args.get('mode', None)
@@ -214,5 +223,18 @@ if __name__ == '__main__':
             elif foldername[0] == MenuNavigator.MUSICVIDEOS:
                 menuNav = MenuNavigator(base_url, addon_handle)
                 menuNav.setVideoList('GetMusicVideos', MenuNavigator.MUSICVIDEOS)
+
+    elif mode[0] == 'findtheme':
+        log("TvTunesPlugin: Mode is FIND THEME")
+
+        # Get the actual title and path that was navigated to
+        title = args.get('title', None)
+        path = args.get('path', None)
+        
+        # Perform the fetch
+        videoList = []
+        normtitle = normalize_string(title[0])
+        videoList.append([normtitle, path[0], normtitle])
+        TvTunesFetcher(videoList)
 
 
