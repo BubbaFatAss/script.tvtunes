@@ -64,7 +64,10 @@ else:
         json_query = unicode(json_query, 'utf-8', errors='ignore')
         json_response = simplejson.loads(json_query)
         log( json_response )
-        
+
+        # Allow time for the command to be reflected on the screen      
+        xbmc.sleep(100)
+
         selectedTitle = xbmc.getInfoLabel('ListItem.Label')
         log("TvTunes: plugin screen selected Title=%s" % selectedTitle)
 

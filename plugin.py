@@ -63,16 +63,19 @@ class MenuNavigator():
 #        li = xbmcgui.ListItem(__addon__.getLocalizedString(32100), iconImage=MediaFiles.MusicLibraryIcon)
         li = xbmcgui.ListItem("Movies", iconImage=__icon__)
         li.setProperty( "Fanart_Image", __fanart__ )
+        li.addContextMenuItems( [], replaceItems=True )
         xbmcplugin.addDirectoryItem(handle=self.addon_handle, url=url, listitem=li, isFolder=True)
     
         url = self._build_url({'mode': 'folder', 'foldername': MenuNavigator.TVSHOWS})
         li = xbmcgui.ListItem("TV Shows", iconImage=__icon__)
         li.setProperty( "Fanart_Image", __fanart__ )
+        li.addContextMenuItems( [], replaceItems=True )
         xbmcplugin.addDirectoryItem(handle=self.addon_handle, url=url, listitem=li, isFolder=True)
 
         url = self._build_url({'mode': 'folder', 'foldername': MenuNavigator.MUSICVIDEOS})
         li = xbmcgui.ListItem("Music Videos", iconImage=__icon__)
         li.setProperty( "Fanart_Image", __fanart__ )
+        li.addContextMenuItems( [], replaceItems=True )
         xbmcplugin.addDirectoryItem(handle=self.addon_handle, url=url, listitem=li, isFolder=True)
      
         xbmcplugin.endOfDirectory(self.addon_handle)
@@ -109,6 +112,8 @@ class MenuNavigator():
 
             # Create the list-item for this video            
             li = xbmcgui.ListItem(videoItem['title'], iconImage=videoItem['thumbnail'])
+            # Remove the default context menu
+            li.addContextMenuItems( [], replaceItems=True )
             # Set the background image
             if videoItem['fanart'] != None:
                 li.setProperty( "Fanart_Image", videoItem['fanart'] )
@@ -213,16 +218,6 @@ if __name__ == '__main__':
         if (foldername != None) and (len(foldername) > 0):
             menuNav = MenuNavigator(base_url, addon_handle)
             menuNav.showFolder(foldername[0])
-            # Check for the special case of manually defined folders
-            if foldername[0] == MenuNavigator.TVSHOWS:
-                menuNav = MenuNavigator(base_url, addon_handle)
-                menuNav.setVideoList('GetTVShows', MenuNavigator.TVSHOWS)
-            elif foldername[0] == MenuNavigator.MOVIES:
-                menuNav = MenuNavigator(base_url, addon_handle)
-                menuNav.setVideoList('GetMovies', MenuNavigator.MOVIES)
-            elif foldername[0] == MenuNavigator.MUSICVIDEOS:
-                menuNav = MenuNavigator(base_url, addon_handle)
-                menuNav.setVideoList('GetMusicVideos', MenuNavigator.MUSICVIDEOS)
 
     elif mode[0] == 'findtheme':
         log("TvTunesPlugin: Mode is FIND THEME")
