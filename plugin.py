@@ -99,7 +99,7 @@ class MenuNavigator():
         for videoItem in videoItems:
             # Get the path where the theme should be stored
             if Settings.isCustomPathEnabled():
-                path = os_path_join(Settings.getCustomPath(), normalize_string(videoItem['title'])).decode("utf-8")
+                path = os_path_join(Settings.getCustomPath(), normalize_string(videoItem['title']))
             else:
                 path = videoItem['file']
                 # Handle stacked files that have a custom file name format
