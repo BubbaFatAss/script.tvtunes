@@ -3,6 +3,7 @@ v4.3.6
 - Support relative paths in NFO files
 - Work around bug in xbmcvfs.listdir and afp protocol
 - Add initial support for theme lists via plugin support
+- Remove goear.com as website changes have blocked XBMC
 
 v4.3.5
 - Add support for themes to play in the Music Video library
