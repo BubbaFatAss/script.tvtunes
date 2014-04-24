@@ -306,3 +306,7 @@ class Settings():
     def isGoEarSearch():
         return False
 #        return __addon__.getSetting("themeSearchSource") == 'goear.com'
+
+    @staticmethod
+    def isSoundcloudSearch():
+        return __addon__.getSetting("themeSearchSource") == 'soundcloud.com'

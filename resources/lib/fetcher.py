@@ -10,6 +10,7 @@ import xbmcaddon
 import xbmcgui
 import xbmcvfs
 import traceback
+import math
 
 # Following includes required for GoEar support
 import urllib2
@@ -36,6 +37,7 @@ from settings import os_path_split
 from settings import list_dir
 from settings import normalize_string
 
+import soundcloud
 
 
 #################################
@@ -56,13 +58,14 @@ class TvTunesFetcher:
         self.Videolist = videoList
 
         self.isGoEarSearch = Settings.isGoEarSearch()
+        self.isSoundcloudSearch = Settings.isSoundcloudSearch()
 
         # Now we have the list of programs to search for, perform the scan
         self.scan()
         self.DIALOG_PROGRESS.close()
         
 
-    # Seach for themes
+    # Search for themes
     def scan(self):
         count = 0
         total = len(self.Videolist)
@@ -138,6 +141,7 @@ class TvTunesFetcher:
             print_exc()
             return False 
 
+
     # Retrieve the theme that the user has selected
     def getUserChoice(self , theme_list , showname):
         theme_url = False
@@ -147,10 +151,15 @@ class TvTunesFetcher:
             displayList = []
             # start with the custom option to manual search
             displayList.insert(0, __language__(32118))
-            if self.isGoEarSearch:
+#             if self.isGoEarSearch:
+#                 displayList.insert(1, __language__(32120) % "televisiontunes.com")
+#             else:
+#                 displayList.insert(1, __language__(32120) % "goear.com")
+
+            if self.isSoundcloudSearch:
                 displayList.insert(1, __language__(32120) % "televisiontunes.com")
             else:
-                displayList.insert(1, __language__(32120) % "goear.com")
+                displayList.insert(1, __language__(32120) % "soundcloud.com")
 
             # Now add all the other entries
             for theme in theme_list:
@@ -174,7 +183,8 @@ class TvTunesFetcher:
                     searchname = result
                 elif select == 1:
                     # Search using the alternative engine 
-                    self.isGoEarSearch = not self.isGoEarSearch
+#                    self.isGoEarSearch = not self.isGoEarSearch
+                    self.isSoundcloudSearch = not self.isSoundcloudSearch
                     theme_list = self.searchThemeList(searchname)
                 else:
                     # Not the first entry selected, so change the select option
@@ -191,7 +201,7 @@ class TvTunesFetcher:
                         xbmc.Player().stop()
                     while xbmc.Player().isPlayingAudio():
                         xbmc.sleep(5)
-                    
+                     
                     xbmcgui.Window( 10025 ).setProperty( "TvTunesIsAlive", "true" )
                     xbmc.Player().play(theme_url, listitem)
                     # Prompt the user to see if this is the theme to download
@@ -204,7 +214,7 @@ class TvTunesFetcher:
         return theme_url
 
     # Perform the actual search on the configured web site
-    def searchThemeList(self , showname, manual=False):
+    def searchThemeList(self, showname, manual=False):
         log("searchThemeList: Search for %s" % showname )
 
         theme_list = []
@@ -216,10 +226,15 @@ class TvTunesFetcher:
                 theme_list = searchListing.search(showname)
             else:
                 theme_list = searchListing.themeSearch(showname)
+        elif self.isSoundcloudSearch:
+            # Soundcloud is selected
+            searchListing = SoundcloudListing()
+            theme_list = searchListing.search(showname)
         else:
             # Default to Television Tunes
             searchListing = TelevisionTunesListing()
             theme_list = searchListing.search(showname)
+
 
         return theme_list
 
@@ -240,21 +255,13 @@ class TvTunesFetcher:
 # Holds the details of each theme retrieved from a search
 ###########################################################
 class ThemeItemDetails():
-    def __init__(self, trackName, trackUrlTag, trackLength="", trackQuality="", isGoEarSearch=False):
+    def __init__(self, trackName, trackUrl, trackLength="", trackQuality=""):
         # Remove any HTML characters from the name
         h = HTMLParser.HTMLParser()
         self.trackName = h.unescape(trackName)
-        self.trackUrlTag = trackUrlTag
+        self.trackUrl = trackUrl
         self.trackLength = trackLength
         self.trackQuality = trackQuality
-        self.isGoEarSearch = isGoEarSearch
-
-        # Television Tunes download URL (default)
-        self.download_url = "http://www.televisiontunes.com/download.php?f=%s"
-
-        if self.isGoEarSearch:
-            # GoEar download URL
-            self.download_url = "http://www.goear.com/action/sound/get/%s"
 
     # Checks if the theme this points to is the same
     def __eq__(self, other):
@@ -268,7 +275,6 @@ class ThemeItemDetails():
         # Order just on the name of the file
         return self.trackName < other.trackName
 
-
     # Get the raw track name
     def getName(self):
         return self.trackName
@@ -280,27 +286,12 @@ class ThemeItemDetails():
     # Gets the ID to uniquely identifier a given tune
     def _getId(self):
         audio_id = ""
-
-        # Check if the search engine being used is GoEar
-        if self.isGoEarSearch:
-            # The URL will be of the format:
-            #  http://www.goear.com/listen/1ed51e2/together-the-firm
-            # We want the ID out of the middle
-            start_of_id = self.trackUrlTag.find("listen/") + 7
-            end_of_id = self.trackUrlTag.find("/", start_of_id)
-            audio_id = self.trackUrlTag[start_of_id:end_of_id]
-        else:
-            # Default to Television Tunes
-            audio_id = self.trackUrlTag
-            audio_id = audio_id.replace("http://www.televisiontunes.com/", "")
-            audio_id = audio_id.replace(".html" , "")
-            
         return audio_id
 
     # Get the URL used to download the theme
     def getMediaURL(self):
-        theme_url = self.download_url % self._getId()
-        return theme_url
+        return self.trackUrl
+
 
 #################################################
 # Searches www.televisiontunes.com for themes
@@ -309,7 +300,7 @@ class TelevisionTunesListing():
     def __init__(self):
         # Links required for televisiontunes.com
         self.search_url = "http://www.televisiontunes.com/search.php?searWords=%s&Send=Search"
-    
+
     # Perform the search for the theme
     def search(self, showname):
         log("TelevisionTunesListing: Search for %s" % showname )
@@ -330,7 +321,8 @@ class TelevisionTunesListing():
             for i in data2:
                 themeURL = i[0] or ""
                 themeName = i[1] or ""
-                theme = ThemeItemDetails(themeName, themeURL)
+                downloadUrl = self._getMediaURL(themeURL)
+                theme = ThemeItemDetails(themeName, downloadUrl)
                 # in case of an exact match (when enabled) only return this theme
                 if Settings.isExactMatchEnabled() and themeName == showname:
                     theme_list = []
@@ -369,6 +361,19 @@ class TelevisionTunesListing():
             log( "getHtmlSource: ERROR opening page %s" % url )
             xbmcgui.Dialog().ok(__language__(32101) , __language__(32102))
             return False
+
+    # Gets the URL to stream and download from
+    def _getMediaURL(self, themeURL):
+
+        audio_id = themeURL
+        audio_id = audio_id.replace("http://www.televisiontunes.com/", "")
+        audio_id = audio_id.replace(".html" , "")
+
+        download_url = "http://www.televisiontunes.com/download.php?f=%s" % audio_id
+            
+        return download_url
+
+
 
 #################################################
 # Searches www.goear.com for themes
@@ -520,7 +525,7 @@ class GoearListing():
             if trackUrlTag == None:
                 continue
             trackUrl = trackUrlTag['href']
-        
+
             # Get the length of the track
             # e.g. <li class="length radius_3">3:36</li>
             trackLength = ""
@@ -535,10 +540,96 @@ class GoearListing():
             if trackQualityTag != None:
                 trackQuality = " (" + trackQualityTag.contents[0] + "kbps)"
         
-            themeScraperEntry = ThemeItemDetails(trackName, trackUrl, trackLength, trackQuality, True)
+            downloadURL = self._getMediaURL(trackUrl)
+            themeScraperEntry = ThemeItemDetails(trackName, downloadURL, trackLength, trackQuality)
             if not (themeScraperEntry in self.themeDetailsList):
                 log("GoearListing: Theme Details = %s" % themeScraperEntry.getDisplayString())
                 log("GoearListing: Theme URL = %s" % themeScraperEntry.getMediaURL() )
                 self.themeDetailsList.append(themeScraperEntry)
 
+    # Gets the URL to stream and download from
+    def _getMediaURL(self, themeURL):
+        # The URL will be of the format:
+        #  http://www.goear.com/listen/1ed51e2/together-the-firm
+        # We want the ID out of the middle
+        start_of_id = self.trackUrlTag.find("listen/") + 7
+        end_of_id = self.trackUrlTag.find("/", start_of_id)
+        audio_id = self.trackUrlTag[start_of_id:end_of_id]
 
+        download_url = "http://www.goear.com/action/sound/get/%s" % audio_id
+            
+        return download_url
+
+
+#################################################
+# Searches www.soundcloud.com for themes
+#################################################
+class SoundcloudListing():
+    def __init__(self):
+        # Links required for televisiontunes.com
+        self.search_url = ""
+
+    # Perform the search for the theme
+    def search(self, showname):
+        log("SoundcloudListing: Search for %s" % showname )
+ 
+        tracks = None
+        client = soundcloud.Client(client_id='b45b1aa10f1ac2941910a7f0d10f8e28')
+        try:
+            # Don't limit the number of entries returned (could do limit=20 if we wanted)
+            tracks = client.get('/tracks', q=showname)
+        except requests.exceptions.HTTPError:
+            print "Check your internet connection"
+
+        # Loop over the tracks produced assigning it to the list
+        theme_list = []
+        for track in tracks:
+            #another dictionary for holding all the results for a specific song
+            themeName = track.title
+            duration = self._convertTime(track.duration)
+            # The file size makes no difference as the stream is always limited to 128kbps
+            filesize = "" # self._convertSize(track.original_content_size)
+            themeURL = ""
+            try:
+                # Only allow the theme if it is streamable
+                if track.streamable:
+                    id = track.id
+    #                themeURL = track.download_url or track.permalink_url
+                    themeURL = self._getDownloadLinkFromWaveform(track.waveform_url)
+                    log("SoundcloudListing: Found %s%s (%s) %s (%s)" % (themeName, duration, themeURL, str(id), track.waveform_url))
+        
+                    theme = ThemeItemDetails(themeName, themeURL, duration, filesize)
+                    theme_list.append(theme)
+            except:
+                pass
+        return theme_list
+
+    # Generate the stream link from the waveform_url 
+    def _getDownloadLinkFromWaveform(self, waveform_url):
+        regex = re.compile("\/([a-zA-Z0-9]+)_")
+        r = regex.search(waveform_url)
+        stream_id = r.groups()[0]
+        return "http://media.soundcloud.com/stream/%s" % str(stream_id)
+
+    # this method converts the time in milliseconds to human readable format.
+    def _convertTime(self, ms):
+        x = ms / 1000
+        seconds = x % 60
+        x /= 60
+        minutes = x % 60
+        x /= 60
+        hours = x % 24
+        x /= 24
+        days = x
+        return " [%02d:%02d:%02d]" % (hours, minutes, seconds)
+
+    def _convertSize(self, size):
+       size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+       i = int(math.floor(math.log(size,1024)))
+       p = math.pow(1024,i)
+       s = round(size/p,2)
+       if (s > 0):
+           return ' (%s %s)' % (s,size_name[i])
+       else:
+           return ""
+   
