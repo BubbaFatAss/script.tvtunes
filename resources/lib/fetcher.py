@@ -576,10 +576,12 @@ class SoundcloudListing():
         tracks = None
         client = soundcloud.Client(client_id='b45b1aa10f1ac2941910a7f0d10f8e28')
         try:
-            # Don't limit the number of entries returned (could do limit=20 if we wanted)
-            tracks = client.get('/tracks', q=showname)
-        except requests.exceptions.HTTPError:
-            print "Check your internet connection"
+            # Max value for limit is 200 entries
+            # TODO need to page all the results
+            tracks = client.get('/tracks', q=showname, filter="streamable", limit=200)
+        except:
+            log("SoundcloudListing: Request failed for %s" % showname)
+            log("SoundcloudListing: %s" % traceback.format_exc())
 
         # Loop over the tracks produced assigning it to the list
         theme_list = []
@@ -600,6 +602,9 @@ class SoundcloudListing():
         
                     theme = ThemeItemDetails(themeName, themeURL, duration, filesize)
                     theme_list.append(theme)
+                else:
+                    # As we filter for only streamable, this should never happen
+                    log("SoundcloudListing: %s is not streamable" % themeName)
             except:
                 pass
         return theme_list
