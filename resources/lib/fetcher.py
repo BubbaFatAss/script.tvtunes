@@ -38,12 +38,19 @@ from settings import list_dir
 from settings import normalize_string
 
 import soundcloud
+from grooveshark import Client
 
 
 #################################
 # Core TvTunes Scraper class
 #################################
 class TvTunesFetcher:
+    TELEVISION_TUNES = 'televisiontunes.com'
+    SOUNDCLOUD = 'soundcloud.com'
+    GROOVESHARK = 'grooveshark.com'
+    GOEAR = 'goear.com'
+    
+    
     def __init__(self, videoList):
         # Set up the addon directories if they do not already exist
         if not xbmcvfs.exists( xbmc.translatePath( 'special://profile/addon_data/%s' % __addonid__ ).decode("utf-8") ):
@@ -57,8 +64,8 @@ class TvTunesFetcher:
         # The video list is in the format [videoName, Path, DisplayName]
         self.Videolist = videoList
 
-        self.isGoEarSearch = Settings.isGoEarSearch()
-        self.isSoundcloudSearch = Settings.isSoundcloudSearch()
+        # Get the currently selected search engine
+        self.searchEngine = Settings.getSearchEngine()
 
         # Now we have the list of programs to search for, perform the scan
         self.scan()
@@ -151,15 +158,7 @@ class TvTunesFetcher:
             displayList = []
             # start with the custom option to manual search
             displayList.insert(0, __language__(32118))
-#             if self.isGoEarSearch:
-#                 displayList.insert(1, __language__(32120) % "televisiontunes.com")
-#             else:
-#                 displayList.insert(1, __language__(32120) % "goear.com")
-
-            if self.isSoundcloudSearch:
-                displayList.insert(1, __language__(32120) % "televisiontunes.com")
-            else:
-                displayList.insert(1, __language__(32120) % "soundcloud.com")
+            displayList.insert(1, __language__(32120) % "")
 
             # Now add all the other entries
             for theme in theme_list:
@@ -183,8 +182,7 @@ class TvTunesFetcher:
                     searchname = result
                 elif select == 1:
                     # Search using the alternative engine 
-#                    self.isGoEarSearch = not self.isGoEarSearch
-                    self.isSoundcloudSearch = not self.isSoundcloudSearch
+                    self.promptForSearchEngine()
                     theme_list = self.searchThemeList(searchname)
                 else:
                     # Not the first entry selected, so change the select option
@@ -220,21 +218,25 @@ class TvTunesFetcher:
         theme_list = []
 
         # Check if the search engine being used is GoEar
-        if self.isGoEarSearch:
+        if self.searchEngine == TvTunesFetcher.GOEAR:
+            # Goeear is selected
             searchListing = GoearListing()
             if manual:
                 theme_list = searchListing.search(showname)
             else:
                 theme_list = searchListing.themeSearch(showname)
-        elif self.isSoundcloudSearch:
+        elif self.searchEngine == TvTunesFetcher.SOUNDCLOUD:
             # Soundcloud is selected
             searchListing = SoundcloudListing()
+            theme_list = searchListing.search(showname)
+        elif self.searchEngine == TvTunesFetcher.GROOVESHARK:
+            # grooveshark is selected
+            searchListing = GroovesharkListing()
             theme_list = searchListing.search(showname)
         else:
             # Default to Television Tunes
             searchListing = TelevisionTunesListing()
             theme_list = searchListing.search(showname)
-
 
         return theme_list
 
@@ -250,6 +252,33 @@ class TvTunesFetcher:
         log("Next Theme Filename = " + themeFileName)
         return themeFileName
 
+    # Prompt the user to select a different search option
+    def promptForSearchEngine(self):
+        displayList = []
+        displayList.insert(0, TvTunesFetcher.TELEVISION_TUNES)
+        displayList.insert(1, TvTunesFetcher.SOUNDCLOUD)
+        displayList.insert(2, TvTunesFetcher.GROOVESHARK)
+        displayList.insert(3, TvTunesFetcher.GOEAR + " (Broken)")
+
+        # Show the list to the user
+        select = xbmcgui.Dialog().select((__language__(32120) % ""), displayList)
+        if select == -1: 
+            log("promptForSearchEngine: Cancelled by user")
+            return False
+        else:
+            if select == 0:
+                self.searchEngine = TvTunesFetcher.TELEVISION_TUNES
+            elif select == 1:
+                self.searchEngine = TvTunesFetcher.SOUNDCLOUD
+            elif select == 2:
+                self.searchEngine = TvTunesFetcher.GROOVESHARK
+            elif select == 3:
+                self.searchEngine = TvTunesFetcher.GOEAR
+            else:
+                return False
+        
+        log("promptForSearchEngine: New search engine is %s" % self.searchEngine)
+        return True
 
 ###########################################################
 # Holds the details of each theme retrieved from a search
@@ -282,11 +311,6 @@ class ThemeItemDetails():
     # Get the display name that could include extra information
     def getDisplayString(self):
         return "%s%s%s" % (self.trackName, self.trackLength, self.trackQuality)
-
-    # Gets the ID to uniquely identifier a given tune
-    def _getId(self):
-        audio_id = ""
-        return audio_id
 
     # Get the URL used to download the theme
     def getMediaURL(self):
@@ -339,7 +363,7 @@ class TelevisionTunesListing():
         return theme_list
 
     def _getHtmlSource(self, url, save=False):
-        """ fetch the html source """
+        # fetch the html source
         class AppURLopener(urllib.FancyURLopener):
             version = "Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.0.1) Gecko/2008070208 Firefox/3.6"
         urllib._urlopener = AppURLopener()
@@ -364,7 +388,6 @@ class TelevisionTunesListing():
 
     # Gets the URL to stream and download from
     def _getMediaURL(self, themeURL):
-
         audio_id = themeURL
         audio_id = audio_id.replace("http://www.televisiontunes.com/", "")
         audio_id = audio_id.replace(".html" , "")
@@ -552,9 +575,9 @@ class GoearListing():
         # The URL will be of the format:
         #  http://www.goear.com/listen/1ed51e2/together-the-firm
         # We want the ID out of the middle
-        start_of_id = self.trackUrlTag.find("listen/") + 7
-        end_of_id = self.trackUrlTag.find("/", start_of_id)
-        audio_id = self.trackUrlTag[start_of_id:end_of_id]
+        start_of_id = themeURL.find("listen/") + 7
+        end_of_id = themeURL.find("/", start_of_id)
+        audio_id = themeURL[start_of_id:end_of_id]
 
         download_url = "http://www.goear.com/action/sound/get/%s" % audio_id
             
@@ -638,3 +661,64 @@ class SoundcloudListing():
        else:
            return ""
    
+
+
+#################################################
+# Searches www.grooveshark.com for themes
+#################################################
+class GroovesharkListing():
+    def __init__(self):
+        # Links required for televisiontunes.com
+        self.search_url = ""
+
+    # Perform the search for the theme
+    def search(self, showname):
+        log("GroovesharkListing: Search for %s" % showname )
+ 
+        tracks = None
+        
+        try:
+            client = Client()
+            client.init()
+            tracks = client.search(showname)
+        except:
+            log("GroovesharkListing: Request failed for %s" % showname)
+            log("GroovesharkListing: %s" % traceback.format_exc())
+
+        # Loop over the tracks produced assigning it to the list
+        theme_list = []
+        for track in tracks:
+            log("GroovesharkListing: Found %s" % track.name)
+            # Construct the custom holder for the theme
+            theme = GroovesharkThemeItemDetails(track)
+            theme_list.append(theme)
+        return theme_list
+
+###########################################################
+# Holds the details of each theme retrieved from a search
+# Custom for grooveshark as we need to generate the streem
+# just for the entry that is used, this is because getting
+# each of the streams for everything in the list takes
+# far too long up-front, so we just get the one that the
+# user wants
+###########################################################
+class GroovesharkThemeItemDetails(ThemeItemDetails):
+    def __init__(self, track):
+        self.grooveshark_track = track
+        ThemeItemDetails.__init__(self, track.name, "")
+
+    # Get the URL used to download the theme
+    def getMediaURL(self):
+        # We need to generate the URL on the fly, this is because it takes too
+        # long to generate before hand for each track
+        log("GroovesharkThemeItemDetails: Getting stream for %s" % self.grooveshark_track.name)
+        
+        try:
+            self.trackUrl = self.grooveshark_track.stream.url
+            log("GroovesharkThemeItemDetails: Stream url is %s" % self.trackUrl)
+        except:
+            log("GroovesharkThemeItemDetails: Request failed for %s" % self.grooveshark_track.name)
+            log("GroovesharkThemeItemDetails: %s" % traceback.format_exc())
+        
+        return self.trackUrl
+

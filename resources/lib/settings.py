@@ -303,10 +303,7 @@ class Settings():
         return __addon__.getSetting("searchMovieDownload") == 'true'
 
     @staticmethod
-    def isGoEarSearch():
-        return False
-#        return __addon__.getSetting("themeSearchSource") == 'goear.com'
+    def getSearchEngine():
+        return __addon__.getSetting("themeSearchSource")
 
-    @staticmethod
-    def isSoundcloudSearch():
-        return __addon__.getSetting("themeSearchSource") == 'soundcloud.com'
+
