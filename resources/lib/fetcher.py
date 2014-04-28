@@ -297,7 +297,7 @@ class ThemeItemDetails():
         if other == None:
             return False
         # Check if the URL is the same as that will make it unique
-        return self.trackUrlTag == other.trackUrlTag
+        return self.trackUrl == other.trackUrl
 
     # lt defined for sorting order only
     def __lt__(self, other):
@@ -331,7 +331,31 @@ class DefaultListing():
     def themeSearch(self, name):
         # Default is to just do a normal search
         cleanTitle = self.commonTitleCleanup(name)
-        return self.search(cleanTitle)
+
+        themeDetailsList = []
+
+        appendices = self.getSearchAppendices()
+
+        for appendix in appendices:
+            searchRes = self.search("%s %s" % (cleanTitle, appendix))
+            # Check each of the returned values
+            for result in searchRes:
+                # Make sure we do not add duplicates
+                if not (result in themeDetailsList):
+                    themeDetailsList.append(result)
+
+        # If no entries found doing the custom search then just search for the name only
+        if len(themeDetailsList) < 1:
+            log("themeSearch: No themes found, doing default search")
+            themeDetailsList = self.search(cleanTitle)
+        else:
+            # We only sort the returned data if it is a result of us doing multiple searches
+            # The case where we just did a single "default" search we leave the list as
+            # it was returned to us, this is because it will be returned in "relevance" order
+            # already, so we want the best matches at the top
+            themeDetailsList.sort()
+
+        return themeDetailsList
 
 
     # Common cleanup to do to automatic searches
@@ -345,6 +369,22 @@ class DefaultListing():
         cleanedName = cleanedName.replace("  ", " ")
 
         return cleanedName
+
+    # Default set of appendices to use for searches
+    def getSearchAppendices(self):
+        return ["OST",          # English acronym for original soundtrack
+                "theme",
+                "title",
+                "soundtrack",
+                "tv",
+                "movie",
+                "tema",         # Spanish for theme
+                "BSO",          # Spanish acronym for OST (banda sonora original)
+                "B.S.O.",       # variation for Spanish acronym BSO
+                "banda sonora", # Spanish for Soundtrack
+                "pelicula"]     # Spanish for movie
+
+
 
 #################################################
 # Searches www.televisiontunes.com for themes
@@ -374,6 +414,7 @@ class TelevisionTunesListing(DefaultListing):
             for i in data2:
                 themeURL = i[0] or ""
                 themeName = i[1] or ""
+                log("TelevisionTunesListing: found %s (%s)" % (themeName, themeURL) )
                 downloadUrl = self._getMediaURL(themeURL)
                 theme = ThemeItemDetails(themeName, downloadUrl)
                 # in case of an exact match (when enabled) only return this theme
@@ -390,6 +431,10 @@ class TelevisionTunesListing(DefaultListing):
                 next = False
             log("TelevisionTunesListing: next page = %s" % next )
         return theme_list
+
+    # We don't add any appendices for Television Tunes search
+    def getSearchAppendices(self):
+        return []
 
     def _getHtmlSource(self, url, save=False):
         # fetch the html source
@@ -434,35 +479,6 @@ class GoearListing(DefaultListing):
     def __init__(self):
         self.baseUrl = "http://www.goear.com/search/"
         self.themeDetailsList = []
-
-    # Searches for a given subset of themes, trying to reduce the list
-    def themeSearch(self, name):
-        # If performing the automated search, remove anything in brackets
-        searchName = self.commonTitleCleanup(name)
-        
-        self.search("%s%s" % (searchName, "-OST")) # English acronym for original soundtrack
-        self.search("%s%s" % (searchName, "-theme"))
-        self.search("%s%s" % (searchName, "-title"))
-        self.search("%s%s" % (searchName, "-soundtrack"))
-        self.search("%s%s" % (searchName, "-tv"))
-        self.search("%s%s" % (searchName, "-movie"))
-        self.search("%s%s" % (searchName, "-tema")) # Spanish for theme
-        self.search("%s%s" % (searchName, "-BSO")) # Spanish acronym for OST (banda sonora original)
-        self.search("%s%s" % (searchName, "-B.S.O.")) # variation for Spanish acronym BSO
-        self.search("%s%s" % (searchName, "-banda-sonora")) # Spanish for Soundtrack
-        self.search("%s%s" % (searchName, "-pelicula")) # Spanish for movie
-
-        # If no entries found doing the custom search then just search for the name only
-        if len(self.themeDetailsList) < 1:
-            self.search(searchName)
-        else:
-            # We only sort the returned data if it is a result of us doing multiple searches
-            # The case where we just did a single "default" search we leave the list as
-            # it was returned to us, this is because it will be returned in "relevance" order
-            # already, so we want the best matches at the top
-            self.themeDetailsList.sort()
-        
-        return self.themeDetailsList
 
     # Perform the search for the theme
     def search(self, name):
@@ -730,6 +746,14 @@ class GroovesharkThemeItemDetails(ThemeItemDetails):
     def __init__(self, track):
         self.grooveshark_track = track
         ThemeItemDetails.__init__(self, track.name, "")
+
+    # Checks if the theme this points to is the same
+    def __eq__(self, other):
+        if other == None:
+            return False
+        # Check if the URL is the same as that will make it unique
+        return self.grooveshark_track.id == other.grooveshark_track.id
+
 
     # Get the URL used to download the theme
     def getMediaURL(self):
