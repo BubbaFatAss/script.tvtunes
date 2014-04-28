@@ -216,27 +216,27 @@ class TvTunesFetcher:
         log("searchThemeList: Search for %s" % showname )
 
         theme_list = []
+        searchListing = None
 
         # Check if the search engine being used is GoEar
         if self.searchEngine == TvTunesFetcher.GOEAR:
             # Goeear is selected
             searchListing = GoearListing()
-            if manual:
-                theme_list = searchListing.search(showname)
-            else:
-                theme_list = searchListing.themeSearch(showname)
         elif self.searchEngine == TvTunesFetcher.SOUNDCLOUD:
             # Soundcloud is selected
             searchListing = SoundcloudListing()
-            theme_list = searchListing.search(showname)
         elif self.searchEngine == TvTunesFetcher.GROOVESHARK:
             # grooveshark is selected
             searchListing = GroovesharkListing()
-            theme_list = searchListing.search(showname)
         else:
             # Default to Television Tunes
             searchListing = TelevisionTunesListing()
+
+        # Call the correct search option, depends if a manual search or not
+        if manual:
             theme_list = searchListing.search(showname)
+        else:
+            theme_list = searchListing.themeSearch(showname)
 
         return theme_list
 
@@ -317,10 +317,39 @@ class ThemeItemDetails():
         return self.trackUrl
 
 
+###########################################################
+# Class to define the interface for listings from websites
+###########################################################
+class DefaultListing():
+
+    # Perform the search for the theme (Manual search)
+    def search(self, showname):
+        # Always has a custom implementation
+        return []
+
+    # Searches for a given subset of themes, trying to reduce the list
+    def themeSearch(self, name):
+        # Default is to just do a normal search
+        cleanTitle = self.commonTitleCleanup(name)
+        return self.search(cleanTitle)
+
+
+    # Common cleanup to do to automatic searches
+    def commonTitleCleanup(self, name):
+        # If performing the automated search, remove anything in brackets
+        # Remove anything in square brackets
+        cleanedName = re.sub(r'\[[^)]*\]', '', name)
+        # Remove anything in rounded brackets
+        cleanedName = re.sub(r'\([^)]*\)', '', cleanedName)
+        # Remove double space
+        cleanedName = cleanedName.replace("  ", " ")
+
+        return cleanedName
+
 #################################################
 # Searches www.televisiontunes.com for themes
 #################################################
-class TelevisionTunesListing():
+class TelevisionTunesListing(DefaultListing):
     def __init__(self):
         # Links required for televisiontunes.com
         self.search_url = "http://www.televisiontunes.com/search.php?searWords=%s&Send=Search"
@@ -401,7 +430,7 @@ class TelevisionTunesListing():
 #################################################
 # Searches www.goear.com for themes
 #################################################
-class GoearListing():
+class GoearListing(DefaultListing):
     def __init__(self):
         self.baseUrl = "http://www.goear.com/search/"
         self.themeDetailsList = []
@@ -409,12 +438,7 @@ class GoearListing():
     # Searches for a given subset of themes, trying to reduce the list
     def themeSearch(self, name):
         # If performing the automated search, remove anything in brackets
-        # Remove anything in square brackets
-        searchName = re.sub(r'\[[^)]*\]', '', name)
-        # Remove anything in rounded brackets
-        searchName = re.sub(r'\([^)]*\)', '', searchName)
-        # Remove double space
-        searchName = searchName.replace("  ", " ")
+        searchName = self.commonTitleCleanup(name)
         
         self.search("%s%s" % (searchName, "-OST")) # English acronym for original soundtrack
         self.search("%s%s" % (searchName, "-theme"))
@@ -587,7 +611,7 @@ class GoearListing():
 #################################################
 # Searches www.soundcloud.com for themes
 #################################################
-class SoundcloudListing():
+class SoundcloudListing(DefaultListing):
     def __init__(self):
         # Links required for televisiontunes.com
         self.search_url = ""
@@ -666,7 +690,7 @@ class SoundcloudListing():
 #################################################
 # Searches www.grooveshark.com for themes
 #################################################
-class GroovesharkListing():
+class GroovesharkListing(DefaultListing):
     def __init__(self):
         # Links required for televisiontunes.com
         self.search_url = ""
