@@ -394,7 +394,16 @@ class ThemeFiles():
             else:
                 # If no theme files were found in this path, look at the parent directory
                 workingPath = os_path_split( workingPath )[0]
-                themeList = self._getThemeFiles(workingPath)
+
+                # Check for the case where there is the theme forlder settings, we want to
+                # check the parent folders themes directory
+                if Settings.isThemeDirEnabled():
+                    themeDir = os_path_join( workingPath, Settings.getThemeDirectory() )
+                    themeList = self._getThemeFiles(themeDir)
+
+                # If there are still no themes, just check the parent directory
+                if len(themeList) < 1:
+                    themeList = self._getThemeFiles(workingPath)
 
         log("ThemeFiles: Playlist size = %d" % len(themeList))
         log("ThemeFiles: Working Path = %s" % workingPath)
