@@ -746,7 +746,8 @@ class GroovesharkListing(DefaultListing):
 class GroovesharkThemeItemDetails(ThemeItemDetails):
     def __init__(self, track):
         self.grooveshark_track = track
-        ThemeItemDetails.__init__(self, track.name, "")
+        duration = self._convertTime(track.duration)
+        ThemeItemDetails.__init__(self, track.name, "", duration)
 
     # Checks if the theme this points to is the same
     def __eq__(self, other):
@@ -770,4 +771,21 @@ class GroovesharkThemeItemDetails(ThemeItemDetails):
             log("GroovesharkThemeItemDetails: %s" % traceback.format_exc())
         
         return self.trackUrl
+
+    # this method converts the time in milliseconds to human readable format.
+    def _convertTime(self, totalSeconds):
+        # Several tracks do not include a duration, so only create on if it is valid
+        if (totalSeconds == None) or (totalSeconds == "") or (int(float(totalSeconds)) < 1):
+            log("GroovesharkThemeItemDetails: Duration of %s is None or less than 1" % self.grooveshark_track.name)
+            return ""
+        
+        x = int(float(totalSeconds))
+        seconds = x % 60
+        x /= 60
+        minutes = x % 60
+        x /= 60
+        hours = x % 24
+        x /= 24
+        days = x
+        return " [%02d:%02d:%02d]" % (hours, minutes, seconds)
 
