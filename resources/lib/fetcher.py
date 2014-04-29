@@ -636,12 +636,13 @@ class SoundcloudListing(DefaultListing):
     def search(self, showname):
         log("SoundcloudListing: Search for %s" % showname )
  
-        tracks = None
+        tracks = []
         client = soundcloud.Client(client_id='b45b1aa10f1ac2941910a7f0d10f8e28')
         try:
             # Max value for limit is 200 entries
             # TODO need to page all the results
-            tracks = client.get('/tracks', q=showname, filter="streamable", limit=200)
+            normtitle = showname.decode("utf-8", 'ignore')
+            tracks = client.get('/tracks', q=normtitle, filter="streamable", limit=200)
         except:
             log("SoundcloudListing: Request failed for %s" % showname)
             log("SoundcloudListing: %s" % traceback.format_exc())
