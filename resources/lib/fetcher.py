@@ -258,7 +258,7 @@ class TvTunesFetcher:
         displayList.insert(0, TvTunesFetcher.TELEVISION_TUNES)
         displayList.insert(1, TvTunesFetcher.SOUNDCLOUD)
         displayList.insert(2, TvTunesFetcher.GROOVESHARK)
-        displayList.insert(3, TvTunesFetcher.GOEAR + " (Broken)")
+        displayList.insert(3, TvTunesFetcher.GOEAR)
 
         # Show the list to the user
         select = xbmcgui.Dialog().select((__language__(32120) % ""), displayList)
@@ -603,15 +603,43 @@ class GoearListing(DefaultListing):
             if trackQualityTag != None:
                 trackQuality = " (" + trackQualityTag.contents[0] + "kbps)"
         
-            downloadURL = self._getMediaURL(trackUrl)
-            themeScraperEntry = ThemeItemDetails(trackName, downloadURL, trackLength, trackQuality)
+#            downloadURL = self._getMediaURL(trackUrl)
+            themeScraperEntry = GoearThemeItemDetails(trackName, trackUrl, trackLength, trackQuality)
             if not (themeScraperEntry in self.themeDetailsList):
                 log("GoearListing: Theme Details = %s" % themeScraperEntry.getDisplayString())
                 log("GoearListing: Theme URL = %s" % themeScraperEntry.getMediaURL() )
                 self.themeDetailsList.append(themeScraperEntry)
 
+################################
+# Custom Goear,com Item Details
+################################
+class GoearThemeItemDetails(ThemeItemDetails):
+    # Get the URL used to download the theme
+    def getMediaURL(self):
+        # Before returning the Media URL, we want to call the listen URL
+        # This is because if we do not call this first, then we only get a warning
+        # message recording in the MP3
+        try:
+            req = urllib2.Request(ThemeItemDetails.getMediaURL(self))
+            req.add_header('User-Agent', ' Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3')
+            response = urllib2.urlopen(req)
+            # Holds the webpage that was read via the response.read() command
+            doc = response.read()
+            # Closes the connection after we have read the webpage.
+            response.close()
+        except:
+            # If we get an exception we have failed to perform the http request
+            log("GoearThemeItemDetails: Request failed for %s" % fullUrl)
+            log("GoearThemeItemDetails: %s" % traceback.format_exc())
+
+        downloadURL = self._getDownloadURL(ThemeItemDetails.getMediaURL(self))
+
+        log("GoearThemeItemDetails: Download URL: %s" % downloadURL)
+
+        return downloadURL
+
     # Gets the URL to stream and download from
-    def _getMediaURL(self, themeURL):
+    def _getDownloadURL(self, themeURL):
         # The URL will be of the format:
         #  http://www.goear.com/listen/1ed51e2/together-the-firm
         # We want the ID out of the middle
