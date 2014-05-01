@@ -660,34 +660,92 @@ class SoundcloudListing(DefaultListing):
         # Links required for televisiontunes.com
         self.search_url = ""
 
+    # Searches for a given subset of themes, trying to reduce the list
+    def themeSearch(self, name):
+        # Default is to just do a normal search
+        cleanTitle = self.commonTitleCleanup(name)
+
+        # Start by getting the tracks, we can just do this once, and then run
+        # different filters on them
+        tracks = self._getTracks(cleanTitle)
+
+        #
+        # Create the default regex that will be used to filter
+        #
+        # Get all the appendices that we want to match
+        searchAppendices = '|'.join(self.getSearchAppendices())
+
+        regex = self._getFilterRegex(cleanTitle.decode("utf-8", 'ignore'), searchAppendices)
+
+        # Start my a search using the appendices 
+        themeDetailsList = self.search(cleanTitle, tracks, regex)
+
+        # If no entries found doing the custom search then just search for the name only
+        if len(themeDetailsList) < 1:
+            log("SoundcloudListing: No themes found for filtered regex, filtering on title")
+
+            regex = self._getFilterRegex(cleanTitle.decode("utf-8", 'ignore'))
+            themeDetailsList = self.search(cleanTitle, tracks, regex)
+            if len(themeDetailsList) < 1:
+                log("SoundcloudListing: No themes found, doing default search")
+                themeDetailsList = self.search(cleanTitle)
+            else:
+                themeDetailsList.sort()
+        else:
+            # We only sort the returned data if it is a result of us doing multiple searches
+            # The case where we just did a single "default" search we leave the list as
+            # it was returned to us, this is because it will be returned in "relevance" order
+            # already, so we want the best matches at the top
+            themeDetailsList.sort()
+
+        return themeDetailsList
+
+    # Generates the regular expression that is used to filter results
+    def _getFilterRegex(self, showname, searchAppendices=""):
+        searchAppend = ""
+        # If there are appendices to apply, then create the regex part
+        if searchAppendices != "":
+            searchAppend = "%s%s%s" % ('(?=.*(', searchAppendices, '))')
+
+        # Generate the regular expression that will be used to match the title
+        regexCheck = "%s%s%s%s" % ('(?=.*', showname.replace(' ', ')(?=.*'), ')', searchAppend)
+
+        # Compile for case insensitive search
+        regex = re.compile(regexCheck, re.I)
+
+        log("SoundcloudListing: Using regex: %s" % regexCheck)
+        
+        return regex
+
     # Perform the search for the theme
-    def search(self, showname):
+    def search(self, showname, tracks=None, regex=None):
         log("SoundcloudListing: Search for %s" % showname )
  
-        tracks = []
-        client = soundcloud.Client(client_id='b45b1aa10f1ac2941910a7f0d10f8e28')
-        try:
-            # Max value for limit is 200 entries
-            # TODO need to page all the results
-            normtitle = showname.decode("utf-8", 'ignore')
-            tracks = client.get('/tracks', q=normtitle, filter="streamable", limit=200)
-        except:
-            log("SoundcloudListing: Request failed for %s" % showname)
-            log("SoundcloudListing: %s" % traceback.format_exc())
+        # Get the tracks if they have not already been retrieved
+        if tracks == None:
+            tracks = self._getTracks(showname)
 
         # Loop over the tracks produced assigning it to the list
         theme_list = []
         for track in tracks:
             #another dictionary for holding all the results for a specific song
             themeName = track.title
+            
+            if regex != None:
+                # Check to see if the title contains the value that is being searched for
+                titleMatch = regex.search(themeName)
+                # Skip this one if the title does not have the regex in it
+                if not titleMatch:
+                    log("SoundcloudListing: Title %s not in regex" % themeName)
+                    continue
+
             duration = self._convertTime(track.duration)
-            # The file size makes no difference as the stream is always limited to 128kbps
-            filesize = "" # self._convertSize(track.original_content_size)
-            themeURL = ""
             try:
                 # Only allow the theme if it is streamable
                 if track.streamable:
                     id = track.id
+                    # The file size makes no difference as the stream is always limited to 128kbps
+                    filesize = "" # self._convertSize(track.original_content_size)
     #                themeURL = track.download_url or track.permalink_url
                     themeURL = self._getDownloadLinkFromWaveform(track.waveform_url)
                     log("SoundcloudListing: Found %s%s (%s) %s (%s)" % (themeName, duration, themeURL, str(id), track.waveform_url))
@@ -700,6 +758,27 @@ class SoundcloudListing(DefaultListing):
             except:
                 pass
         return theme_list
+
+    # Performs the call to soundcloud to get the list of tracks
+    def _getTracks(self, showname):
+        log("SoundcloudListing: Get Tracks for %s" % showname )
+ 
+        tracks = []
+        client = soundcloud.Client(client_id='b45b1aa10f1ac2941910a7f0d10f8e28')
+        try:
+            # Max value for limit is 200 entries
+            # That is more than enough - tried some cases to get more back - but the
+            # ones later down the list really have very little similarity to shat was
+            # being searched for
+            normtitle = showname.decode("utf-8", 'ignore')
+            tracks = client.get('/tracks', q=normtitle, filter="streamable", limit=200)
+            log("SoundcloudListing: Number of entries returned = %d" % len(tracks))
+        except:
+            log("SoundcloudListing: Request failed for %s" % showname)
+            log("SoundcloudListing: %s" % traceback.format_exc())
+
+        return tracks
+
 
     # Generate the stream link from the waveform_url 
     def _getDownloadLinkFromWaveform(self, waveform_url):
