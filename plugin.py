@@ -102,6 +102,14 @@ class MenuNavigator():
         li.addContextMenuItems( [], replaceItems=True )
         xbmcplugin.addDirectoryItem(handle=self.addon_handle, url=url, listitem=li, isFolder=False)
 
+        # Action: Retrieve missing themes
+        url = self._build_url({'mode': 'action', 'actiontype': 'RetrieveMissingThemes'})
+        filterTitle = "  %s" % __addon__.getLocalizedString(32205)
+        li = xbmcgui.ListItem(filterTitle, iconImage=__icon__)
+        li.setProperty( "Fanart_Image", __fanart__ )
+        li.addContextMenuItems( [], replaceItems=True )
+        xbmcplugin.addDirectoryItem(handle=self.addon_handle, url=url, listitem=li, isFolder=False)
+
      
         xbmcplugin.endOfDirectory(self.addon_handle)
 
@@ -122,18 +130,7 @@ class MenuNavigator():
         
         for videoItem in videoItems:
             # Get the path where the theme should be stored
-            if Settings.isCustomPathEnabled():
-                path = os_path_join(Settings.getCustomPath(), normalize_string(videoItem['title']))
-            else:
-                path = videoItem['file']
-                # Handle stacked files that have a custom file name format
-                if path.startswith("stack://"):
-                    path = path.replace("stack://", "").split(" , ", 1)[0]
-                # Need to remove the filename from the end  as we just want the directory
-                fileExt = os.path.splitext( path )[1]
-                # If this is a file, then get it's parent directory
-                if fileExt != None and fileExt != "":
-                    path = os.path.dirname( path )
+            path = self.getPathForVideoItem(videoItem)
 
             # Create the list-item for this video            
             li = xbmcgui.ListItem(videoItem['title'], iconImage=videoItem['thumbnail'])
@@ -218,6 +215,46 @@ class MenuNavigator():
             return True
         return False
 
+    # Does a search for all the missing themes
+    def fetchAllMissingThemes(self):
+        tvShows = self.getVideos('GetTVShows', MenuNavigator.TVSHOWS)
+        movies = self.getVideos('GetMovies', MenuNavigator.MOVIES)
+        music = self.getVideos('GetMusicVideos', MenuNavigator.MUSICVIDEOS)
+
+        videoList = []
+        
+        for videoItem in (tvShows + movies + music):
+            # Get the path where the theme should be stored
+            path = self.getPathForVideoItem(videoItem)
+            # Skip items that already have themes
+            if self._doesThemeExist(path):
+                continue
+
+            normtitle = normalize_string(videoItem['title']).encode("utf-8")
+            videoList.append([normtitle, path.encode("utf-8"), normtitle])
+
+        if len(videoList) > 0:
+            TvTunesFetcher(videoList)
+
+
+    # Searches for the path from a video item
+    def getPathForVideoItem(self, videoItem):
+        path = ""
+        # Get the path where the theme should be stored
+        if Settings.isCustomPathEnabled():
+            path = os_path_join(Settings.getCustomPath(), normalize_string(videoItem['title']))
+        else:
+            path = videoItem['file']
+            # Handle stacked files that have a custom file name format
+            if path.startswith("stack://"):
+                path = path.replace("stack://", "").split(" , ", 1)[0]
+            # Need to remove the filename from the end  as we just want the directory
+            fileExt = os.path.splitext( path )[1]
+            # If this is a file, then get it's parent directory
+            if fileExt != None and fileExt != "":
+                path = os.path.dirname( path )
+
+        return path
 
 
 ################################
@@ -277,5 +314,11 @@ if __name__ == '__main__':
         # Now reload the screen to reflect the change
         xbmc.executebuiltin("Container.Refresh")
         
+    elif mode[0] == 'action':
+        log("TvTunesPlugin: Mode is ACTION")
+
+        # Only one action at the moment
+        menuNav = MenuNavigator(base_url, addon_handle)
+        menuNav.fetchAllMissingThemes()
 
 
