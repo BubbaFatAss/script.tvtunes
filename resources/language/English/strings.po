@@ -237,7 +237,12 @@ msgctxt "#32203"
 msgid "Music Videos"
 msgstr ""
 
-#empty strings from id 32204 to 32990
+msgctxt "#32204"
+msgid "[Filter]: Show Only Missing Themes"
+msgstr ""
+
+
+#empty strings from id 32205 to 32990
 
 
 msgctxt "#32991"

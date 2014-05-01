@@ -52,6 +52,14 @@ class MenuNavigator():
         self.base_url = base_url
         self.addon_handle = addon_handle
 
+        # Get the current state of the filter
+        currentSetting = xbmcgui.Window( 12003 ).getProperty( "TvTunes_BrowserMissingThemesOnly" )
+        if currentSetting == "true":
+            self.missingThemesOnly = 1
+        else:
+            self.missingThemesOnly = 0
+
+
     # Creates a URL for a directory
     def _build_url(self, query):
         return self.base_url + '?' + urllib.urlencode(query)
@@ -78,6 +86,22 @@ class MenuNavigator():
         li.setProperty( "Fanart_Image", __fanart__ )
         li.addContextMenuItems( [], replaceItems=True )
         xbmcplugin.addDirectoryItem(handle=self.addon_handle, url=url, listitem=li, isFolder=True)
+
+        # Add a blank line before the filters
+        li = xbmcgui.ListItem("", iconImage=__icon__)
+        li.setProperty( "Fanart_Image", __fanart__ )
+        li.addContextMenuItems( [], replaceItems=True )
+        xbmcplugin.addDirectoryItem(handle=self.addon_handle, url="", listitem=li, isFolder=False)
+
+        # Filter: Show only missing themes
+        url = self._build_url({'mode': 'filter', 'filtertype': 'MissingThemesOnly'})
+        filterTitle = "  %s" % __addon__.getLocalizedString(32204)
+        li = xbmcgui.ListItem(filterTitle, iconImage=__icon__)
+        li.setProperty( "Fanart_Image", __fanart__ )
+        li.setInfo('video', { 'PlayCount': self.missingThemesOnly })
+        li.addContextMenuItems( [], replaceItems=True )
+        xbmcplugin.addDirectoryItem(handle=self.addon_handle, url=url, listitem=li, isFolder=False)
+
      
         xbmcplugin.endOfDirectory(self.addon_handle)
 
@@ -121,6 +145,11 @@ class MenuNavigator():
             # If theme already exists flag it using the play count
             # This will normally put a tick on the GUI
             if self._doesThemeExist(path):
+                # A theme already exists, see if we are showing only missing themes
+                if self.missingThemesOnly == 1:
+                    # skip this theme
+                    continue
+                
                 li.setInfo('video', { 'PlayCount': 1 })
             url = self._build_url({'mode': 'findtheme', 'foldername': target, 'path': path.encode("utf-8"), 'title': videoItem['title'].encode("utf-8")})
             xbmcplugin.addDirectoryItem(handle=self.addon_handle, url=url, listitem=li, isFolder=False)
@@ -232,5 +261,21 @@ if __name__ == '__main__':
         normtitle = normalize_string(title[0])
         videoList.append([normtitle, path[0], normtitle])
         TvTunesFetcher(videoList)
+
+    elif mode[0] == 'filter':
+        log("TvTunesPlugin: Mode is FILTER")
+
+        # Only one filter at the moment
+
+        # Get the current state of the filter
+        currentSetting = xbmcgui.Window( 12003 ).getProperty( "TvTunes_BrowserMissingThemesOnly" )
+        if currentSetting == "true":
+            xbmcgui.Window( 12003 ).clearProperty("TvTunes_BrowserMissingThemesOnly")
+        else:
+            xbmcgui.Window( 12003 ).setProperty( "TvTunes_BrowserMissingThemesOnly", "true" )
+
+        # Now reload the screen to reflect the change
+        xbmc.executebuiltin("Container.Refresh")
+        
 
 
