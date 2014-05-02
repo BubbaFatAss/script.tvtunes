@@ -395,7 +395,7 @@ class DefaultListing():
             titleMatch = regex.search(themeName)
             # Skip this one if the title does not have the regex in it
             if not titleMatch:
-                log("GoearListing: Title %s not in regex" % themeName)
+                log("DefaultListing: Title %s not in regex" % themeName)
                 continue
             filteredTrackList.append(track)
 
@@ -701,52 +701,53 @@ class SoundcloudListing(DefaultListing):
     def search(self, showname):
         log("SoundcloudListing: Search for %s" % showname )
  
-        tracks = self._getTracks(showname)
-
-        # Loop over the tracks produced assigning it to the list
         theme_list = []
-        for track in tracks:
-            #another dictionary for holding all the results for a specific song
-            themeName = track.title
-            duration = self._convertTime(track.duration)
-            try:
-                # Only allow the theme if it is streamable
-                if track.streamable:
-                    id = track.id
-                    # The file size makes no difference as the stream is always limited to 128kbps
-                    filesize = "" # self._convertSize(track.original_content_size)
-    #                themeURL = track.download_url or track.permalink_url
-                    themeURL = self._getDownloadLinkFromWaveform(track.waveform_url)
-                    log("SoundcloudListing: Found %s%s (%s) %s (%s)" % (themeName, duration, themeURL, str(id), track.waveform_url))
-        
-                    theme = ThemeItemDetails(themeName, themeURL, duration, filesize)
-                    theme_list.append(theme)
-                else:
-                    # As we filter for only streamable, this should never happen
-                    log("SoundcloudListing: %s is not streamable" % themeName)
-            except:
-                pass
-        return theme_list
 
-    # Performs the call to soundcloud to get the list of tracks
-    def _getTracks(self, showname):
-        log("SoundcloudListing: Get Tracks for %s" % showname )
+        numTracksInBatch = 200   # set it to a value to start the loop for the first time
+        offset = 0
+        while (numTracksInBatch == 200) and (offset < 1000):
  
-        tracks = []
-        client = soundcloud.Client(client_id='b45b1aa10f1ac2941910a7f0d10f8e28')
-        try:
-            # Max value for limit is 200 entries
-            # That is more than enough - tried some cases to get more back - but the
-            # ones later down the list really have very little similarity to shat was
-            # being searched for
-            normtitle = showname.decode("utf-8", 'ignore')
-            tracks = client.get('/tracks', q=normtitle, filter="streamable", limit=200)
-            log("SoundcloudListing: Number of entries returned = %d" % len(tracks))
-        except:
-            log("SoundcloudListing: Request failed for %s" % showname)
-            log("SoundcloudListing: %s" % traceback.format_exc())
-
-        return tracks
+            tracks = []
+            client = soundcloud.Client(client_id='b45b1aa10f1ac2941910a7f0d10f8e28')
+            try:
+                # Max value for limit is 200 entries
+                # That is more than enough - tried some cases to get more back - but the
+                # ones later down the list really have very little similarity to what was
+                # being searched for, will do a couple of loops but will not get everything
+                normtitle = showname.decode("utf-8", 'ignore')
+                tracks = client.get('/tracks', q=normtitle, filter="streamable", limit=200, offset=offset)
+                numTracksInBatch = len(tracks)
+                log("SoundcloudListing: Number of entries returned = %d, offset = %d" % (numTracksInBatch, offset))
+                offset = offset + numTracksInBatch
+            except:
+                log("SoundcloudListing: Request failed for %s" % showname)
+                log("SoundcloudListing: %s" % traceback.format_exc())
+                numTracksInBatch = 0
+    
+            # Loop over the tracks produced assigning it to the list
+            for track in tracks:
+                #another dictionary for holding all the results for a specific song
+                themeName = track.title
+                duration = self._convertTime(track.duration)
+                try:
+                    # Only allow the theme if it is streamable
+                    if track.streamable:
+                        id = track.id
+                        # The file size makes no difference as the stream is always limited to 128kbps
+                        filesize = "" # self._convertSize(track.original_content_size)
+                        # themeURL = track.download_url or track.permalink_url
+                        themeURL = self._getDownloadLinkFromWaveform(track.waveform_url)
+                        log("SoundcloudListing: Found %s%s (%s) %s (%s)" % (themeName, duration, themeURL, str(id), track.waveform_url))
+            
+                        theme = ThemeItemDetails(themeName, themeURL, duration, filesize)
+                        theme_list.append(theme)
+                    else:
+                        # As we filter for only streamable, this should never happen
+                        log("SoundcloudListing: %s is not streamable" % themeName)
+                except:
+                    continue
+        log("SoundcloudListing: Total entries returned from search = %d" % len(theme_list))
+        return theme_list
 
 
     # Generate the stream link from the waveform_url 
