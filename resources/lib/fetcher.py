@@ -820,7 +820,13 @@ class GroovesharkThemeItemDetails(ThemeItemDetails):
     def __init__(self, track):
         self.grooveshark_track = track
         duration = self._convertTime(track.duration)
-        ThemeItemDetails.__init__(self, track.name, "", duration)
+        
+        # If there is an album name, prepend that
+        fullTrackName = track.name
+        if (track.album != None) and (track.album != ""):
+            fullTrackName = "%s - %s" % (track.album, track.name)
+        
+        ThemeItemDetails.__init__(self, fullTrackName, "", duration)
 
     # Checks if the theme this points to is the same
     def __eq__(self, other):
