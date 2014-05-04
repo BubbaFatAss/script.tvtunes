@@ -284,13 +284,14 @@ class TvTunesFetcher:
 # Holds the details of each theme retrieved from a search
 ###########################################################
 class ThemeItemDetails():
-    def __init__(self, trackName, trackUrl, trackLength="", trackQuality=""):
+    def __init__(self, trackName, trackUrl, trackLength="", trackQuality="", albumname=""):
         # Remove any HTML characters from the name
         h = HTMLParser.HTMLParser()
         self.trackName = h.unescape(trackName)
         self.trackUrl = trackUrl
         self.trackLength = trackLength
         self.trackQuality = trackQuality
+        self.albumname = albumname
 
     # Checks if the theme this points to is the same
     def __eq__(self, other):
@@ -306,11 +307,19 @@ class ThemeItemDetails():
 
     # Get the raw track name
     def getName(self):
-        return self.trackName
+        # If there is an album name, prepend that
+        fullTrackName = self.trackName
+        if (self.albumname != None) and (self.albumname != ""):
+            fullTrackName = "%s / %s" % (self.trackName, self.albumname)
+
+        return fullTrackName
+
+    def getAlbumName(self):
+        return self.albumname
 
     # Get the display name that could include extra information
     def getDisplayString(self):
-        return "%s%s%s" % (self.trackName, self.trackLength, self.trackQuality)
+        return "%s%s%s" % (self.getName(), self.trackLength, self.trackQuality)
 
     # Get the URL used to download the theme
     def getMediaURL(self):
@@ -339,16 +348,17 @@ class DefaultListing():
 
         # Create the default regex that will be used to filter
         regex = self.getFilterRegex(cleanTitle, True)
+        cleanRegex = self.getFilterRegex(cleanTitle)
+
 
         # Now check the entries against the regex
-        themeDetailsList = self.getRegExMatchList(tracks, regex)
+        themeDetailsList = self.getRegExMatchList(tracks, regex, cleanRegex)
 
         # If no entries found doing the custom search then just search for the name only
         if len(themeDetailsList) < 1:
             log("DefaultListing: No themes found for filtered regex, filtering on title")
 
-            regex = self.getFilterRegex(cleanTitle)
-            themeDetailsList = self.getRegExMatchList(tracks, regex)
+            themeDetailsList = self.getRegExMatchList(tracks, cleanRegex, cleanRegex)
 
             if len(themeDetailsList) < 1:
                 log("DefaultListing: No themes found, using default search")
@@ -384,33 +394,54 @@ class DefaultListing():
                 "pelicula"]     # Spanish for movie
 
     # Filters the list of tracks by a regular expression
-    def getRegExMatchList(self, tracks, regex=None):
+    def getRegExMatchList(self, tracks, regex=None, cleanRegex=None):
         if (regex == None) or (regex == ""):
             return tracks
         
         filteredTrackList = []
         for track in tracks:
             themeName = track.getName()
+            themeNameMatch = self.isRegExMatch(regex, themeName)
 
-            # This is a bit strange, but the name we want to search we want filtered
-            # to be without non-ascii characters as well as with, and with replacements
-            asciiThemeName = re.sub(r'[^\x00-\x7F]',' ', themeName)
-            asciiThemeName = asciiThemeName.replace('\ ', '')
-            try:
-                unicodeRegexCheck = unicodedata.normalize('NFD', themeName).encode('ascii', 'ignore')
-            except:
-                unicodeRegexCheck = themeName
-            regexThemeName = "%s %s %s" % (themeName, asciiThemeName, unicodeRegexCheck)
+            # Check the album name against the clean regex without the appended key words            
+            albumName = track.getAlbumName()
+            albumNameMatch = False
+            if (albumName != None) and (albumName != "") and (cleanRegex != None):
+                albumNameMatch = self.isRegExMatch(cleanRegex, albumName)
 
-            # Check to see if the title contains the value that is being searched for
-            titleMatch = regex.search(regexThemeName)
             # Skip this one if the title does not have the regex in it
-            if not titleMatch:
-                log("DefaultListing: Title %s not in regex" % themeName)
+            if (not themeNameMatch) and (not albumNameMatch):
                 continue
             filteredTrackList.append(track)
 
         return filteredTrackList
+
+    # Checks a name against a gropu of regular expressions
+    def isRegExMatch(self, regex, nameToCheck):
+        # This is a bit strange, but the name we want to search we want filtered
+        # to be without non-ascii characters as well as with, and with replacements
+        try:
+            asciiNameToCheck = re.sub(r'[^\x00-\x7F]',' ', nameToCheck)
+            asciiNameToCheck = asciiNameToCheck.replace('\ ', '')
+        except:
+            asciiNameToCheck = nameToCheck
+        try:
+            unicodeNameToCheck = unicodedata.normalize('NFD', nameToCheck).encode('ascii', 'ignore')
+        except:
+            unicodeNameToCheck = nameToCheck
+
+        regexThemeName = "%s %s %s" % (nameToCheck, asciiNameToCheck, unicodeNameToCheck)
+
+        # Check to see if the title contains the value that is being searched for
+        titleMatch = regex.search(regexThemeName)
+        # Skip this one if the title does not have the regex in it
+        if not titleMatch:
+            log("DefaultListing: Title %s not in regex" % nameToCheck)
+            return False
+        
+        log("DefaultListing: Title matched %s" % nameToCheck)
+        return True
+
 
     # Generates the regular expression that is used to filter results
     def getFilterRegex(self, showname, useAppendices=False):
@@ -424,12 +455,10 @@ class DefaultListing():
         regexShowname = showname.decode("utf-8", 'ignore')
 
         for w in ['a', 'an', 'and', 'the', 'of']:
-            removeWord = " %s " % w
+            removeWord = "(?i) %s " % w
             regexShowname = re.sub(removeWord, ' ', regexShowname)
-            regexShowname = re.sub(removeWord.upper(), ' ', regexShowname)
-            removeWord = "^%s " % w
+            removeWord = "(?i)^%s " % w
             regexShowname = re.sub(removeWord, '', regexShowname)
-            regexShowname = re.sub(removeWord.upper(), '', regexShowname)
         
         # Remove white space from the start and end of the string
         regexShowname = regexShowname.strip()
@@ -636,8 +665,10 @@ class GoearListing(DefaultListing):
                 # Holds the webpage that was read via the response.read() command
                 doc = response.read()
                 # Closes the connection after we have read the webpage.
-                response.close()
-                
+                try:
+                    response.close()
+                except:
+                    log("GoearListing: Failed to close connection for %s" % fullUrl)
                 requestFailed = False
             except:
                 # If we get an exception we have failed to perform the http request
@@ -741,7 +772,7 @@ class GoearThemeItemDetails(ThemeItemDetails):
             response.close()
         except:
             # If we get an exception we have failed to perform the http request
-            log("GoearThemeItemDetails: Request failed for %s" % fullUrl)
+            log("GoearThemeItemDetails: Request failed for %s" % ThemeItemDetails.getMediaURL(self))
             log("GoearThemeItemDetails: %s" % traceback.format_exc())
 
         downloadURL = self._getDownloadURL(ThemeItemDetails.getMediaURL(self))
@@ -890,14 +921,8 @@ class GroovesharkListing(DefaultListing):
 class GroovesharkThemeItemDetails(ThemeItemDetails):
     def __init__(self, track):
         self.grooveshark_track = track
-        duration = self._convertTime(track.duration)
-        
-        # If there is an album name, prepend that
-        fullTrackName = track.name
-        if (track.album != None) and (track.album != ""):
-            fullTrackName = "%s / %s" % (track.name, track.album)
-        
-        ThemeItemDetails.__init__(self, fullTrackName, "", duration)
+        duration = self._convertTime(track.duration)        
+        ThemeItemDetails.__init__(self, track.name, "", duration, albumname=track.album)
 
     # Checks if the theme this points to is the same
     def __eq__(self, other):

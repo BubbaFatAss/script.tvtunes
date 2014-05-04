@@ -107,7 +107,7 @@ class NfoReader():
                         if file.startswith('..') or ((not "/" in file) and (not "\\" in file)):
                             # Make it a full path if it is not already
                             file = os_path_join(directory, file)
-                        log("NfoReader: file = %s" % file)
+                        log("NfoReader: file = %s" % file, self.debug_logging_enabled)
                         self.themeFiles.append(file)
 
                 # There could be multiple directory entries, so loop through all of them
@@ -188,7 +188,7 @@ class NfoReader():
                     file = xbmcPlaylist[i].getfilename()
                     i = i + 1
                     if (file != None) and (file != ""):
-                        log("NfoReader: file from playlist = %s" % file)
+                        log("NfoReader: file from playlist = %s" % file, self.debug_logging_enabled)
                         self.themeFiles.append(file)      
             except:
                 log("NfoReader: playlist file processing error = %s" % playlistFile)
