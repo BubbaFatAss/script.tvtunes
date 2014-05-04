@@ -45,7 +45,8 @@ from settings import normalize_string
 # Reads TvTunes information from an NFO file
 #############################################
 class NfoReader():
-    def __init__( self, directory ):
+    def __init__( self, directory, debug_logging_enabled=True ):
+        self.debug_logging_enabled = debug_logging_enabled
         self.themeFiles = []
         self.themeDirs = []
         self._loadNfoInfo(directory)
@@ -63,12 +64,12 @@ class NfoReader():
     def _loadNfoInfo(self, directory):
         # Find out the name of the NFO file
         nfoFileName = os_path_join(directory, "tvtunes.nfo")
-        
-        log("NfoReader: Searching for NFO file: %s" % nfoFileName)
+
+        log("NfoReader: Searching for NFO file: %s" % nfoFileName, self.debug_logging_enabled)
         
         # Return False if file does not exist
         if not xbmcvfs.exists( nfoFileName ):
-            log("NfoReader: No NFO file found: %s" % nfoFileName)
+            log("NfoReader: No NFO file found: %s" % nfoFileName, self.debug_logging_enabled)
             return False
 
         returnValue = False
@@ -84,12 +85,12 @@ class NfoReader():
             # Create an XML parser
             nfoXml = ET.ElementTree(ET.fromstring(nfoFileStr))
             rootElement = nfoXml.getroot()
-            
-            log("NfoReader: Root element is = %s" % rootElement.tag)
+
+            log("NfoReader: Root element is = %s" % rootElement.tag, self.debug_logging_enabled)
             
             # Check which format if being used
             if rootElement.tag == "tvtunes":
-                log("NfoReader: TvTunes format NFO detected")
+                log("NfoReader: TvTunes format NFO detected", self.debug_logging_enabled)
                 #    <tvtunes>
                 #        <file>theme.mp3</file>
                 #        <directory>c:\my\themes</directory>
@@ -119,7 +120,7 @@ class NfoReader():
                         if dir.startswith('..') or ((not "/" in dir) and (not "\\" in dir)):
                             # Make it a full path if it is not already
                             dir = os_path_join(directory, dir)
-                        log("NfoReader: directory = %s" % dir)
+                        log("NfoReader: directory = %s" % dir, self.debug_logging_enabled)
                         self.themeDirs.append(dir)
 
                 # Check for the playlist files
@@ -134,7 +135,7 @@ class NfoReader():
             else:
                 self.displayName = None
                 self.orderKey = None
-                log("NfoReader: Unknown NFO format")
+                log("NfoReader: Unknown NFO format", self.debug_logging_enabled)
     
             del nfoXml
 
@@ -173,7 +174,7 @@ class NfoReader():
                 # default to the music playlist directory if not local
                 playlistFile = os_path_join(xbmc.translatePath("special://musicplaylists"), playlistFile)
                 
-        log("NfoReader: playlist file = %s" % playlistFile)
+        log("NfoReader: playlist file = %s" % playlistFile, self.debug_logging_enabled)
 
         if xbmcvfs.exists(playlistFile):
             # Load the playlist into the Playlist object
@@ -192,7 +193,7 @@ class NfoReader():
             except:
                 log("NfoReader: playlist file processing error = %s" % playlistFile)
         else:
-            log("NfoReader: playlist file not found = %s" % playlistFile)
+            log("NfoReader: playlist file not found = %s" % playlistFile, self.debug_logging_enabled)
 
 
     # Adds tracks in a Smart playlist to the list of theme files to play
@@ -208,7 +209,7 @@ class NfoReader():
             # Get the list of movies paths from the movie set
             items = json_query['result']['files']
             for item in items:
-                log("NfoReader: Adding From Smart Playlist: %s" % item['file'])
+                log("NfoReader: Adding From Smart Playlist: %s" % item['file'], self.debug_logging_enabled)
                 self.themeFiles.append(item['file'])
 
 
@@ -216,7 +217,8 @@ class NfoReader():
 # Calculates file locations
 ##############################
 class ThemeFiles():
-    def __init__(self, rawPath, pathList=None):
+    def __init__(self, rawPath, pathList=None, debug_logging_enabled=True):
+        self.debug_logging_enabled = debug_logging_enabled
         self.forceShuffle = False
         self.rawPath = rawPath
         if rawPath == "":
@@ -289,7 +291,7 @@ class ThemeFiles():
             filename = playlist[0].getfilename()
             duration = int(playlist[0].getduration())
 
-            log("ThemeFiles: Duration is %d for file %s" % (duration, filename))
+            log("ThemeFiles: Duration is %d for file %s" % (duration, filename), self.debug_logging_enabled)
             
             if duration > 10:
                 listitem = xbmcgui.ListItem()
@@ -297,7 +299,7 @@ class ThemeFiles():
                 randomStart = random.randint(0, int(duration * 0.75))
                 listitem.setProperty('StartOffset', str(randomStart))
 
-                log("ThemeFiles: Setting Random start of %d for %s" % (randomStart, filename))
+                log("ThemeFiles: Setting Random start of %d for %s" % (randomStart, filename), self.debug_logging_enabled)
 
                 # Remove the old item from the playlist
                 playlist.remove(filename)
@@ -360,7 +362,7 @@ class ThemeFiles():
         # directory is above it
         if len(themeFiles) < 1:
             if ('VIDEO_TS' in rawPath) or ('BDMV' in rawPath):
-                log( "ThemeFiles: Found VIDEO_TS in path: Correcting the path for DVDR tv shows" )
+                log( "ThemeFiles: Found VIDEO_TS in path: Correcting the path for DVDR tv shows", self.debug_logging_enabled)
                 themeDir = self._getUsablePath(rawPath)
                 themeDir = os_path_split( themeDir )[0]
                 themeDir = os_path_join( themeDir, Settings.getThemeDirectory() )
@@ -384,7 +386,7 @@ class ThemeFiles():
         if len(themeList) < 1:
             #######hack for TV shows stored as ripped disc folders
             if ('VIDEO_TS' in workingPath) or ('BDMV' in workingPath):
-                log( "ThemeFiles: Found VIDEO_TS or BDMV in path: Correcting the path for DVDR tv shows" )
+                log( "ThemeFiles: Found VIDEO_TS or BDMV in path: Correcting the path for DVDR tv shows", self.debug_logging_enabled)
                 workingPath = os_path_split( workingPath )[0]
                 themeList = self._getThemeFiles(workingPath)
                 if len(themeList) < 1:
@@ -405,23 +407,24 @@ class ThemeFiles():
                 if len(themeList) < 1:
                     themeList = self._getThemeFiles(workingPath)
 
-        log("ThemeFiles: Playlist size = %d" % len(themeList))
-        log("ThemeFiles: Working Path = %s" % workingPath)
+        log("ThemeFiles: Playlist size = %d" % len(themeList), self.debug_logging_enabled)
+        log("ThemeFiles: Working Path = %s" % workingPath, self.debug_logging_enabled)
         
         return themeList
 
     # Search for theme files in the given directory
     def _getThemeFiles(self, directory, extensionOnly=False):
         # First read from the NFO file if it exists
-        nfoRead = NfoReader(directory)
+        nfoRead = NfoReader(directory, self.debug_logging_enabled)
         themeFiles = nfoRead.getThemeFiles()
         
         # Get the theme directories that are referenced and process the data in them
         for nfoDir in nfoRead.getThemeDirs():
             # Do not want the theme keyword if looking at an entire directory
             themeFiles = themeFiles + self._getThemeFiles(nfoDir, True)
-        
-        log( "ThemeFiles: Searching %s for %s" % (directory, Settings.getThemeFileRegEx(directory,extensionOnly)) )
+
+        log( "ThemeFiles: Searching %s for %s" % (directory, Settings.getThemeFileRegEx(directory,extensionOnly)), self.debug_logging_enabled)
+
         # check if the directory exists before searching
         if xbmcvfs.exists(directory):
             dirs, files = list_dir( directory )
@@ -429,7 +432,7 @@ class ThemeFiles():
                 m = re.search(Settings.getThemeFileRegEx(directory,extensionOnly), aFile, re.IGNORECASE)
                 if m:
                     path = os_path_join( directory, aFile )
-                    log("ThemeFiles: Found match: %s" % path)
+                    log("ThemeFiles: Found match: %s" % path, self.debug_logging_enabled)
                     # Add the theme file to the list
                     themeFiles.append(path)
 
@@ -921,6 +924,9 @@ class TunesBackend( ):
         self.oldThemeFiles = ThemeFiles("")
         self.prevThemeFiles = ThemeFiles("")
         self.delayedStart = DelayedStartTheme()
+        
+        # Only used for logging filtering
+        self.lastLoggedThemePath = ""
 
     def run( self ):
         try:
@@ -1059,7 +1065,18 @@ class TunesBackend( ):
         else:
             themePath = xbmc.getInfoLabel( "ListItem.Path" )
 
-        log("TunesBackend: themePath = %s" % themePath)
+        # To try and reduce the amount of "noise" in the logging, where the
+        # same check is logged again and again, we record if it has been
+        # logged for this video, and then do not do it again until the
+        # video changes and what we would print wound be different
+        debug_logging_enabled = False
+
+        # Only log if something is different from the last time we logged
+        if self.lastLoggedThemePath != themePath:
+            debug_logging_enabled = True
+            self.lastLoggedThemePath = themePath
+
+        log("TunesBackend: themePath = %s" % themePath, debug_logging_enabled)
 
         # Check if the selection is a Movie Set
         if WindowShowing.isMovieSet():
@@ -1073,9 +1090,9 @@ class TunesBackend( ):
                     movieSetMap[aKey] = os_path_join(Settings.getCustomPath(), videotitle)
  
             if len(movieSetMap) < 1:
-                themefile = ThemeFiles("")
+                themefile = ThemeFiles("", debug_logging_enabled=debug_logging_enabled)
             else:
-                themefile = ThemeFiles(themePath, movieSetMap.values())
+                themefile = ThemeFiles(themePath, movieSetMap.values(), debug_logging_enabled=debug_logging_enabled)
 
         # When the reference is into the database and not the file system
         # then don't return it
@@ -1083,12 +1100,12 @@ class TunesBackend( ):
             # If in either the Tv Show List or the Movie list then
             # need to stop the theme is selecting the back button
             if WindowShowing.isMovies() or WindowShowing.isTvShowTitles():
-                themefile = ThemeFiles("")
+                themefile = ThemeFiles("", debug_logging_enabled=debug_logging_enabled)
             else:
                 # Load the previous theme
                 themefile = self.newThemeFiles
         else:
-            themefile = ThemeFiles(themePath)
+            themefile = ThemeFiles(themePath, debug_logging_enabled=debug_logging_enabled)
 
         return themefile
 

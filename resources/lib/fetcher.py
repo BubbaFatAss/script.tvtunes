@@ -338,7 +338,7 @@ class DefaultListing():
         tracks = self.search(cleanTitle)
 
         # Create the default regex that will be used to filter
-        regex = self.getFilterRegex(cleanTitle.decode("utf-8", 'ignore'), True)
+        regex = self.getFilterRegex(cleanTitle, True)
 
         # Now check the entries against the regex
         themeDetailsList = self.getRegExMatchList(tracks, regex)
@@ -347,7 +347,7 @@ class DefaultListing():
         if len(themeDetailsList) < 1:
             log("DefaultListing: No themes found for filtered regex, filtering on title")
 
-            regex = self.getFilterRegex(cleanTitle.decode("utf-8", 'ignore'))
+            regex = self.getFilterRegex(cleanTitle)
             themeDetailsList = self.getRegExMatchList(tracks, regex)
 
             if len(themeDetailsList) < 1:
@@ -375,10 +375,11 @@ class DefaultListing():
                 "title",
                 "soundtrack",
                 "tv",
+                "t\\.v\\.",
                 "movie",
                 "tema",         # Spanish for theme
                 "BSO",          # Spanish acronym for OST (banda sonora original)
-                "B.S.O.",       # variation for Spanish acronym BSO
+                "B\\.S\\.O\\.",       # variation for Spanish acronym BSO
                 "banda sonora", # Spanish for Soundtrack
                 "pelicula"]     # Spanish for movie
 
@@ -390,9 +391,16 @@ class DefaultListing():
         filteredTrackList = []
         for track in tracks:
             themeName = track.getName()
-                
+
+            # This is a bit strange, but the name we want to search we want filtered
+            # to be without non-ascii characters as well as with, and with replacements
+            asciiThemeName = re.sub(r'[^\x00-\x7F]',' ', themeName)
+            asciiThemeName = asciiThemeName.replace('\ ', '')
+            unicodeRegexCheck = unicodedata.normalize('NFD', themeName).encode('ascii', 'ignore')
+            regexThemeName = "%s %s %s" % (themeName, asciiThemeName, unicodeRegexCheck)
+
             # Check to see if the title contains the value that is being searched for
-            titleMatch = regex.search(themeName)
+            titleMatch = regex.search(regexThemeName)
             # Skip this one if the title does not have the regex in it
             if not titleMatch:
                 log("DefaultListing: Title %s not in regex" % themeName)
@@ -410,13 +418,51 @@ class DefaultListing():
             searchAppendices = '|'.join(self.getSearchAppendices())
             searchAppend = "%s%s%s" % ('(?=.*(', searchAppendices, '))')
 
+        regexShowname = showname.decode("utf-8", 'ignore')
+
+        for w in ['a', 'an', 'and', 'the', 'of']:
+            removeWord = " %s " % w
+            regexShowname = re.sub(removeWord, ' ', regexShowname)
+            regexShowname = re.sub(removeWord.upper(), ' ', regexShowname)
+            removeWord = "^%s " % w
+            regexShowname = re.sub(removeWord, '', regexShowname)
+            regexShowname = re.sub(removeWord.upper(), '', regexShowname)
+        
+        # Remove white space from the start and end of the string
+        regexShowname = regexShowname.strip()
+        regexShowname = regexShowname.replace('  ', ' ')
+
+        log("DefaultListing: Before regex escape: %s" % regexShowname)
+
+        # Need to escape any values in the show name that are used as
+        # part of the regex formatting
+        # Note: Thiswill also escape spaced, so if we replace
+        # spaces later, we need it to be escaped
+        beforeRegexEscape = regexShowname
+        regexShowname = re.escape(regexShowname)
+
+        log("DefaultListing: After regex escape: %s" % regexShowname)
+
         # Generate the regular expression that will be used to match the title
-        regexCheck = "%s%s%s%s" % ('(?=.*', showname.replace(' ', ')(?=.*'), ')', searchAppend)
+        regexCheck = "%s%s%s%s" % ('(?=.*', regexShowname.replace('\\ ', ')(?=.*'), ')', searchAppend)
+
+        # Get the regex without and non-ascii characters
+        asciiRegexCheck = re.sub(r'[^\x00-\x7F]',' ', regexCheck)
+        asciiRegexCheck = asciiRegexCheck.replace('\ ', '')
+ 
+        # Also get the string where we remove the non ascii characters and
+        # replace them with the closest match
+        unicodeRegex = unicodedata.normalize('NFD', beforeRegexEscape).encode('ascii', 'ignore')
+        unicodeRegex = re.escape(unicodeRegex)
+        unicodeRegex = "%s%s%s%s" % ('(?=.*', unicodeRegex.replace('\\ ', ')(?=.*'), ')', searchAppend)
+       
+
+        regexCheck ="'(%s)|(%s)|(%s)" % (regexCheck, asciiRegexCheck, unicodeRegex)
+ 
+        log("DefaultListing: Using regex: %s" % regexCheck)
 
         # Compile for case insensitive search
-        regex = re.compile(regexCheck, re.I)
-
-        log("DefaultListing: Using regex: %s" % regexCheck)
+        regex = re.compile(regexCheck, re.IGNORECASE | re.UNICODE)
         
         return regex
 
