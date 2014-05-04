@@ -396,7 +396,10 @@ class DefaultListing():
             # to be without non-ascii characters as well as with, and with replacements
             asciiThemeName = re.sub(r'[^\x00-\x7F]',' ', themeName)
             asciiThemeName = asciiThemeName.replace('\ ', '')
-            unicodeRegexCheck = unicodedata.normalize('NFD', themeName).encode('ascii', 'ignore')
+            try:
+                unicodeRegexCheck = unicodedata.normalize('NFD', themeName).encode('ascii', 'ignore')
+            except:
+                unicodeRegexCheck = themeName
             regexThemeName = "%s %s %s" % (themeName, asciiThemeName, unicodeRegexCheck)
 
             # Check to see if the title contains the value that is being searched for
@@ -452,10 +455,12 @@ class DefaultListing():
  
         # Also get the string where we remove the non ascii characters and
         # replace them with the closest match
-        unicodeRegex = unicodedata.normalize('NFD', beforeRegexEscape).encode('ascii', 'ignore')
-        unicodeRegex = re.escape(unicodeRegex)
-        unicodeRegex = "%s%s%s%s" % ('(?=.*', unicodeRegex.replace('\\ ', ')(?=.*'), ')', searchAppend)
-       
+        try:
+            unicodeRegex = unicodedata.normalize('NFD', beforeRegexEscape).encode('ascii', 'ignore')
+            unicodeRegex = re.escape(unicodeRegex)
+            unicodeRegex = "%s%s%s%s" % ('(?=.*', unicodeRegex.replace('\\ ', ')(?=.*'), ')', searchAppend)
+        except:
+            unicodeRegex = regexCheck
 
         regexCheck ="'(%s)|(%s)|(%s)" % (regexCheck, asciiRegexCheck, unicodeRegex)
  
@@ -575,10 +580,28 @@ class GoearListing(DefaultListing):
         # Remove double space
         searchName = searchName.replace("--", "-")
 
-        fullUrl = self.baseUrl + searchName
+        fullUrl = "%s%s" % (self.baseUrl, searchName)
 
+        self._doSearch(fullUrl)
+
+        # Now check if any non ascii characters exist in the name, if so
+        # try the search with them converted
+        try:
+            unicodeSearchName = unicodedata.normalize('NFD', searchName.decode("utf-8", 'ignore')).encode('ascii', 'ignore')
+            
+            if unicodeSearchName != searchName:
+                unicodeFullUrl = "%s%s" % (self.baseUrl, unicodeSearchName)
+                self._doSearch(unicodeFullUrl)
+        except:
+            log("GoearListing: Exception when converting to ascii %s" % traceback.format_exc())
+        
+        return self.themeDetailsList
+
+    # Perform the search for the theme
+    def _doSearch(self, name):
+        log("GoearListing: Performing doSearch for %s" % name)
         # Load the output of the search request into Soup
-        soup = self._getPageContents(fullUrl)
+        soup = self._getPageContents(name)
 
         if soup != None:
             # Get all the pages for this set of search results
@@ -595,8 +618,7 @@ class GoearListing(DefaultListing):
                 soup = self._getPageContents(page)
                 if soup != None:
                     self._getEntries(soup)
-        
-        return self.themeDetailsList
+
 
     # Reads a web page
     def _getPageContents(self, fullUrl):
@@ -696,6 +718,9 @@ class GoearListing(DefaultListing):
                 log("GoearListing: Theme Details = %s" % themeScraperEntry.getDisplayString())
                 log("GoearListing: Theme URL = %s" % themeScraperEntry.getMediaURL() )
                 self.themeDetailsList.append(themeScraperEntry)
+            else:
+                log("GoearListing: Theme Details already in list = %s" % themeScraperEntry.getDisplayString())
+                
 
 ################################
 # Custom Goear,com Item Details
@@ -870,7 +895,7 @@ class GroovesharkThemeItemDetails(ThemeItemDetails):
         # If there is an album name, prepend that
         fullTrackName = track.name
         if (track.album != None) and (track.album != ""):
-            fullTrackName = "%s - %s" % (track.album, track.name)
+            fullTrackName = "%s / %s" % (track.name, track.album)
         
         ThemeItemDetails.__init__(self, fullTrackName, "", duration)
 
