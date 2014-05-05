@@ -714,44 +714,49 @@ class GoearListing(DefaultListing):
         
         # Check out each item in the search results list
         for item in searchResults.contents:
-            # Skip the blank lines, just want the <li> elements
-            if item == '\n':
-                continue
-        
-            # Get the name of the track
-            trackNameTag = item.find('span', { "class" : "song" })
-            if trackNameTag == None:
-                continue
-            trackName = trackNameTag.string
+            # Just in case there is a problem reading the page, or a single entry
+            # make sure we don't fail everything
+            try:
+                # Skip the blank lines, just want the <li> elements
+                if item == '\n':
+                    continue
             
-            # Get the URL for the track
-            trackUrlTag = item.find('a')
-            if trackUrlTag == None:
-                continue
-            trackUrl = trackUrlTag['href']
-
-            # Get the length of the track
-            # e.g. <li class="length radius_3">3:36</li>
-            trackLength = ""
-            trackLengthTag = item.find('li', { "class" : "length radius_3" })
-            if trackUrlTag != None:
-                trackLength = " [" + trackLengthTag.string + "]"
-        
-            # Get the quality of the track
-            # e.g. <li class="kbps radius_3">128<abbr title="Kilobit por segundo">kbps</abbr></li>
-            trackQuality = ""
-            trackQualityTag = item.find('li', { "class" : "kbps radius_3" })
-            if trackQualityTag != None:
-                trackQuality = " (" + trackQualityTag.contents[0] + "kbps)"
-
-            themeScraperEntry = GoearThemeItemDetails(trackName, trackUrl, trackLength, trackQuality)
-            if not (themeScraperEntry in self.themeDetailsList):
-                log("GoearListing: Theme Details = %s" % themeScraperEntry.getDisplayString())
-                log("GoearListing: Theme URL = %s" % themeScraperEntry.getMediaURL() )
-                self.themeDetailsList.append(themeScraperEntry)
-            else:
-                log("GoearListing: Theme Details already in list = %s" % themeScraperEntry.getDisplayString())
+                # Get the name of the track
+                trackNameTag = item.find('span', { "class" : "song" })
+                if trackNameTag == None:
+                    continue
+                trackName = trackNameTag.string
                 
+                # Get the URL for the track
+                trackUrlTag = item.find('a')
+                if trackUrlTag == None:
+                    continue
+                trackUrl = trackUrlTag['href']
+    
+                # Get the length of the track
+                # e.g. <li class="length radius_3">3:36</li>
+                trackLength = ""
+                trackLengthTag = item.find('li', { "class" : "length radius_3" })
+                if trackUrlTag != None:
+                    trackLength = " [" + trackLengthTag.string + "]"
+            
+                # Get the quality of the track
+                # e.g. <li class="kbps radius_3">128<abbr title="Kilobit por segundo">kbps</abbr></li>
+                trackQuality = ""
+                trackQualityTag = item.find('li', { "class" : "kbps radius_3" })
+                if trackQualityTag != None:
+                    trackQuality = " (" + trackQualityTag.contents[0] + "kbps)"
+    
+                themeScraperEntry = GoearThemeItemDetails(trackName, trackUrl, trackLength, trackQuality)
+                if not (themeScraperEntry in self.themeDetailsList):
+                    log("GoearListing: Theme Details = %s" % themeScraperEntry.getDisplayString())
+                    log("GoearListing: Theme URL = %s" % themeScraperEntry.getMediaURL() )
+                    self.themeDetailsList.append(themeScraperEntry)
+                else:
+                    log("GoearListing: Theme Details already in list = %s" % themeScraperEntry.getDisplayString())
+            except:
+                log("GoearListing: Failed when processing page %s" % traceback.format_exc())
+
 
 ################################
 # Custom Goear,com Item Details
