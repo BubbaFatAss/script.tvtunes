@@ -365,10 +365,11 @@ class DefaultListing():
         # If there is an alternative title for this movie or show then
         # search for that as well and merge the results
         if (alternativeTitle != None) and (alternativeTitle != ""):
-            alternativeCleanTitle = self.commonTitleCleanup(alternativeTitle)
-            alternativeTracks = self.search(alternativeCleanTitle)
-            alternativeRegex = self.getFilterRegex(alternativeCleanTitle, True)
-            alternativeCleanRegex = self.getFilterRegex(alternativeCleanTitle)
+            # Note: No need to clean the title of things like brackets when comparing
+            # the alternative title
+            alternativeTracks = self.search(alternativeTitle)
+            alternativeRegex = self.getFilterRegex(alternativeTitle, True)
+            alternativeCleanRegex = self.getFilterRegex(alternativeTitle)
     
             # Now check the entries against the regex
             filteredAlternativeTracks = self.getRegExMatchList(alternativeTracks, alternativeRegex, alternativeCleanRegex)
@@ -556,8 +557,7 @@ class TelevisionTunesListing(DefaultListing):
         # If there is an alternative title for this movie or show then
         # search for that as well and merge the results
         if (alternativeTitle != None) and (alternativeTitle != ""):
-            alternativeCleanTitle = self.commonTitleCleanup(alternativeTitle)
-            alternativeThemeDetailsList = self.search(alternativeCleanTitle)
+            alternativeThemeDetailsList = self.search(alternativeTitle)
             themeDetailsList = self.mergeThemeLists(themeDetailsList, alternativeThemeDetailsList)
 
         return themeDetailsList

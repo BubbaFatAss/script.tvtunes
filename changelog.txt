@@ -4,6 +4,8 @@ v4.4.2
 - Fix for goear.com scraper
 - Add filter option to the Theme Browser to only show missing themes
 - Add action option to the Theme Browser to retrieve missing themes
+- Also search under "Original Title" if available
+- Scraper speed improvements
 
 v4.4.1
 - Add support for soundcloud.com to the scraper
