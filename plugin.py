@@ -307,7 +307,7 @@ if __name__ == '__main__':
         originaltitle = args.get('originaltitle', None)
         
         if originaltitle != None:
-            originaltitle = originaltitle[0]
+            originaltitle = normalize_string(originaltitle[0])
         
         # Perform the fetch
         videoList = []
