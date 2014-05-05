@@ -404,6 +404,9 @@ class DefaultListing():
         cleanedName = re.sub(r'\([^)]*\)', '', cleanedName)
         # Remove double space
         cleanedName = cleanedName.replace("  ", " ")
+        # Remove -'s from the name
+        cleanedName = cleanedName.replace("-", " ")
+        
 
         return cleanedName
 
