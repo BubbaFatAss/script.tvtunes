@@ -76,6 +76,10 @@ class TvTunesFetcher:
     def scan(self):
         count = 0
         total = len(self.Videolist)
+        # For the show
+        # show[0] = Title
+        # show[1] = Path where the theme is to be stored
+        # show[2] = Original Title (If set)
         for show in self.Videolist:
             count = count + 1
             self.DIALOG_PROGRESS.update( (count*100)/total, ("%s %s" % (__language__(32107), show[0].decode("utf-8"))), ' ')
@@ -83,11 +87,11 @@ class TvTunesFetcher:
                 self.DIALOG_PROGRESS.close()
                 xbmcgui.Dialog().ok(__language__(32108),__language__(32109))
                 break
-            theme_list = self.searchThemeList( show[0] )
+            theme_list = self.searchThemeList( show[0], show[2] )
             if (len(theme_list) == 1) and Settings.isExactMatchEnabled(): 
                 theme_url = theme_list[0].getMediaURL()
             else:
-                theme_url = self.getUserChoice( theme_list , show[2] )
+                theme_url = self.getUserChoice( theme_list , show[0], show[2] )
             if theme_url:
                 self.download(theme_url , show[1])
             else:
@@ -150,7 +154,7 @@ class TvTunesFetcher:
 
 
     # Retrieve the theme that the user has selected
-    def getUserChoice(self , theme_list , showname):
+    def getUserChoice(self , theme_list, showname, alternativeTitle=None):
         theme_url = False
         searchname = showname
         while theme_url == False:
@@ -178,12 +182,12 @@ class TvTunesFetcher:
                     if (result == None) or (result == ""):
                         log("getUserChoice: No text entered by user")
                         return False
-                    theme_list = self.searchThemeList(result, True)
+                    theme_list = self.searchThemeList(result, manual=True)
                     searchname = result
                 elif select == 1:
                     # Search using the alternative engine 
                     self.promptForSearchEngine()
-                    theme_list = self.searchThemeList(searchname)
+                    theme_list = self.searchThemeList(searchname, alternativeTitle)
                 else:
                     # Not the first entry selected, so change the select option
                     # so the index value matches the theme list
@@ -212,8 +216,11 @@ class TvTunesFetcher:
         return theme_url
 
     # Perform the actual search on the configured web site
-    def searchThemeList(self, showname, manual=False):
-        log("searchThemeList: Search for %s" % showname )
+    def searchThemeList(self, showname, alternativeTitle=None, manual=False):
+        if (alternativeTitle == None) or (alternativeTitle == ""):
+            log("searchThemeList: Search for %s" % showname )
+        else:
+            log("searchThemeList: Search for %s (%s)" % (showname, alternativeTitle) )
 
         theme_list = []
         searchListing = None
@@ -236,7 +243,7 @@ class TvTunesFetcher:
         if manual:
             theme_list = searchListing.search(showname)
         else:
-            theme_list = searchListing.themeSearch(showname)
+            theme_list = searchListing.themeSearch(showname, alternativeTitle)
 
         return theme_list
 
@@ -337,7 +344,7 @@ class DefaultListing():
         return []
 
     # Searches for a given subset of themes, trying to reduce the list
-    def themeSearch(self, name):
+    def themeSearch(self, name, alternativeTitle=None):
         log("DefaultListing: ThemeSearch for %s" % name)
         # Default is to just do a normal search
         cleanTitle = self.commonTitleCleanup(name)
@@ -350,19 +357,40 @@ class DefaultListing():
         regex = self.getFilterRegex(cleanTitle, True)
         cleanRegex = self.getFilterRegex(cleanTitle)
 
-
         # Now check the entries against the regex
         themeDetailsList = self.getRegExMatchList(tracks, regex, cleanRegex)
+
+        alternativeCleanRegex = None
+        alternativeTracks = None
+        # If there is an alternative title for this movie or show then
+        # search for that as well and merge the results
+        if (alternativeTitle != None) and (alternativeTitle != ""):
+            alternativeCleanTitle = self.commonTitleCleanup(alternativeTitle)
+            alternativeTracks = self.search(alternativeCleanTitle)
+            alternativeRegex = self.getFilterRegex(alternativeCleanTitle, True)
+            alternativeCleanRegex = self.getFilterRegex(alternativeCleanTitle)
+    
+            # Now check the entries against the regex
+            filteredAlternativeTracks = self.getRegExMatchList(alternativeTracks, alternativeRegex, alternativeCleanRegex)
+            themeDetailsList = self.mergeThemeLists(themeDetailsList, filteredAlternativeTracks)
 
         # If no entries found doing the custom search then just search for the name only
         if len(themeDetailsList) < 1:
             log("DefaultListing: No themes found for filtered regex, filtering on title")
 
             themeDetailsList = self.getRegExMatchList(tracks, cleanRegex, cleanRegex)
+            
+            if (alternativeCleanRegex != None) and (alternativeTracks != None):
+                filteredAlternativeTracks = self.getRegExMatchList(alternativeTracks, alternativeCleanRegex, alternativeCleanRegex)
+                themeDetailsList = self.mergeThemeLists(themeDetailsList, filteredAlternativeTracks)
+                
 
             if len(themeDetailsList) < 1:
                 log("DefaultListing: No themes found, using default search")
                 themeDetailsList = tracks
+
+                if alternativeTracks != None:
+                    themeDetailsList = self.mergeThemeLists(themeDetailsList, alternativeTracks)
 
         return themeDetailsList
 
@@ -500,6 +528,16 @@ class DefaultListing():
         
         return regex
 
+    # Appends unique values from list 2 to list 1
+    def mergeThemeLists(self, list1, list2):
+        for item2 in list2:
+            if not (item2 in list1):
+                log("DefaultListing: Adding Theme = %s" % item2.getDisplayString())
+                list1.append(item2)
+            else:
+                log("DefaultListing: Not Adding Theme = %s" % item2.getDisplayString())
+        return list1
+
 
 #################################################
 # Searches www.televisiontunes.com for themes
@@ -510,10 +548,18 @@ class TelevisionTunesListing(DefaultListing):
         self.search_url = "http://www.televisiontunes.com/search.php?searWords=%s&Send=Search"
 
     # Television tunes just uses the default search
-    def themeSearch(self, name):
+    def themeSearch(self, name, alternativeTitle=None):
         # Default is to just do a normal search
         cleanTitle = self.commonTitleCleanup(name)
         themeDetailsList = self.search(cleanTitle)
+
+        # If there is an alternative title for this movie or show then
+        # search for that as well and merge the results
+        if (alternativeTitle != None) and (alternativeTitle != ""):
+            alternativeCleanTitle = self.commonTitleCleanup(alternativeTitle)
+            alternativeThemeDetailsList = self.search(alternativeCleanTitle)
+            themeDetailsList = self.mergeThemeLists(themeDetailsList, alternativeThemeDetailsList)
+
         return themeDetailsList
 
     # Perform the search for the theme

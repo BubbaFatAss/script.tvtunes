@@ -148,7 +148,10 @@ class MenuNavigator():
                     continue
                 
                 li.setInfo('video', { 'PlayCount': 1 })
-            url = self._build_url({'mode': 'findtheme', 'foldername': target, 'path': path.encode("utf-8"), 'title': videoItem['title'].encode("utf-8")})
+            if videoItem['originaltitle'] != None:
+                url = self._build_url({'mode': 'findtheme', 'foldername': target, 'path': path.encode("utf-8"), 'title': videoItem['title'].encode("utf-8"), 'originaltitle': videoItem['originaltitle'].encode("utf-8")})
+            else:
+                url = self._build_url({'mode': 'findtheme', 'foldername': target, 'path': path.encode("utf-8"), 'title': videoItem['title'].encode("utf-8")})
             xbmcplugin.addDirectoryItem(handle=self.addon_handle, url=url, listitem=li, isFolder=False)
 
         xbmcplugin.endOfDirectory(self.addon_handle)
@@ -156,7 +159,11 @@ class MenuNavigator():
 
     # Do a lookup in the database for the given type of videos
     def getVideos(self, jsonGet, target):
-        json_query = xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "VideoLibrary.%s", "params": {"properties": ["title", "file", "thumbnail", "fanart"], "sort": { "method": "title" } }, "id": 1}' % jsonGet)
+        origTitleRequest = ', "originaltitle"'
+        if target == MenuNavigator.MUSICVIDEOS:
+            origTitleRequest =''
+        
+        json_query = xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "VideoLibrary.%s", "params": {"properties": ["title", "file", "thumbnail", "fanart"%s], "sort": { "method": "title" } }, "id": 1}' % (jsonGet, origTitleRequest))
         json_query = unicode(json_query, 'utf-8', errors='ignore')
         json_response = simplejson.loads(json_query)
         log( json_response )
@@ -173,6 +180,8 @@ class MenuNavigator():
                 else:
                     videoItem['thumbnail'] = item['thumbnail']
                 videoItem['fanart'] = item['fanart']
+                
+                videoItem['originaltitle'] = item['originaltitle']
 
                 Videolist.append(videoItem)
         return Videolist
@@ -231,7 +240,10 @@ class MenuNavigator():
                 continue
 
             normtitle = normalize_string(videoItem['title']).encode("utf-8")
-            videoList.append([normtitle, path.encode("utf-8"), normtitle])
+            normOriginalTitle = None
+            if videoItem['originaltitle'] == None:
+                normOriginalTitle = normalize_string(videoItem['originaltitle']).encode("utf-8")
+            videoList.append([normtitle, path.encode("utf-8"), normOriginalTitle])
 
         if len(videoList) > 0:
             TvTunesFetcher(videoList)
@@ -292,11 +304,15 @@ if __name__ == '__main__':
         # Get the actual title and path that was navigated to
         title = args.get('title', None)
         path = args.get('path', None)
+        originaltitle = args.get('originaltitle', None)
+        
+        if originaltitle != None:
+            originaltitle = originaltitle[0]
         
         # Perform the fetch
         videoList = []
         normtitle = normalize_string(title[0])
-        videoList.append([normtitle, path[0], normtitle])
+        videoList.append([normtitle, path[0], originaltitle])
         TvTunesFetcher(videoList)
 
     elif mode[0] == 'filter':
