@@ -520,7 +520,7 @@ class DefaultListing():
         except:
             unicodeRegex = regexCheck
 
-        regexCheck ="'(%s)|(%s)|(%s)" % (regexCheck, asciiRegexCheck, unicodeRegex)
+        regexCheck ="(%s)|(%s)|(%s)" % (regexCheck, asciiRegexCheck, unicodeRegex)
  
         log("DefaultListing: Using regex: %s" % regexCheck)
 
