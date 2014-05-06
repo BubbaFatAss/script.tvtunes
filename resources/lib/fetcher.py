@@ -407,6 +407,9 @@ class DefaultListing():
         # Remove -'s from the name
         cleanedName = cleanedName.replace("-", " ")
         
+        cleanedName = self.removePrepositions(cleanedName)
+        # Remove white space from the start and end of the string
+        cleanedName = cleanedName.strip()
 
         return cleanedName
 
@@ -424,6 +427,13 @@ class DefaultListing():
                 "B\\.S\\.O\\.",       # variation for Spanish acronym BSO
                 "banda sonora", # Spanish for Soundtrack
                 "pelicula"]     # Spanish for movie
+#                 "music ",        #with space at the end to avoid variations such as musical, musico, etc
+#                 "overture",
+#                 "finale",
+#                 "prelude",
+#                 "opening",
+#                 "closing",
+#                 "collection"]
 
     # Filters the list of tracks by a regular expression
     def getRegExMatchList(self, tracks, regex=None, cleanRegex=None):
@@ -448,19 +458,25 @@ class DefaultListing():
 
         return filteredTrackList
 
-    # Checks a name against a gropu of regular expressions
+    # Checks a name against a group of regular expressions
     def isRegExMatch(self, regex, nameToCheck):
         # This is a bit strange, but the name we want to search we want filtered
         # to be without non-ascii characters as well as with, and with replacements
         try:
             asciiNameToCheck = re.sub(r'[^\x00-\x7F]',' ', nameToCheck)
             asciiNameToCheck = asciiNameToCheck.replace('\ ', '')
+            
+            if asciiNameToCheck == nameToCheck:
+                asciiNameToCheck = ""
         except:
-            asciiNameToCheck = nameToCheck
+            asciiNameToCheck = ""
         try:
             unicodeNameToCheck = unicodedata.normalize('NFD', nameToCheck).encode('ascii', 'ignore')
+            
+            if unicodeNameToCheck == nameToCheck:
+                unicodeNameToCheck = ""
         except:
-            unicodeNameToCheck = nameToCheck
+            unicodeNameToCheck = ""
 
         regexThemeName = "%s %s %s" % (nameToCheck, asciiNameToCheck, unicodeNameToCheck)
 
@@ -468,12 +484,23 @@ class DefaultListing():
         titleMatch = regex.search(regexThemeName)
         # Skip this one if the title does not have the regex in it
         if not titleMatch:
-            log("DefaultListing: Title %s not in regex" % nameToCheck)
+            log("DefaultListing: Title %s not in regex %s" % (nameToCheck, regex.pattern))
             return False
         
-        log("DefaultListing: Title matched %s" % nameToCheck)
+        log("DefaultListing: Title matched %s to regex %s" % (nameToCheck, regex.pattern))
         return True
 
+    # Remove anything like "the" "of" "a"
+    def removePrepositions(self, showname):
+        regexShowname = showname
+        for w in ['a', 'an', 'and', 'the', 'of']:
+            removeWord = "(?i) %s " % w
+            regexShowname = re.sub(removeWord, ' ', regexShowname)
+            removeWord = "(?i)^%s " % w
+            regexShowname = re.sub(removeWord, '', regexShowname)
+        
+        return regexShowname
+        
 
     # Generates the regular expression that is used to filter results
     def getFilterRegex(self, showname, useAppendices=False):
@@ -486,11 +513,7 @@ class DefaultListing():
 
         regexShowname = showname.decode("utf-8", 'ignore')
 
-        for w in ['a', 'an', 'and', 'the', 'of']:
-            removeWord = "(?i) %s " % w
-            regexShowname = re.sub(removeWord, ' ', regexShowname)
-            removeWord = "(?i)^%s " % w
-            regexShowname = re.sub(removeWord, '', regexShowname)
+        regexShowname = self.removePrepositions(regexShowname)
         
         # Remove white space from the start and end of the string
         regexShowname = regexShowname.strip()
@@ -511,19 +534,38 @@ class DefaultListing():
         regexCheck = "%s%s%s%s" % ('(?=.*', regexShowname.replace('\\ ', ')(?=.*'), ')', searchAppend)
 
         # Get the regex without and non-ascii characters
-        asciiRegexCheck = re.sub(r'[^\x00-\x7F]',' ', regexCheck)
-        asciiRegexCheck = asciiRegexCheck.replace('\ ', '')
+        asciiRegexCheck = None
+        try:
+            asciiRegexCheck = re.sub(r'[^\x00-\x7F]',' ', regexCheck)
+            asciiRegexCheck = asciiRegexCheck.replace('\ ', '')
+            # Only want it if it is different from theone we have already
+            if asciiRegexCheck == regexCheck:
+                asciiRegexCheck = None
+        except:
+            log("DefaultListing: Failed to process asciiRegexCheck")
+            asciiRegexCheck = None
  
         # Also get the string where we remove the non ascii characters and
         # replace them with the closest match
+        unicodeRegex = None
         try:
             unicodeRegex = unicodedata.normalize('NFD', beforeRegexEscape).encode('ascii', 'ignore')
             unicodeRegex = re.escape(unicodeRegex)
             unicodeRegex = "%s%s%s%s" % ('(?=.*', unicodeRegex.replace('\\ ', ')(?=.*'), ')', searchAppend)
+            # Only want it if it is different from theone we have already
+            if unicodeRegex == regexCheck:
+                unicodeRegex = None
         except:
-            unicodeRegex = regexCheck
+            log("DefaultListing: Failed to process unicodeRegex")
+            unicodeRegex = None
 
-        regexCheck ="(%s)|(%s)|(%s)" % (regexCheck, asciiRegexCheck, unicodeRegex)
+        if (asciiRegexCheck != None) and (unicodeRegex != None):
+            regexCheck ="(%s)|(%s)|(%s)" % (regexCheck, asciiRegexCheck, unicodeRegex)
+        elif (asciiRegexCheck != None):
+            regexCheck ="(%s)|(%s)" % (regexCheck, asciiRegexCheck)
+        elif (unicodeRegex != None):
+            regexCheck ="(%s)|(%s)" % (regexCheck, unicodeRegex)
+        # Default is just the one regex
  
         log("DefaultListing: Using regex: %s" % regexCheck)
 
