@@ -493,7 +493,17 @@ class DefaultListing():
     # Remove anything like "the" "of" "a"
     def removePrepositions(self, showname):
         regexShowname = showname
-        for w in ['a', 'an', 'and', 'the', 'of']:
+        
+        English = ['a', 'an', 'and', 'the', 'of', 'or', 'to']
+        Spanish = ['el', 'los', 'las', 'de', 'du', 'des']
+        French = ['à', 'la', 'le', 'les']
+        Italian = ['y', 'o', 'ne', 'il', 'di', 'gli', 'lo', 'del', 'et', 'u', 'e'] 
+        German = [ 'von', 'der', 'und', 'aus', 'zu' ]
+        Swedish = [ 'av', 'i']
+
+        prepositions = English + Spanish + French + Italian + German + Swedish
+        
+        for w in prepositions:
             removeWord = "(?i) %s " % w
             regexShowname = re.sub(removeWord, ' ', regexShowname)
             removeWord = "(?i)^%s " % w
@@ -691,7 +701,6 @@ class TelevisionTunesListing(DefaultListing):
 class GoearListing(DefaultListing):
     def __init__(self):
         self.baseUrl = "http://www.goear.com/search/"
-        self.themeDetailsList = []
 
     # Perform the search for the theme
     def search(self, name):
@@ -700,9 +709,10 @@ class GoearListing(DefaultListing):
         # Remove double space
         searchName = searchName.replace("--", "-")
 
-        fullUrl = "%s%s" % (self.baseUrl, searchName)
+        fullUrl = "%s%s" % (self.baseUrl, urllib.quote_plus(searchName))
 
-        self._doSearch(fullUrl)
+        # Perform the search using the supplied URL
+        themeDetailsList = self._doSearch(fullUrl)
 
         # Now check if any non ascii characters exist in the name, if so
         # try the search with them converted
@@ -711,37 +721,47 @@ class GoearListing(DefaultListing):
             
             if unicodeSearchName != searchName:
                 unicodeFullUrl = "%s%s" % (self.baseUrl, unicodeSearchName)
-                self._doSearch(unicodeFullUrl)
+                unicodeThemeList = self._doSearch(unicodeFullUrl)
+                themeDetailsList = self.mergeThemeLists(themeDetailsList, unicodeThemeList)
         except:
             log("GoearListing: Exception when converting to ascii %s" % traceback.format_exc())
         
-        return self.themeDetailsList
+        return themeDetailsList
 
     # Perform the search for the theme
-    def _doSearch(self, name):
-        log("GoearListing: Performing doSearch for %s" % name)
-        # Load the output of the search request into Soup
-        soup = self._getPageContents(name)
+    def _doSearch(self, searchURL):
+        log("GoearListing: Performing doSearch for %s" % searchURL)
+        
+        themeList = [ ]
+        lastThemeBatch = ['dummy']
+        nextPageIndex = 0
 
-        if soup != None:
-            # Get all the pages for this set of search results
-            urlPageList = self._getSearchPages(soup)
-    
-            # The first page is always /0 on the URL, so we should check this
-            self._getEntries(soup)
-            
-            for page in urlPageList:
-                # Already processed the first page, no need to retrieve it again
-                if page.endswith("/0"):
-                    continue
-                # Get the next page and read the tracks from it
-                soup = self._getPageContents(page)
-                if soup != None:
-                    self._getEntries(soup)
+        # Loop until we do not get any entries for the given page        
+        while (len(lastThemeBatch) > 0) and (nextPageIndex < 40):
+            # Reset the themes to none
+            lastThemeBatch = []
+
+            thisSearchURL = searchURL
+            if nextPageIndex > 0:
+                thisSearchURL = "%s/%d" % (searchURL, nextPageIndex)
+
+            # First search is page /0 anyway
+            soup = self._getPageContents(thisSearchURL)
+
+            if soup != None:
+                # Get the tracks for this page
+                lastThemeBatch = self._getEntries(soup)
+                # Now merge this batch with the existing entries
+                themeList = self.mergeThemeLists(themeList, lastThemeBatch)
+
+            nextPageIndex = nextPageIndex + 1
+                    
+        return themeList
 
 
     # Reads a web page
     def _getPageContents(self, fullUrl):
+        log("GoearListing: Loading page %s" % fullUrl)
         # Start by calling the search URL
         req = urllib2.Request(fullUrl)
         req.add_header('User-Agent', ' Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3')
@@ -803,6 +823,8 @@ class GoearListing(DefaultListing):
         # Get all the items in the search results
         searchResults = soup.find('ol', { "id" : "search_results"})
         
+        themeList = []
+        
         # Check out each item in the search results list
         for item in searchResults.contents:
             # Just in case there is a problem reading the page, or a single entry
@@ -828,9 +850,9 @@ class GoearListing(DefaultListing):
                 # e.g. <li class="length radius_3">3:36</li>
                 trackLength = ""
                 trackLengthTag = item.find('li', { "class" : "length radius_3" })
-                if trackUrlTag != None:
+                if trackLengthTag != None:
                     trackLength = " [" + trackLengthTag.string + "]"
-            
+
                 # Get the quality of the track
                 # e.g. <li class="kbps radius_3">128<abbr title="Kilobit por segundo">kbps</abbr></li>
                 trackQuality = ""
@@ -839,14 +861,13 @@ class GoearListing(DefaultListing):
                     trackQuality = " (" + trackQualityTag.contents[0] + "kbps)"
     
                 themeScraperEntry = GoearThemeItemDetails(trackName, trackUrl, trackLength, trackQuality)
-                if not (themeScraperEntry in self.themeDetailsList):
-                    log("GoearListing: Theme Details = %s" % themeScraperEntry.getDisplayString())
-                    log("GoearListing: Theme URL = %s" % themeScraperEntry.getMediaURL() )
-                    self.themeDetailsList.append(themeScraperEntry)
-                else:
-                    log("GoearListing: Theme Details already in list = %s" % themeScraperEntry.getDisplayString())
+                themeList.append(themeScraperEntry)
+                log("GoearListing: Theme Details = %s" % themeScraperEntry.getDisplayString())
+                log("GoearListing: Theme URL = %s" % themeScraperEntry.getMediaURL() )
             except:
                 log("GoearListing: Failed when processing page %s" % traceback.format_exc())
+
+        return themeList
 
 
 ################################
