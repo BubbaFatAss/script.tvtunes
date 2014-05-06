@@ -299,6 +299,8 @@ class ThemeItemDetails():
         self.trackLength = trackLength
         self.trackQuality = trackQuality
         self.albumname = albumname
+        
+        self.priority = None
 
     # Checks if the theme this points to is the same
     def __eq__(self, other):
@@ -326,11 +328,23 @@ class ThemeItemDetails():
 
     # Get the display name that could include extra information
     def getDisplayString(self):
-        return "%s%s%s" % (self.getName(), self.trackLength, self.trackQuality)
+        displayRating = ""
+        if self.priority != None:
+            if self.priority == 1: # Top Priority
+                displayRating = '* '
+            elif self.priority == 2:
+                displayRating = '+ '
+            elif self.priority == 2:
+                displayRating = '- '
+        
+        return "%s%s%s%s" % (displayRating, self.getName(), self.trackLength, self.trackQuality)
 
     # Get the URL used to download the theme
     def getMediaURL(self):
         return self.trackUrl
+
+    def setPriority(self, rating):
+        self.priority = rating
 
 
 ###########################################################
@@ -358,10 +372,11 @@ class DefaultListing():
         cleanRegex = self.getFilterRegex(cleanTitle)
 
         # Now check the entries against the regex
-        themeDetailsList = self.getRegExMatchList(tracks, regex, cleanRegex)
+        themeDetailsList, lowPriorityTracks = self.getRegExMatchList(tracks, regex, cleanRegex, priority=1)
 
         alternativeCleanRegex = None
         alternativeTracks = None
+        lowPriorityAlternateTracks = []
         # If there is an alternative title for this movie or show then
         # search for that as well and merge the results
         if (alternativeTitle != None) and (alternativeTitle != ""):
@@ -370,28 +385,27 @@ class DefaultListing():
             alternativeTracks = self.search(alternativeTitle)
             alternativeRegex = self.getFilterRegex(alternativeTitle, True)
             alternativeCleanRegex = self.getFilterRegex(alternativeTitle)
-    
+
             # Now check the entries against the regex
-            filteredAlternativeTracks = self.getRegExMatchList(alternativeTracks, alternativeRegex, alternativeCleanRegex)
+            filteredAlternativeTracks, lowPriorityAlternateTracks = self.getRegExMatchList(alternativeTracks, alternativeRegex, alternativeCleanRegex, priority=1)
             themeDetailsList = self.mergeThemeLists(themeDetailsList, filteredAlternativeTracks)
 
         # If no entries found doing the custom search then just search for the name only
-        if len(themeDetailsList) < 1:
-            log("DefaultListing: No themes found for filtered regex, filtering on title")
+        if len(lowPriorityTracks) > 0:
+            log("DefaultListing: Processing low priority tracks, regex filtering on title")
 
-            themeDetailsList = self.getRegExMatchList(tracks, cleanRegex, cleanRegex)
-            
-            if (alternativeCleanRegex != None) and (alternativeTracks != None):
-                filteredAlternativeTracks = self.getRegExMatchList(alternativeTracks, alternativeCleanRegex, alternativeCleanRegex)
-                themeDetailsList = self.mergeThemeLists(themeDetailsList, filteredAlternativeTracks)
-                
+            nextThemeList, lowPriorityTracks = self.getRegExMatchList(lowPriorityTracks, cleanRegex, cleanRegex, priority=2) 
+            # Now append the next set of themes to the list
+            themeDetailsList = self.mergeThemeLists(themeDetailsList, nextThemeList)
 
-            if len(themeDetailsList) < 1:
-                log("DefaultListing: No themes found, using default search")
-                themeDetailsList = tracks
+        if len(lowPriorityAlternateTracks) > 0:
+            log("DefaultListing: Processing low priority alternate tracks, regex filtering on title")
+            filteredAlternativeTracks, lowPriorityAlternateTracks = self.getRegExMatchList(lowPriorityAlternateTracks, alternativeCleanRegex, alternativeCleanRegex, priority=2)
+            themeDetailsList = self.mergeThemeLists(themeDetailsList, filteredAlternativeTracks)
 
-                if alternativeTracks != None:
-                    themeDetailsList = self.mergeThemeLists(themeDetailsList, alternativeTracks)
+        log("DefaultListing: Processing remaining themes found")
+        themeDetailsList = self.mergeThemeLists(themeDetailsList, lowPriorityTracks)
+        themeDetailsList = self.mergeThemeLists(themeDetailsList, lowPriorityAlternateTracks)
 
         return themeDetailsList
 
@@ -426,21 +440,23 @@ class DefaultListing():
                 "BSO",          # Spanish acronym for OST (banda sonora original)
                 "B\\.S\\.O\\.",       # variation for Spanish acronym BSO
                 "banda sonora", # Spanish for Soundtrack
-                "pelicula"]     # Spanish for movie
-#                 "music ",        #with space at the end to avoid variations such as musical, musico, etc
-#                 "overture",
-#                 "finale",
-#                 "prelude",
-#                 "opening",
-#                 "closing",
-#                 "collection"]
+                "pelicula",     # Spanish for movie
+                 "music ",        #with space at the end to avoid variations such as musical, musico, etc
+                 "overture",
+                 "finale",
+                 "prelude",
+                 "opening",
+                 "closing",
+                 "collection"]
 
     # Filters the list of tracks by a regular expression
-    def getRegExMatchList(self, tracks, regex=None, cleanRegex=None):
+    def getRegExMatchList(self, tracks, regex=None, cleanRegex=None, priority=None):
         if (regex == None) or (regex == ""):
             return tracks
         
         filteredTrackList = []
+        lowPriorityTracks = []
+        
         for track in tracks:
             themeName = track.getName()
             themeNameMatch = self.isRegExMatch(regex, themeName)
@@ -453,10 +469,13 @@ class DefaultListing():
 
             # Skip this one if the title does not have the regex in it
             if (not themeNameMatch) and (not albumNameMatch):
-                continue
-            filteredTrackList.append(track)
+                lowPriorityTracks.append(track)
+            else:
+                # Flag this track with the supplied priority
+                track.setPriority(priority)
+                filteredTrackList.append(track)
 
-        return filteredTrackList
+        return filteredTrackList, lowPriorityTracks
 
     # Checks a name against a group of regular expressions
     def isRegExMatch(self, regex, nameToCheck):
@@ -493,12 +512,12 @@ class DefaultListing():
     # Remove anything like "the" "of" "a"
     def removePrepositions(self, showname):
         regexShowname = showname
-        
+
         English = ['a', 'an', 'and', 'the', 'of', 'or', 'to']
-        Spanish = ['el', 'los', 'las', 'de', 'du', 'des']
-        French = ['à', 'la', 'le', 'les']
-        Italian = ['y', 'o', 'ne', 'il', 'di', 'gli', 'lo', 'del', 'et', 'u', 'e'] 
-        German = [ 'von', 'der', 'und', 'aus', 'zu' ]
+        Spanish = ['el', 'los', 'las', 'de', 'del', 'y', 'u', 'o']
+        French = ['à', 'la', 'le', 'les', 'du', 'des', 'et']
+        Italian = ['ne', 'il', 'di', 'gli', 'lo', 'e'] 
+        German = [ 'von', 'der', 'und', 'aus', 'zu']
         Swedish = [ 'av', 'i']
 
         prepositions = English + Spanish + French + Italian + German + Swedish
