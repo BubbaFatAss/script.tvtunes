@@ -70,7 +70,6 @@ class TvTunesFetcher:
         # Now we have the list of programs to search for, perform the scan
         self.scan()
         self.DIALOG_PROGRESS.close()
-        
 
     # Search for themes
     def scan(self):
@@ -618,10 +617,6 @@ class DefaultListing():
 # Searches www.televisiontunes.com for themes
 #################################################
 class TelevisionTunesListing(DefaultListing):
-    def __init__(self):
-        # Links required for televisiontunes.com
-        self.search_url = "http://www.televisiontunes.com/search.php?searWords=%s&Send=Search"
-
     # Television tunes just uses the default search
     def themeSearch(self, name, alternativeTitle=None):
         # Default is to just do a normal search
@@ -638,10 +633,12 @@ class TelevisionTunesListing(DefaultListing):
 
     # Perform the search for the theme
     def search(self, showname):
+        search_url = "http://www.televisiontunes.com/search.php?searWords=%s&Send=Search"
+
         log("TelevisionTunesListing: Search for %s" % showname )
         theme_list = []
         next = True
-        url = self.search_url % urllib.quote_plus(showname)
+        url = search_url % urllib.quote_plus(showname)
         urlpage = ""
         while next == True:
             # Get the HTMl at the given URL
@@ -718,17 +715,15 @@ class TelevisionTunesListing(DefaultListing):
 # Searches www.goear.com for themes
 #################################################
 class GoearListing(DefaultListing):
-    def __init__(self):
-        self.baseUrl = "http://www.goear.com/search/"
-
     # Perform the search for the theme
     def search(self, name):
+        baseUrl = "http://www.goear.com/search/"
         # User - instead of spaces
         searchName = name.replace(" ", "-")
         # Remove double space
         searchName = searchName.replace("--", "-")
 
-        fullUrl = "%s%s" % (self.baseUrl, urllib.quote_plus(searchName))
+        fullUrl = "%s%s" % (baseUrl, urllib.quote_plus(searchName))
 
         # Perform the search using the supplied URL
         themeDetailsList = self._doSearch(fullUrl)
@@ -739,7 +734,7 @@ class GoearListing(DefaultListing):
             unicodeSearchName = unicodedata.normalize('NFD', searchName.decode("utf-8", 'ignore')).encode('ascii', 'ignore')
             
             if unicodeSearchName != searchName:
-                unicodeFullUrl = "%s%s" % (self.baseUrl, unicodeSearchName)
+                unicodeFullUrl = "%s%s" % (baseUrl, unicodeSearchName)
                 unicodeThemeList = self._doSearch(unicodeFullUrl)
                 themeDetailsList = self.mergeThemeLists(themeDetailsList, unicodeThemeList)
         except:
