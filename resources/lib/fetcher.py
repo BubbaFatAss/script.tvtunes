@@ -50,6 +50,7 @@ class TvTunesFetcher:
     GROOVESHARK = 'grooveshark.com'
     GOEAR = 'goear.com'
     PROMPT = 'Prompt User'
+    ALL_ENGINES= 'ALL'
     
     
     def __init__(self, videoList):
@@ -265,18 +266,34 @@ class TvTunesFetcher:
         elif self.searchEngine == TvTunesFetcher.GROOVESHARK:
             # grooveshark is selected
             searchListing = GroovesharkListing()
-        else:
+        elif self.searchEngine == TvTunesFetcher.TELEVISION_TUNES:
             # Default to Television Tunes
             searchListing = TelevisionTunesListing()
 
-        # Call the correct search option, depends if a manual search or not
-        if manual:
-            theme_list = searchListing.search(showname, showProgressDialog)
+        # Check the special case where we use all the engines
+        if self.searchEngine == TvTunesFetcher.ALL_ENGINES:
+            # As part of this, we reset the search engine back to the default in settings
+            # We do not want them doing this search all the time!
+            self.searchEngine = Settings.getSearchEngine()
+            
+            tvtunesList = TelevisionTunesListing().themeSearch(showname, alternativeTitle, showProgressDialog)
+            groovesharkList = GroovesharkListing().themeSearch(showname, alternativeTitle, showProgressDialog)
+            goearList = GoearListing().themeSearch(showname, alternativeTitle, showProgressDialog)
+            soundcloudList = SoundcloudListing().themeSearch(showname, alternativeTitle, showProgressDialog)
+            
+            # Join all the entries into one list
+            theme_list = tvtunesList + groovesharkList + goearList + soundcloudList
+            # Now sort the list
+            theme_list.sort()
+
         else:
-            theme_list = searchListing.themeSearch(showname, alternativeTitle, showProgressDialog)
+            # Call the correct search option, depends if a manual search or not
+            if manual:
+                theme_list = searchListing.search(showname, showProgressDialog)
+            else:
+                theme_list = searchListing.themeSearch(showname, alternativeTitle, showProgressDialog)
 
         return theme_list
-
 
     # Calculates the next filename to use when downloading multiple themes
     def getNextThemeFileName(self, path):
@@ -297,11 +314,13 @@ class TvTunesFetcher:
         displayList.insert(2, TvTunesFetcher.GROOVESHARK)
         displayList.insert(3, TvTunesFetcher.GOEAR)
 
+        displayList.insert(4, "** %s **" % __language__(32121))
+
         if showManualOptions:
-            displayList.insert(4, "%s %s" % (TvTunesFetcher.TELEVISION_TUNES, __language__(32118)))
-            displayList.insert(5, "%s %s" % (TvTunesFetcher.SOUNDCLOUD, __language__(32118)))
-            displayList.insert(6, "%s %s" % (TvTunesFetcher.GROOVESHARK, __language__(32118)))
-            displayList.insert(7, "%s %s" % (TvTunesFetcher.GOEAR, __language__(32118)))
+            displayList.insert(5, "%s %s" % (TvTunesFetcher.TELEVISION_TUNES, __language__(32118)))
+            displayList.insert(6, "%s %s" % (TvTunesFetcher.SOUNDCLOUD, __language__(32118)))
+            displayList.insert(7, "%s %s" % (TvTunesFetcher.GROOVESHARK, __language__(32118)))
+            displayList.insert(8, "%s %s" % (TvTunesFetcher.GOEAR, __language__(32118)))
 
         isManualSearch = False
 
@@ -311,19 +330,21 @@ class TvTunesFetcher:
             log("promptForSearchEngine: Cancelled by user")
             return False
         else:
-            if (select == 0) or (select == 4):
+            if (select == 0) or (select == 5):
                 self.searchEngine = TvTunesFetcher.TELEVISION_TUNES
-            elif (select == 1) or (select == 5):
+            elif (select == 1) or (select == 6):
                 self.searchEngine = TvTunesFetcher.SOUNDCLOUD
-            elif (select == 2) or (select == 6):
+            elif (select == 2) or (select == 7):
                 self.searchEngine = TvTunesFetcher.GROOVESHARK
-            elif (select == 3) or (select == 7):
+            elif (select == 3) or (select == 8):
                 self.searchEngine = TvTunesFetcher.GOEAR
+            elif (select == 4):
+                self.searchEngine = TvTunesFetcher.ALL_ENGINES
 
             # Record if this is a manual search
-            if select > 3:
+            if select > 4:
                 isManualSearch = True
-        
+
         log("promptForSearchEngine: New search engine is %s" % self.searchEngine)
         return isManualSearch
 
@@ -339,8 +360,9 @@ class ThemeItemDetails():
         self.trackLength = trackLength
         self.trackQuality = trackQuality
         self.albumname = albumname
-        
-        self.priority = None
+
+        # Start with a very low priority
+        self.priority = 100
 
     # Checks if the theme this points to is the same
     def __eq__(self, other):
@@ -351,6 +373,10 @@ class ThemeItemDetails():
 
     # lt defined for sorting order only
     def __lt__(self, other):
+        # Sort by priority first
+        if self.priority != other.priority:
+            return self.priority < other.priority
+
         # Order just on the name of the file
         return self.trackName < other.trackName
 
@@ -369,15 +395,14 @@ class ThemeItemDetails():
     # Get the display name that could include extra information
     def getDisplayString(self):
         displayRating = ""
-        if self.priority != None:
-            if self.priority == 1: # Top Priority
-                displayRating = '* '
-            elif self.priority == 2:
-                displayRating = '~ '
-            elif self.priority == 3:
-                displayRating = '+ '
-            elif self.priority == 4:
-                displayRating = '- '
+        if self.priority == 1: # Top Priority
+            displayRating = '* '
+        elif self.priority == 2:
+            displayRating = '~ '
+        elif self.priority == 3:
+            displayRating = '+ '
+        elif self.priority == 4:
+            displayRating = '- '
 
         return "%s%s%s%s" % (displayRating, self.getName(), self.trackLength, self.trackQuality)
 

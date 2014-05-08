@@ -3,6 +3,7 @@ v4.4.3
 - Move manual search to sub-list
 - Add setting to always prompt for search engine
 - Order themes if priority order
+- Add option to search using all sites
 
 v4.4.2
 - Fix issue with episode themes defaulting to TV Show themes directory
