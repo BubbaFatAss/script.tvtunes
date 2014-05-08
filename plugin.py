@@ -181,7 +181,10 @@ class MenuNavigator():
                     videoItem['thumbnail'] = item['thumbnail']
                 videoItem['fanart'] = item['fanart']
                 
-                videoItem['originaltitle'] = item['originaltitle']
+                if item.has_key('originaltitle'):
+                    videoItem['originaltitle'] = item['originaltitle']
+                else:
+                    videoItem['originaltitle'] = None
 
                 Videolist.append(videoItem)
         return Videolist
@@ -241,7 +244,7 @@ class MenuNavigator():
 
             normtitle = normalize_string(videoItem['title']).encode("utf-8")
             normOriginalTitle = None
-            if videoItem['originaltitle'] == None:
+            if videoItem['originaltitle'] != None:
                 normOriginalTitle = normalize_string(videoItem['originaltitle']).encode("utf-8")
             videoList.append([normtitle, path.encode("utf-8"), normOriginalTitle])
 

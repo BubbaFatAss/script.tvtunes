@@ -1,5 +1,10 @@
+v4.4.3
+- Improve progress dialog
+- Move manual search to sub-list
+- Add setting to always prompt for search engine
+- Order themes if priority order
+
 v4.4.2
-- Refine search options to reduce results returned for soundcloud and grooveshark
 - Fix issue with episode themes defaulting to TV Show themes directory
 - Fix for goear.com scraper
 - Add filter option to the Theme Browser to only show missing themes
