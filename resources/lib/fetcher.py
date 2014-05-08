@@ -1034,7 +1034,14 @@ class GoearListing(DefaultListing):
                 if trackNameTag == None:
                     continue
                 trackName = trackNameTag.string
-                
+
+                # Get the name of the group, artist or album
+                trackGroupNameTag = item.find('span', { "class" : "group" })
+                if trackGroupNameTag != None:
+                    groupName = trackGroupNameTag.string
+                else:
+                    groupName = None 
+
                 # Get the URL for the track
                 trackUrlTag = item.find('a')
                 if trackUrlTag == None:
@@ -1055,7 +1062,7 @@ class GoearListing(DefaultListing):
                 if trackQualityTag != None:
                     trackQuality = " (" + trackQualityTag.contents[0] + "kbps)"
     
-                themeScraperEntry = GoearThemeItemDetails(trackName, trackUrl, trackLength, trackQuality)
+                themeScraperEntry = GoearThemeItemDetails(trackName, trackUrl, trackLength, trackQuality, groupName)
                 themeList.append(themeScraperEntry)
                 log("GoearListing: Theme Details = %s" % themeScraperEntry.getDisplayString())
                 log("GoearListing: Theme URL = %s" % themeScraperEntry.getMediaURL() )
