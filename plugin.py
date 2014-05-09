@@ -148,6 +148,12 @@ class MenuNavigator():
                     continue
                 
                 li.setInfo('video', { 'PlayCount': 1 })
+            # Check the parent directory
+            elif Settings.isThemeDirEnabled() and self._doesThemeExist(path, True):
+                # The Theme directory is set, there is no theme in there
+                # but we have a theme that will play, so flag it
+                li.setProperty("ResumeTime", "50")
+                
             if videoItem['originaltitle'] != None:
                 url = self._build_url({'mode': 'findtheme', 'foldername': target, 'path': path.encode("utf-8"), 'title': videoItem['title'].encode("utf-8"), 'originaltitle': videoItem['originaltitle'].encode("utf-8")})
             else:
@@ -190,7 +196,7 @@ class MenuNavigator():
         return Videolist
 
     # Checks if a theme exists in a directory
-    def _doesThemeExist(self, directory):
+    def _doesThemeExist(self, directory, checkParent=False):
         log("doesThemeExist: Checking directory: %s" % directory)
         # Check for custom theme directory
         if Settings.isThemeDirEnabled():
@@ -209,6 +215,10 @@ class MenuNavigator():
                     themeDir = os_path_join(themeDir, Settings.getThemeDirectory())
             directory = themeDir
 
+        # Check to see if we need to check the parent directory
+        if checkParent:
+            directory = os_path_split( directory )[0]
+
         # check if the directory exists before searching
         if xbmcvfs.exists(directory):
             # Generate the regex
@@ -225,6 +235,7 @@ class MenuNavigator():
         if xbmcvfs.exists(nfoFileName):
             log("doesThemeExist: Found match: " + nfoFileName)
             return True
+        
         return False
 
     # Does a search for all the missing themes
@@ -235,11 +246,28 @@ class MenuNavigator():
 
         videoList = []
         
+        moveExistingThemes = None
+        
         for videoItem in (tvShows + movies + music):
             # Get the path where the theme should be stored
             path = self.getPathForVideoItem(videoItem)
             # Skip items that already have themes
             if self._doesThemeExist(path):
+                continue
+
+            if Settings.isThemeDirEnabled() and self._doesThemeExist(path, True):
+                if moveExistingThemes == None:
+                    # Prompt user if we should move themes in the parent
+                    # directory into the theme directory
+                    moveExistingThemes = xbmcgui.Dialog().yesno(__addon__.getLocalizedString(32105), 'You have themes that are not in themes folders.', 'Move themes into themes folder?')
+
+                # Check if we need to move a theme file
+                if moveExistingThemes:
+                    log("fetchAllMissingThemes: Moving theme for %s" % videoItem['title'])
+                    # Get the parent directory
+                    # TODO: Change dir sep + handle DBD Directory structure
+                    directory = os_path_split( path )[0] + '/'
+                    self._moveToThemeFolder(path)
                 continue
 
             normtitle = normalize_string(videoItem['title']).encode("utf-8")
@@ -251,6 +279,30 @@ class MenuNavigator():
         if len(videoList) > 0:
             TvTunesFetcher(videoList)
 
+    # Moves a theme that is not in a theme folder to a theme folder
+    def _moveToThemeFolder(self, directory):
+        log("moveToThemeFolder: path = %s" % directory)
+        dirs, files = list_dir( directory )
+        for aFile in files:
+            log("*** ROB ***: %s" % aFile)
+            m = re.search(Settings.getThemeFileRegEx(directory), aFile, re.IGNORECASE)
+            if m:
+                srcpath = os_path_join( directory, aFile )
+                log("fetchAllMissingThemes: Found match: %s" % srcpath)
+                targetpath = os_path_join( directory, Settings.getThemeDirectory() )
+                # Make sure the theme directory exists
+                if not xbmcvfs.exists(targetpath):
+                    try:
+                        xbmcvfs.mkdir(targetpath)
+                    except:
+                        log("fetchAllMissingThemes: Failed to create directory: %s" % targetpath )
+                        break
+                else:
+                    log("moveToThemeFolder: directory already exists %s" % targetpath)
+                # Add the filename to the path
+                targetpath = os_path_join( targetpath, aFile )
+                if not xbmcvfs.rename(srcpath, targetpath):
+                    log("moveToThemeFolder: Failed to move file from %s to %s" % (srcpath, targetpath))
 
     # Searches for the path from a video item
     def getPathForVideoItem(self, videoItem):

@@ -999,13 +999,12 @@ class TunesBackend( ):
                 # reset everything to highlight that nothing is playing
                 # Note: TvTunes is still running in this case, just not playing a theme
                 if (not self.isPlayingZone()) and (not isForcedTvTunesContinue):
-                    log( "TunesBackend: reinit condition" )
                     self.newThemeFiles.clear()
                     self.oldThemeFiles.clear()
                     self.prevThemeFiles.clear()
                     self.delayedStart.clear()
-                    log( "TunesBackend: end playing" )
                     if self.themePlayer.isPlaying() and TvTunesStatus.isAlive():
+                        log( "TunesBackend: end playing" )
                         self.themePlayer.endPlaying()
                     TvTunesStatus.setAliveState(False)
 
