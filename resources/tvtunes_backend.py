@@ -339,7 +339,7 @@ class ThemeFiles():
         fileExt = os.path.splitext( workingPath )[1]
         # If this is a file, then get it's parent directory
         if fileExt != None and fileExt != "":
-            workingPath = os.path.dirname(workingPath)
+            workingPath = os_path_split(workingPath)[0]
 
         # If the path currently ends in the directory separator
         # then we need to clear an extra one

@@ -238,6 +238,33 @@ class MenuNavigator():
         
         return False
 
+    # Fetch a single theme
+    def fetchTheme(self, title, path, originaltitle=None):
+        if Settings.isThemeDirEnabled() and self._doesThemeExist(path, True):
+            # Prompt user if we should move themes in the parent
+            # directory into the theme directory
+            moveExistingThemes = xbmcgui.Dialog().yesno(__addon__.getLocalizedString(32105), __addon__.getLocalizedString(32206), __addon__.getLocalizedString(32207))
+
+            # Check if we need to move a theme file
+            if moveExistingThemes:
+                log("fetchAllMissingThemes: Moving theme for %s" % title)
+                self._moveToThemeFolder(path)
+                # Now reload the screen to reflect the change
+                xbmc.executebuiltin("Container.Refresh")
+                return
+
+        if originaltitle != None:
+            originaltitle = normalize_string(originaltitle)
+        
+        # Perform the fetch
+        videoList = []
+        normtitle = normalize_string(title)
+        videoList.append([normtitle, path, originaltitle])
+        TvTunesFetcher(videoList)
+
+        # Now reload the screen to reflect the change
+        xbmc.executebuiltin("Container.Refresh")
+
     # Does a search for all the missing themes
     def fetchAllMissingThemes(self):
         tvShows = self.getVideos('GetTVShows', MenuNavigator.TVSHOWS)
@@ -259,14 +286,11 @@ class MenuNavigator():
                 if moveExistingThemes == None:
                     # Prompt user if we should move themes in the parent
                     # directory into the theme directory
-                    moveExistingThemes = xbmcgui.Dialog().yesno(__addon__.getLocalizedString(32105), 'You have themes that are not in themes folders.', 'Move themes into themes folder?')
+                    moveExistingThemes = xbmcgui.Dialog().yesno(__addon__.getLocalizedString(32105), __addon__.getLocalizedString(32206), __addon__.getLocalizedString(32207))
 
                 # Check if we need to move a theme file
                 if moveExistingThemes:
                     log("fetchAllMissingThemes: Moving theme for %s" % videoItem['title'])
-                    # Get the parent directory
-                    # TODO: Change dir sep + handle DBD Directory structure
-                    directory = os_path_split( path )[0] + '/'
                     self._moveToThemeFolder(path)
                 continue
 
@@ -282,6 +306,11 @@ class MenuNavigator():
     # Moves a theme that is not in a theme folder to a theme folder
     def _moveToThemeFolder(self, directory):
         log("moveToThemeFolder: path = %s" % directory)
+
+        # Handle the case where we have a disk image
+        if (os_path_split(directory)[1] == 'VIDEO_TS') or (os_path_split(directory)[1] == 'BDMV'):
+            directory = os_path_split( directory )[0]
+        
         dirs, files = list_dir( directory )
         for aFile in files:
             log("*** ROB ***: %s" % aFile)
@@ -319,7 +348,7 @@ class MenuNavigator():
             fileExt = os.path.splitext( path )[1]
             # If this is a file, then get it's parent directory
             if fileExt != None and fileExt != "":
-                path = os.path.dirname( path )
+                path = os_path_split( path )[0]
 
         return path
 
@@ -362,13 +391,11 @@ if __name__ == '__main__':
         originaltitle = args.get('originaltitle', None)
         
         if originaltitle != None:
-            originaltitle = normalize_string(originaltitle[0])
-        
+            originaltitle = originaltitle[0]
+
         # Perform the fetch
-        videoList = []
-        normtitle = normalize_string(title[0])
-        videoList.append([normtitle, path[0], originaltitle])
-        TvTunesFetcher(videoList)
+        menuNav = MenuNavigator(base_url, addon_handle)
+        menuNav.fetchTheme(title[0], path[0], originaltitle)
 
     elif mode[0] == 'filter':
         log("TvTunesPlugin: Mode is FILTER")
