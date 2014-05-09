@@ -313,7 +313,6 @@ class MenuNavigator():
         
         dirs, files = list_dir( directory )
         for aFile in files:
-            log("*** ROB ***: %s" % aFile)
             m = re.search(Settings.getThemeFileRegEx(directory), aFile, re.IGNORECASE)
             if m:
                 srcpath = os_path_join( directory, aFile )
