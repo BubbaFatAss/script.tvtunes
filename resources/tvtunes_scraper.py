@@ -138,7 +138,14 @@ class TvTunesScraper:
                 videoPath = os.path.dirname( videoPath )
 
         log("getSoloVideo: videoPath = %s" % videoPath )
-        return [normVideoName,videoPath.decode("utf-8"),originalTitle]
+        
+#         try:
+#             decodedPath = videoPath.decode("utf-8")
+#             videoPath = decodedPath
+#         except:
+#             pass
+        
+        return [normVideoName,videoPath,originalTitle]
 
 
     # Checks if a theme exists in a directory

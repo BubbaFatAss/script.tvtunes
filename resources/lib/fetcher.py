@@ -64,7 +64,10 @@ class TvTunesFetcher:
         self.searchEngine = Settings.getSearchEngine()
         
         if self.searchEngine == TvTunesFetcher.PROMPT:
-            self.promptForSearchEngine(False)
+            isManualSearch, engineSelected = self.promptForSearchEngine(False)
+            # Exit if no engine was selected
+            if engineSelected == None:
+                return
 
         # Now we have the list of programs to search for, perform the scan
         # The video list is in the format [videoName, Path, DisplayName]
@@ -112,7 +115,7 @@ class TvTunesFetcher:
         # show[0] = Title
         # show[1] = Path where the theme is to be stored
         # show[2] = Original Title (If set)
-        theme_list = self.searchThemeList( show[0], show[2], showProgressDialog )
+        theme_list = self.searchThemeList( show[0], show[2], manual=False, showProgressDialog=showProgressDialog )
         if (len(theme_list) == 1) and Settings.isExactMatchEnabled(): 
             theme_url = theme_list[0].getMediaURL()
         else:
@@ -204,7 +207,11 @@ class TvTunesFetcher:
             else:
                 if select == 0:
                     # Search using the alternative engine 
-                    isManualSearch = self.promptForSearchEngine()
+                    isManualSearch, engineSelected = self.promptForSearchEngine()
+                    
+                    # If no engine was selected, show the same list
+                    if engineSelected == None:
+                        continue
 
                     if isManualSearch:
                         # Manual search selected, prompt the user
@@ -328,7 +335,7 @@ class TvTunesFetcher:
         select = xbmcgui.Dialog().select((__language__(32120) % ""), displayList)
         if select == -1: 
             log("promptForSearchEngine: Cancelled by user")
-            return False
+            return False, None
         else:
             if (select == 0) or (select == 5):
                 self.searchEngine = TvTunesFetcher.TELEVISION_TUNES
@@ -346,7 +353,7 @@ class TvTunesFetcher:
                 isManualSearch = True
 
         log("promptForSearchEngine: New search engine is %s" % self.searchEngine)
-        return isManualSearch
+        return isManualSearch, self.searchEngine
 
 ###########################################################
 # Holds the details of each theme retrieved from a search
@@ -457,12 +464,13 @@ class ProgressDialog(DummyProgressDialog):
         self.progressDialog.update( int(percentageProgress), ("%s %s" % (__language__(32107), self.showTitle)), ' ')
 
     # Check if the user has cancelled the operation
-    def isUserCancelled(self):
+    def isUserCancelled(self, displayNotice=True):
         userCancelled = False
 
         if self.progressDialog.iscanceled():
             self.closeProgress()
-            xbmcgui.Dialog().ok(__language__(32108),__language__(32109))
+            if displayNotice:
+                xbmcgui.Dialog().ok(__language__(32108),__language__(32109),__language__(32115))
             userCancelled = True
         
         return userCancelled
@@ -525,7 +533,7 @@ class DefaultListing():
         lowPriorityAlternateTracks = []
         # If there is an alternative title for this movie or show then
         # search for that as well and merge the results
-        if (alternativeTitle != None) and (alternativeTitle != "") and not progressDialog.isUserCancelled():
+        if (alternativeTitle != None) and (alternativeTitle != "") and not progressDialog.isUserCancelled(False):
             # Note: No need to clean the title of things like brackets when comparing
             # the alternative title
             alternativeTracks = self._search(alternativeTitle, progressDialog)
@@ -937,14 +945,14 @@ class GoearListing(DefaultListing):
         # Perform the search using the supplied URL
         themeDetailsList = self._doSearch(fullUrl, progressDialog, progressDivisor)
 
-        if unicodeFullUrl:
-            unicodeThemeList = self._doSearch(unicodeFullUrl, progressDialog, progressDivisor)
+        if unicodeFullUrl and not progressDialog.isUserCancelled(False):
+            unicodeThemeList = self._doSearch(unicodeFullUrl, progressDialog, progressDivisor, startpercentage=50)
             themeDetailsList = self.mergeThemeLists(themeDetailsList, unicodeThemeList)
 
         return themeDetailsList
 
     # Perform the search for the theme
-    def _doSearch(self, searchURL, progressDialog, progressDivisor=1):
+    def _doSearch(self, searchURL, progressDialog, progressDivisor=1, startpercentage=0):
         log("GoearListing: Performing doSearch for %s" % searchURL)
         
         themeList = [ ]
@@ -953,7 +961,11 @@ class GoearListing(DefaultListing):
 
         # Loop until we do not get any entries for the given page        
         while (len(lastThemeBatch) > 0) and (nextPageIndex < 40):
-            progressDialog.updateProgress((nextPageIndex*2)/progressDivisor)
+            # Check if the user has reqested the operation to be cancelled
+            if progressDialog.isUserCancelled():
+                break
+
+            progressDialog.updateProgress(((nextPageIndex*2)/progressDivisor) + startpercentage)
             
             # Reset the themes to none
             lastThemeBatch = []
@@ -974,7 +986,7 @@ class GoearListing(DefaultListing):
             nextPageIndex = nextPageIndex + 1
 
         # Make sure this searches progress is at 100%
-        progressDialog.updateProgress(100/progressDivisor)
+        progressDialog.updateProgress((100/progressDivisor) + startpercentage)
 
         return themeList
 
@@ -1045,6 +1057,11 @@ class GoearListing(DefaultListing):
         
         themeList = []
         
+        # Make sure the list is set to something
+        if (searchResults == None) or (searchResults.contents == None):
+            log("GoearListing: Unexpected return results of None")
+            return themeList
+        
         # Check out each item in the search results list
         for item in searchResults.contents:
             # Just in case there is a problem reading the page, or a single entry
@@ -1071,6 +1088,11 @@ class GoearListing(DefaultListing):
                 trackUrlTag = item.find('a')
                 if trackUrlTag == None:
                     continue
+                
+                # Make sure there is a valid link
+                if not trackUrlTag.has_key('href'):
+                    continue
+
                 trackUrl = trackUrlTag['href']
     
                 # Get the length of the track
