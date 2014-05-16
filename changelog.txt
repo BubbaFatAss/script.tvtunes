@@ -1,3 +1,6 @@
+v4.4.4
+- Make sure there is only one username/password in smb shares
+
 v4.4.3
 - Improve progress dialog
 - Move manual search to sub-list

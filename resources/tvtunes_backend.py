@@ -318,7 +318,7 @@ class ThemeFiles():
         if workingPath.startswith("stack://"):
             workingPath = workingPath.replace("stack://", "").split(" , ", 1)[0]
         
-        if Settings.isSmbEnabled():
+        if Settings.isSmbEnabled() and not ('@' in workingPath):
             if workingPath.startswith("smb://"):
                 log( "### Try authentication share" )
                 workingPath = workingPath.replace("smb://", "smb://%s:%s@" % (Settings.getSmbUser(), Settings.getSmbPassword()) )
