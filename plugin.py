@@ -38,7 +38,7 @@ from settings import list_dir
 from settings import normalize_string
 
 from themeFetcher import TvTunesFetcher
-from finder import ThemeFiles
+from themeFinder import ThemeFiles
 
 
 ###################################################################
