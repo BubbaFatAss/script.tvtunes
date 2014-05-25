@@ -30,6 +30,11 @@ def normalize_string( text ):
 # There has been problems with calling join with non ascii characters,
 # so we have this method to try and do the conversion for us
 def os_path_join( dir, file ):
+    # Check if it ends in a slash
+    if dir.endswith("/") or dir.endswith("\\"):
+        # Remove the slash character
+        dir = dir[:-1]
+
     # Convert each argument - if an error, then it will use the default value
     # that was passed in
     try:
