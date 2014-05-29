@@ -151,7 +151,7 @@ msgid "ERROR"
 msgstr ""
 
 msgctxt "#32102"
-msgid "site unreacheable"
+msgid "site unreachable"
 msgstr ""
 
 msgctxt "#32103"

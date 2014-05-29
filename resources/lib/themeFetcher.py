@@ -843,6 +843,9 @@ class TelevisionTunesListing(DefaultListing):
 
             # Get the HTMl at the given URL
             data = self._getHtmlSource( url + urlpage )
+            # Check for an error occuring in the fetch from the web
+            if data == None:
+                break
             log("TelevisionTunesListing: Search url = %s" % ( url + urlpage ) )
             # Search the HTML for the links to the themes
             match = re.search(r"1\.&nbsp;(.*)<br>", data)
@@ -901,7 +904,7 @@ class TelevisionTunesListing(DefaultListing):
             log("getHtmlSource: ERROR opening page %s" % url )
             log("getHtmlSource: %s" % traceback.format_exc())
             xbmcgui.Dialog().ok(__language__(32101) , __language__(32102))
-            return False
+            return None
 
     # Gets the URL to stream and download from
     def _getMediaURL(self, themeURL):
