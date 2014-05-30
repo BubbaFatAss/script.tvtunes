@@ -9,12 +9,12 @@ __addonid__   = __addon__.getAddonInfo('id')
 
 
 # Common logging module
-def log(txt, debug_logging_enabled=True):
-    if (__addon__.getSetting( "logEnabled" ) == "true") and debug_logging_enabled:
+def log(txt, debug_logging_enabled=True, loglevel=xbmc.LOGDEBUG):
+    if ((__addon__.getSetting( "logEnabled" ) == "true") and debug_logging_enabled) or (loglevel != xbmc.LOGDEBUG):
         if isinstance (txt,str):
             txt = txt.decode("utf-8")
         message = u'%s: %s' % (__addonid__, txt)
-        xbmc.log(msg=message.encode("utf-8"), level=xbmc.LOGDEBUG)
+        xbmc.log(msg=message.encode("utf-8"), level=loglevel)
 
 def normalize_string( text ):
     try:
