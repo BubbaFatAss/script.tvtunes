@@ -1057,7 +1057,7 @@ class GoearListing(DefaultListing):
                 if trackNameTag is None:
                     continue
                 trackName = trackNameTag.string
-                
+
                 # Get the name of the group, artist or album
                 trackGroupNameTag = item.find('span', {"class": "group"})
                 if trackGroupNameTag is not None:
