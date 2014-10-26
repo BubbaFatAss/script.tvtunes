@@ -13,7 +13,7 @@ import math
 
 # Following includes required for GoEar support
 import urllib2
-from BeautifulSoup import BeautifulSoup
+from bs4 import BeautifulSoup
 import HTMLParser
 
 
