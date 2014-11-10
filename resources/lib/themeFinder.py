@@ -31,6 +31,7 @@ from settings import log
 from settings import os_path_join
 from settings import os_path_split
 from settings import list_dir
+from settings import dir_exists
 
 
 #############################################
@@ -419,7 +420,7 @@ class ThemeFiles():
         log("ThemeFiles: Searching %s for %s" % (directory, Settings.getThemeFileRegEx(directory, extensionOnly)), self.debug_logging_enabled)
 
         # check if the directory exists before searching
-        if xbmcvfs.exists(directory):
+        if dir_exists(directory):
             dirs, files = list_dir(directory)
             for aFile in files:
                 m = re.search(Settings.getThemeFileRegEx(directory, extensionOnly), aFile, re.IGNORECASE)

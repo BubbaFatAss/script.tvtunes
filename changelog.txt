@@ -1,5 +1,6 @@
 v4.5.0
 - Update to BeautifulSoup 4
+- Update directory existence check for Helix
 
 v4.4.9
 - Fix issue with searching for themes with no progress dialog

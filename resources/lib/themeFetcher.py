@@ -13,7 +13,7 @@ import math
 
 # Following includes required for GoEar support
 import urllib2
-from bs4 import BeautifulSoup
+from BeautifulSoup import BeautifulSoup
 import HTMLParser
 
 
@@ -33,6 +33,7 @@ from settings import Settings
 from settings import log
 from settings import os_path_join
 from settings import os_path_split
+from settings import dir_exists
 
 import soundcloud
 from grooveshark import Client
@@ -51,9 +52,9 @@ class TvTunesFetcher:
 
     def __init__(self, videoList):
         # Set up the addon directories if they do not already exist
-        if not xbmcvfs.exists(xbmc.translatePath('special://profile/addon_data/%s' % __addonid__).decode("utf-8")):
+        if not dir_exists(xbmc.translatePath('special://profile/addon_data/%s' % __addonid__).decode("utf-8")):
             xbmcvfs.mkdir(xbmc.translatePath('special://profile/addon_data/%s' % __addonid__).decode("utf-8"))
-        if not xbmcvfs.exists(xbmc.translatePath('special://profile/addon_data/%s/temp' % __addonid__).decode("utf-8")):
+        if not dir_exists(xbmc.translatePath('special://profile/addon_data/%s/temp' % __addonid__).decode("utf-8")):
             xbmcvfs.mkdir(xbmc.translatePath('special://profile/addon_data/%s/temp' % __addonid__).decode("utf-8"))
 
         # Get the currently selected search engine
@@ -131,7 +132,7 @@ class TvTunesFetcher:
         # Check for custom theme directory
         if Settings.isThemeDirEnabled():
             themeDir = os_path_join(path, Settings.getThemeDirectory())
-            if not xbmcvfs.exists(themeDir):
+            if not dir_exists(themeDir):
                 workingPath = path
                 # If the path currently ends in the directory separator
                 # then we need to clear an extra one
@@ -159,7 +160,7 @@ class TvTunesFetcher:
             def _report_hook(count, blocksize, totalsize):
                 percent = int(float(count * blocksize * 100) / totalsize)
                 downloadProgressDialog.update(percent, __language__(32110) + ' ' + theme_url, __language__(32111) + ' ' + destination)
-            if not xbmcvfs.exists(path):
+            if not dir_exists(path):
                 try:
                     xbmcvfs.mkdir(path)
                 except:

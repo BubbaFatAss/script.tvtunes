@@ -5,8 +5,6 @@ import re
 import xbmc
 import xbmcaddon
 import xbmcgui
-import xbmcvfs
-
 
 __addon__ = xbmcaddon.Addon(id='script.tvtunes')
 __addonid__ = __addon__.getAddonInfo('id')
@@ -26,6 +24,7 @@ from settings import os_path_join
 from settings import os_path_split
 from settings import list_dir
 from settings import normalize_string
+from settings import dir_exists
 
 from themeFetcher import TvTunesFetcher
 
@@ -153,7 +152,7 @@ class TvTunesScraper:
         if Settings.isThemeDirEnabled():
             themeDir = os_path_join(directory, Settings.getThemeDirectory())
             # Check if this directory exists
-            if not xbmcvfs.exists(themeDir):
+            if not dir_exists(themeDir):
                 workingPath = directory
                 # If the path currently ends in the directory separator
                 # then we need to clear an extra one
@@ -167,7 +166,7 @@ class TvTunesScraper:
             directory = themeDir
 
         # check if the directory exists before searching
-        if xbmcvfs.exists(directory):
+        if dir_exists(directory):
             # Generate the regex
             themeFileRegEx = Settings.getThemeFileRegEx()
 
