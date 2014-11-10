@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import sys
 import urllib
 import os
 import re
@@ -13,7 +12,7 @@ import math
 
 # Following includes required for GoEar support
 import urllib2
-from BeautifulSoup import BeautifulSoup
+from bs4 import BeautifulSoup
 import HTMLParser
 
 
@@ -21,12 +20,6 @@ __addon__ = xbmcaddon.Addon(id='script.tvtunes')
 __addonid__ = __addon__.getAddonInfo('id')
 __language__ = __addon__.getLocalizedString
 __icon__ = __addon__.getAddonInfo('icon')
-__cwd__ = __addon__.getAddonInfo('path').decode("utf-8")
-__resource__ = xbmc.translatePath(os.path.join(__cwd__, 'resources').encode("utf-8")).decode("utf-8")
-__lib__ = xbmc.translatePath(os.path.join(__resource__, 'lib').encode("utf-8")).decode("utf-8")
-
-sys.path.append(__resource__)
-sys.path.append(__lib__)
 
 # Import the common settings
 from settings import Settings
