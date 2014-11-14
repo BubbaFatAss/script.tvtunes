@@ -54,10 +54,10 @@
         <setting id="screensaver_starwars_speed" label="32050" visible="eq(-9,1)" subsetting="true" type="slider" default="1" range="0.25,0.25,3.0" option="float"/>
 
         <setting id="screensaver_random_order" type="bool" label="32052" default="true"/>
-        <setting id="screensaver_source" type="enum" label="32053" lvalues="32201|32055|32202" default="0"/>
-        <setting id="screensaver_prop" type="enum" label="32054" visible="eq(-1,0)|eq(-1,2)|eq(-1,3)" subsetting="true" lvalues="32057|32058" default="0"/>
-        <setting id="screensaver_image_path" type="folder" source="pictures" label="32055" visible="eq(-2,1)" subsetting="true" default=""/>
-        <setting id="screensaver_recursive" type="bool" label="32056" visible="eq(-3,1)" subsetting="true" default="true"/>
+        <setting id="screensaver_source" type="enum" label="32053" lvalues="32060|32201|32202|32055" default="0"/>
+        <setting id="screensaver_image_type" type="enum" label="32054" visible="eq(-1,0)|eq(-1,1)|eq(-1,2)" subsetting="true" lvalues="32060|32057|32058|32059" default="0"/>
+        <setting id="screensaver_image_path" type="folder" source="pictures" label="32055" visible="eq(-2,3)" subsetting="true" default=""/>
+        <setting id="screensaver_recursive" type="bool" label="32056" visible="eq(-3,3)" subsetting="true" default="true"/>
     </category>
 
 </settings>

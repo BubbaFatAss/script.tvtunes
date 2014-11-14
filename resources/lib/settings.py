@@ -342,16 +342,19 @@ class ScreensaverSettings():
         'RandomZoomIn',
         'AppleTVLike',
         'GridSwitch',
-        'Random',
+        'Random'
     )
     SOURCES = (
+        'all',
         'movies',
-        'image_folder',
         'tvshows',
+        'image_folder'
     )
-    PROPS = (
+    IMAGE_TYPES = (
+        'all',
         'fanart',
         'thumbnail',
+        'cast'
     )
 
     @staticmethod
@@ -367,15 +370,31 @@ class ScreensaverSettings():
 
     @staticmethod
     def getSource():
-        if __addon__.getSetting("screensaver_source"):
-            return ScreensaverSettings.SOURCES[int(__addon__.getSetting("screensaver_source"))]
+        selectedSource = __addon__.getSetting("screensaver_source")
+        if selectedSource:
+            sourceId = int(selectedSource)
+            if sourceId == 0:
+                return ['movies', 'tvshows']
+            else:
+                return [ScreensaverSettings.SOURCES[sourceId]]
         else:
-            return 'movies'
+            return ['movies', 'tvshows']
 
     @staticmethod
-    def getProps():
-        if __addon__.getSetting("screensaver_prop"):
-            return ScreensaverSettings.PROPS[int(__addon__.getSetting("screensaver_prop"))]
+    def getImageTypes():
+        imageTypes = __addon__.getSetting("screensaver_image_type")
+        if imageTypes:
+            imageTypeId = int(imageTypes)
+            if imageTypeId == 0:
+                return ['fanart', 'thumbnail', 'cast']
+            else:
+                return [ScreensaverSettings.IMAGE_TYPES[imageTypeId]]
+        else:
+            return ['fanart', 'thumbnail', 'cast']
+
+        
+        if __addon__.getSetting("screensaver_image_type"):
+            return ScreensaverSettings.PROPS[int(__addon__.getSetting("screensaver_image_type"))]
         else:
             return 'fanart'
 

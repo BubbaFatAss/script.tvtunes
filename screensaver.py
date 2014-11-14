@@ -88,32 +88,31 @@ class ScreensaverBase(object):
     FAST_IMAGE_COUNT = 0
     NEXT_IMAGE_TIME = 2000
     BACKGROUND_IMAGE = MediaFiles.BLACK_IMAGE
-
+    
     def __init__(self):
         log('Screensaver: __init__ start')
         self.exit_requested = False
-        self.background_control = None
-        self.preload_control = None
+
+        # Set up all the required controls for the window
+        self.loading_control = xbmcgui.ControlImage(576, 296, 128, 128, MediaFiles.LOADING_IMAGE)
+        self.background_control = xbmcgui.ControlImage(0, 0, 1280, 720, '')
+        self.preload_control = xbmcgui.ControlImage(-1, -1, 1, 1, '')
+        self.global_controls = [self.preload_control, self.background_control, self.loading_control]
+
+
         self.image_count = 0
         self.image_controls = []
-        self.global_controls = []
         self.exit_monitor = ExitMonitor(self.stop)
         self.xbmc_window = ScreensaverWindow(self.stop)
         self.xbmc_window.show()
-        self.init_global_controls()
+
+        # Add all the controls to the window
+        self.xbmc_window.addControls(self.global_controls)
+
         self.load_settings()
         self.init_cycle_controls()
         self.stack_cycle_controls()
         log('Screensaver: __init__ end')
-
-    def init_global_controls(self):
-        log('Screensaver: init_global_controls start')
-        self.loading_control = xbmcgui.ControlImage(576, 296, 128, 128, MediaFiles.LOADING_IMAGE)
-        self.preload_control = xbmcgui.ControlImage(-1, -1, 1, 1, '')
-        self.background_control = xbmcgui.ControlImage(0, 0, 1280, 720, '')
-        self.global_controls = [self.preload_control, self.background_control, self.loading_control]
-        self.xbmc_window.addControls(self.global_controls)
-        log('Screensaver: init_global_controls end')
 
     def load_settings(self):
         pass
@@ -137,19 +136,19 @@ class ScreensaverBase(object):
         images = self.get_images()
         if ScreensaverSettings.getRandomOrder():
             random.shuffle(images)
-        image_url_cycle = self._cycle(images)
+        image_details_cycle = self._cycle(images)
         image_controls_cycle = self._cycle(self.image_controls)
         self.hide_loading_indicator()
-        image_url = image_url_cycle.next()
+        imageDetails = image_details_cycle.next()
         while not self.exit_requested:
-            log('Screensaver: using image: %s' % repr(image_url))
+            log('Screensaver: using image: %s' % repr(imageDetails['file']))
             image_control = image_controls_cycle.next()
-            self.process_image(image_control, image_url)
-            image_url = image_url_cycle.next()
+            self.process_image(image_control, imageDetails)
+            imageDetails = image_details_cycle.next()
             if self.image_count < self.FAST_IMAGE_COUNT:
                 self.image_count += 1
             else:
-                self.preload_image(image_url)
+                self.preload_image(imageDetails['file'])
                 self.wait()
         log('Screensaver: start_loop end')
 
@@ -162,35 +161,53 @@ class ScreensaverBase(object):
             for element in saved:
                 yield element
 
+    # Gets the set of images that are going to be used
     def get_images(self):
         log('Screensaver: get_images')
-        self.image_aspect_ratio = 16.0 / 9.0
         source = ScreensaverSettings.getSource()
-        prop = ScreensaverSettings.getProps()
+        imageTypes = ScreensaverSettings.getImageTypes()
+
         images = []
-        if source == 'movies':
-            images = self._getJsonImages('VideoLibrary.GetMovies', 'movies', prop)
-        elif source == 'tvshows':
-            images = self._getJsonImages('VideoLibrary.GetTVShows', 'tvshows', prop)
-        elif source == 'image_folder':
+        if 'movies' in source:
+            images.extend(self._getJsonImages('VideoLibrary.GetMovies', 'movies', imageTypes))
+        if 'tvshows' in source:
+            images.extend(self._getJsonImages('VideoLibrary.GetTVShows', 'tvshows', imageTypes))
+        if 'image_folder' in source:
             path = ScreensaverSettings.getImagePath()
             if path:
-                images = self._getFolderImages(path)
+                images.extend(self._getFolderImages(path))
         if not images:
-            cmd = 'XBMC.Notification("{0}", "{1}")'.format(__addon__.getLocalizedString(32995), __addon__.getLocalizedString(32996))
+            cmd = 'XBMC.Notification("{0}", "{1}")'.format(__addon__.getLocalizedString(32101), __addon__.getLocalizedString(32995))
             xbmc.executebuiltin(cmd)
-            images = (self._getJsonImages('VideoLibrary.GetMovies', 'movies', 'fanart'))
-        if not images:
             raise NoImagesException
         return images
 
-    def _getJsonImages(self, method, key, prop):
+    # Makes a JSON call to get the images for a given category
+    def _getJsonImages(self, method, key, imageTypes):
         log("Screensaver: getJsonImages for %s" % key)
-        query = {'jsonrpc': '2.0', 'id': 0, 'method': method, 'params': {'properties': [prop], }}
+        query = {'jsonrpc': '2.0', 'id': 0, 'method': method, 'params': {'properties': imageTypes}}
         response = json.loads(xbmc.executeJSONRPC(json.dumps(query)))
-        images = [element[prop] for element
-                  in response.get('result', {}).get(key, [])
-                  if element.get(prop)]
+
+        images = []
+        if ('result' in response) and (key in response['result']):
+            for item in response['result'][key]:
+                for prop in imageTypes:
+                    if prop in item:
+                        # If we are dealing with fanart or thumbnail, then we can just store this value
+                        if prop in ['fanart']:
+                            # Set the aspect radio based on the type of image being shown
+                            imageDetails = {'file': item[prop], 'aspect_ratio': 16.0 / 9.0 }
+                            images.append(imageDetails)
+                        elif prop in ['thumbnail']:
+                            imageDetails = {'file': item[prop], 'aspect_ratio': 2.0 / 3.0 }
+                            images.append(imageDetails)
+                        elif prop in ['cast']:
+                            log("prop is cast")
+                            # If this cast member has an image, add it to the array
+                            for castItem in item['cast']:
+                                if 'thumbnail' in castItem:
+                                    imageDetails = {'file': castItem['thumbnail'], 'aspect_ratio': 2.0 / 3.0 }
+                                    images.append(imageDetails)
         log("Screensaver: Found %d images for %s" % (len(images), key))
         return images
 
@@ -212,7 +229,7 @@ class ScreensaverBase(object):
         self.background_control.setAnimations([('conditional', 'effect=fade start=0 end=100 time=500 delay=500 condition=true')])
         self.background_control.setImage(self.BACKGROUND_IMAGE)
 
-    def process_image(self, image_control, image_url):
+    def process_image(self, image_control, imageDetails):
         # Needs to be implemented in sub class
         raise NotImplementedError
 
@@ -264,13 +281,13 @@ class TableDropScreensaver(ScreensaverBase):
     IMAGE_CONTROL_COUNT = 20
     FAST_IMAGE_COUNT = 0
     NEXT_IMAGE_TIME = 1500
-    MIN_WIDTH = 500
-    MAX_WIDTH = 700
+    MIN_WIDEST_DIMENSION = 500
+    MAX_WIDEST_DIMENSION = 700
 
     def load_settings(self):
         self.NEXT_IMAGE_TIME = ScreensaverSettings.getTableDropWait()
 
-    def process_image(self, image_control, image_url):
+    def process_image(self, image_control, imageDetails):
         ROTATE_ANIMATION = ('effect=rotate start=0 end=%d center=auto time=%d delay=0 tween=circle condition=true')
         DROP_ANIMATION = ('effect=zoom start=%d end=100 center=auto time=%d delay=0 tween=circle condition=true')
         FADE_ANIMATION = ('effect=fade start=0 end=100 time=200 condition=true')
@@ -281,8 +298,13 @@ class TableDropScreensaver(ScreensaverBase):
         self.xbmc_window.removeControl(image_control)
         self.xbmc_window.addControl(image_control)
         # calculate all parameters and properties
-        width = random.randint(self.MIN_WIDTH, self.MAX_WIDTH)
-        height = int(width / self.image_aspect_ratio)
+        # check if wider or taller, then set the dimensions from that
+        if imageDetails['aspect_ratio'] < 1.0:
+            height = random.randint(self.MIN_WIDEST_DIMENSION, self.MAX_WIDEST_DIMENSION)
+            width = int(height * imageDetails['aspect_ratio'])
+        else:
+            width = random.randint(self.MIN_WIDEST_DIMENSION, self.MAX_WIDEST_DIMENSION)
+            height = int(width / imageDetails['aspect_ratio'])
         x_position = random.randint(0, 1280 - width)
         y_position = random.randint(0, 720 - height)
         drop_height = random.randint(400, 800)
@@ -293,7 +315,7 @@ class TableDropScreensaver(ScreensaverBase):
                       ('conditional', ROTATE_ANIMATION % (rotation_degrees, rotation_duration)),
                       ('conditional', DROP_ANIMATION % (drop_height, drop_duration))]
         # set all parameters and properties
-        image_control.setImage(image_url)
+        image_control.setImage(imageDetails['file'])
         image_control.setPosition(x_position, y_position)
         image_control.setWidth(width)
         image_control.setHeight(height)
@@ -313,7 +335,7 @@ class StarWarsScreensaver(ScreensaverBase):
         self.EFFECT_TIME = 9000.0 / self.SPEED
         self.NEXT_IMAGE_TIME = self.EFFECT_TIME / 7.6
 
-    def process_image(self, image_control, image_url):
+    def process_image(self, image_control, imageDetails):
         TILT_ANIMATION = ('effect=rotatex start=0 end=55 center=auto time=0 condition=true')
         MOVE_ANIMATION = ('effect=slide start=0,1280 end=0,-2560 time=%d tween=linear condition=true')
         # hide the image
@@ -334,7 +356,7 @@ class StarWarsScreensaver(ScreensaverBase):
         image_control.setWidth(width)
         image_control.setHeight(height)
         image_control.setAnimations(animations)
-        image_control.setImage(image_url)
+        image_control.setImage(imageDetails['file'])
         # show the image
         image_control.setVisible(True)
 
@@ -349,7 +371,7 @@ class RandomZoomInScreensaver(ScreensaverBase):
         self.NEXT_IMAGE_TIME = ScreensaverSettings.getRandonZoomWait()
         self.EFFECT_TIME = ScreensaverSettings.getRandonZoomEffect()
 
-    def process_image(self, image_control, image_url):
+    def process_image(self, image_control, imageDetails):
         ZOOM_ANIMATION = ('effect=zoom start=1 end=100 center=%d,%d time=%d tween=quadratic condition=true')
         # hide the image
         image_control.setVisible(False)
@@ -366,7 +388,7 @@ class RandomZoomInScreensaver(ScreensaverBase):
         zoom_y = random.randint(0, 720)
         animations = [('conditional', ZOOM_ANIMATION % (zoom_x, zoom_y, self.EFFECT_TIME))]
         # set all parameters and properties
-        image_control.setImage(image_url)
+        image_control.setImage(imageDetails['file'])
         image_control.setPosition(x_position, y_position)
         image_control.setWidth(width)
         image_control.setHeight(height)
@@ -406,7 +428,7 @@ class AppleTVLikeScreensaver(ScreensaverBase):
         self.xbmc_window.addControls(self.image_controls)
         random.shuffle(self.image_controls)
 
-    def process_image(self, image_control, image_url):
+    def process_image(self, image_control, imageDetails):
         MOVE_ANIMATION = ('effect=slide start=0,720 end=0,-720 center=auto time=%s tween=linear delay=0 condition=true')
         image_control.setVisible(False)
         image_control.setImage('')
@@ -415,7 +437,10 @@ class AppleTVLikeScreensaver(ScreensaverBase):
         # to be added to the window in size order.
         width = image_control.getWidth()
         zoom = width * 100 / 1280
-        height = int(width / self.image_aspect_ratio)
+        if imageDetails['aspect_ratio'] < 1:
+            height = int(width * imageDetails['aspect_ratio'])
+        else:
+            height = int(width / imageDetails['aspect_ratio'])
         # let images overlap max 1/2w left or right
         center = random.randint(0, 1280)
         x_position = center - width / 2
@@ -425,7 +450,7 @@ class AppleTVLikeScreensaver(ScreensaverBase):
 
         animations = [('conditional', MOVE_ANIMATION % time)]
         # set all parameters and properties
-        image_control.setImage(image_url)
+        image_control.setImage(imageDetails['file'])
         image_control.setPosition(x_position, y_position)
         image_control.setWidth(width)
         image_control.setHeight(height)
@@ -467,13 +492,13 @@ class GridSwitchScreensaver(ScreensaverBase):
         if self.RANDOM_ORDER:
             random.shuffle(self.image_controls)
 
-    def process_image(self, image_control, image_url):
+    def process_image(self, image_control, imageDetails):
         if not self.image_count < self.FAST_IMAGE_COUNT:
             FADE_OUT_ANIMATION = ('effect=fade start=100 end=0 time=%d condition=true' % self.EFFECT_TIME)
             animations = [('conditional', FADE_OUT_ANIMATION)]
             image_control.setAnimations(animations)
             xbmc.sleep(self.EFFECT_TIME)
-        image_control.setImage(image_url)
+        image_control.setImage(imageDetails['file'])
         FADE_IN_ANIMATION = ('effect=fade start=0 end=100 time=%d condition=true' % self.EFFECT_TIME)
         animations = [('conditional', FADE_IN_ANIMATION)]
         image_control.setAnimations(animations)

@@ -201,7 +201,7 @@ msgid "Image Source"
 msgstr ""
 
 msgctxt "#32054"
-msgid "Property"
+msgid "Image Type"
 msgstr ""
 
 msgctxt "#32055"
@@ -218,6 +218,14 @@ msgstr ""
 
 msgctxt "#32058"
 msgid "Thumbnail"
+msgstr ""
+
+msgctxt "#32059"
+msgid "Cast"
+msgstr ""
+
+msgctxt "#32060"
+msgid "All"
 msgstr ""
 
 #empty strings from id 32030 to 32100
@@ -358,8 +366,4 @@ msgstr ""
 
 msgctxt "#32995"
 msgid "No Images found!"
-msgstr ""
-
-msgctxt "#32996"
-msgid "Using Fallback Movie Fanart"
 msgstr ""
