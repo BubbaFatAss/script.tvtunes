@@ -17,8 +17,8 @@ __addon__ = xbmcaddon.Addon(id='script.tvtunes')
 __cwd__ = __addon__.getAddonInfo('path').decode("utf-8")
 __resource__ = xbmc.translatePath(os.path.join(__cwd__, 'resources').encode("utf-8")).decode("utf-8")
 __lib__ = xbmc.translatePath(os.path.join(__resource__, 'lib').encode("utf-8")).decode("utf-8")
+__media__ = xbmc.translatePath(os.path.join(__resource__, 'media').encode("utf-8")).decode("utf-8")
 
-sys.path.append(__resource__)
 sys.path.append(__lib__)
 
 
@@ -30,46 +30,64 @@ class NoImagesException(Exception):
     pass
 
 
+# Class used to create the correct type of screensaver class
 class ScreensaverManager(object):
-
+    # Creates the correct type of Screensaver class
     def __new__(cls):
         mode = ScreensaverSettings.getMode()
         if mode == 'Random':
+            # Just choose one of the options at random from everything that
+            # extends the base screensaver
             subcls = random.choice(ScreensaverBase.__subclasses__())
             return subcls()
+        # Find out which screensaver format is selected
         for subcls in ScreensaverBase.__subclasses__():
             if subcls.MODE == mode:
                 return subcls()
         raise ValueError('Not a valid ScreensaverBase subclass: %s' % mode)
 
 
+# Monitor class to handle events like the screensaver deactivating
 class ExitMonitor(xbmc.Monitor):
-
+    # Create the monitor passing in the method to call when we want to exit
+    # and stop the screensaver
     def __init__(self, exit_callback):
         self.exit_callback = exit_callback
 
+    # Called when the screensaver should be stopped
     def onScreensaverDeactivated(self):
+        # Make the callback to stop the screensaver
         self.exit_callback()
 
 
+# The Dialog used to display the screensaver in
 class ScreensaverWindow(xbmcgui.WindowDialog):
-
+    # Create the Dialog, giving the method to call when it is exited
     def __init__(self, exit_callback):
         self.exit_callback = exit_callback
 
+    # Handle the action to exit the screensaver
     def onAction(self, action):
         action_id = action.getId()
         if action_id in [9, 10, 13, 92]:
             self.exit_callback()
 
 
-class ScreensaverBase(object):
+# Class to hold all of the media files used that are stored in the addon
+class MediaFiles(object):
+    LOADING_IMAGE = os.path.join(__media__, 'loading.gif')
+    BLACK_IMAGE = os.path.join(__media__, 'black.jpg')
+    STARS_IMAGE = os.path.join(__media__, 'stars.jpg')
+    TABLE_IMAGE = os.path.join(__media__, 'table.jpg')
 
+
+# Base Screensaver class that handles all of the operations for a screensaver
+class ScreensaverBase(object):
     MODE = None
     IMAGE_CONTROL_COUNT = 10
     FAST_IMAGE_COUNT = 0
     NEXT_IMAGE_TIME = 2000
-    BACKGROUND_IMAGE = 'black.jpg'
+    BACKGROUND_IMAGE = MediaFiles.BLACK_IMAGE
 
     def __init__(self):
         log('Screensaver: __init__ start')
@@ -90,15 +108,10 @@ class ScreensaverBase(object):
 
     def init_global_controls(self):
         log('Screensaver: init_global_controls start')
-        loading_img = xbmc.validatePath('/'.join((
-            __cwd__, 'resources', 'media', 'loading.gif'
-        )))
-        self.loading_control = xbmcgui.ControlImage(576, 296, 128, 128, loading_img)
+        self.loading_control = xbmcgui.ControlImage(576, 296, 128, 128, MediaFiles.LOADING_IMAGE)
         self.preload_control = xbmcgui.ControlImage(-1, -1, 1, 1, '')
         self.background_control = xbmcgui.ControlImage(0, 0, 1280, 720, '')
-        self.global_controls = [
-            self.preload_control, self.background_control, self.loading_control
-        ]
+        self.global_controls = [self.preload_control, self.background_control, self.loading_control]
         self.xbmc_window.addControls(self.global_controls)
         log('Screensaver: init_global_controls end')
 
@@ -124,8 +137,8 @@ class ScreensaverBase(object):
         images = self.get_images()
         if ScreensaverSettings.getRandomOrder():
             random.shuffle(images)
-        image_url_cycle = cycle(images)
-        image_controls_cycle = cycle(self.image_controls)
+        image_url_cycle = self._cycle(images)
+        image_controls_cycle = self._cycle(self.image_controls)
         self.hide_loading_indicator()
         image_url = image_url_cycle.next()
         while not self.exit_requested:
@@ -140,6 +153,15 @@ class ScreensaverBase(object):
                 self.wait()
         log('Screensaver: start_loop end')
 
+    def _cycle(self, iterable):
+        saved = []
+        for element in iterable:
+            yield element
+            saved.append(element)
+        while saved:
+            for element in saved:
+                yield element
+
     def get_images(self):
         log('Screensaver: get_images')
         self.image_aspect_ratio = 16.0 / 9.0
@@ -147,87 +169,55 @@ class ScreensaverBase(object):
         prop = ScreensaverSettings.getProps()
         images = []
         if source == 'movies':
-            images = self._get_json_images('VideoLibrary.GetMovies', 'movies', prop)
-        elif source == 'albums':
-            images = self._get_json_images('AudioLibrary.GetAlbums', 'albums', prop)
-        elif source == 'shows':
-            images = self._get_json_images('VideoLibrary.GetTVShows', 'tvshows', prop)
+            images = self._getJsonImages('VideoLibrary.GetMovies', 'movies', prop)
+        elif source == 'tvshows':
+            images = self._getJsonImages('VideoLibrary.GetTVShows', 'tvshows', prop)
         elif source == 'image_folder':
             path = ScreensaverSettings.getImagePath()
             if path:
-                images = self._get_folder_images(path)
+                images = self._getFolderImages(path)
         if not images:
-            cmd = 'XBMC.Notification("{header}", "{message}")'.format(
-                header=__addon__.getLocalizedString(32500),
-                message=__addon__.getLocalizedString(32501)
-            )
+            cmd = 'XBMC.Notification("{0}", "{1}")'.format(__addon__.getLocalizedString(32995), __addon__.getLocalizedString(32996))
             xbmc.executebuiltin(cmd)
-            images = (
-                self._get_json_images('VideoLibrary.GetMovies', 'movies', 'fanart')
-                or self._get_json_images('AudioLibrary.GetArtists', 'artists', 'fanart')
-            )
+            images = (self._getJsonImages('VideoLibrary.GetMovies', 'movies', 'fanart'))
         if not images:
             raise NoImagesException
         return images
 
-    def _get_json_images(self, method, key, prop):
-        log('Screensaver: _get_json_images start')
-        query = {
-            'jsonrpc': '2.0',
-            'id': 0,
-            'method': method,
-            'params': {
-                'properties': [prop],
-            }
-        }
+    def _getJsonImages(self, method, key, prop):
+        log("Screensaver: getJsonImages for %s" % key)
+        query = {'jsonrpc': '2.0', 'id': 0, 'method': method, 'params': {'properties': [prop], }}
         response = json.loads(xbmc.executeJSONRPC(json.dumps(query)))
-        images = [
-            element[prop] for element
-            in response.get('result', {}).get(key, [])
-            if element.get(prop)
-        ]
-        log('Screensaver: _get_json_images end')
+        images = [element[prop] for element
+                  in response.get('result', {}).get(key, [])
+                  if element.get(prop)]
+        log("Screensaver: Found %d images for %s" % (len(images), key))
         return images
 
-    def _get_folder_images(self, path):
-        log('Screensaver: _get_folder_images started with path: %s' % repr(path))
+    def _getFolderImages(self, path):
+        log('Screensaver: getFolderImages for path: %s' % repr(path))
         dirs, files = xbmcvfs.listdir(path)
-        images = [
-            xbmc.validatePath(path + f) for f in files
-            if f.lower()[-3:] in ('jpg', 'png')
-        ]
+        images = [xbmc.validatePath(path + f) for f in files
+                  if f.lower()[-3:] in ('jpg', 'png')]
         if ScreensaverSettings.getRecursive():
             for directory in dirs:
                 if directory.startswith('.'):
                     continue
-                images.extend(
-                    self._get_folder_images(
-                        xbmc.validatePath('/'.join((path, directory, '')))
-                    )
-                )
-        log('Screensaver: _get_folder_images ends')
+                images.extend(self._getFolderImages(xbmc.validatePath('/'.join((path, directory, '')))))
+        log("Screensaver: Found %d images for %s" % (len(images), path))
         return images
 
     def hide_loading_indicator(self):
-        bg_img = xbmc.validatePath('/'.join((
-            __cwd__, 'resources', 'media', self.BACKGROUND_IMAGE
-        )))
-        self.loading_control.setAnimations([(
-            'conditional',
-            'effect=fade start=100 end=0 time=500 condition=true'
-        )])
-        self.background_control.setAnimations([(
-            'conditional',
-            'effect=fade start=0 end=100 time=500 delay=500 condition=true'
-        )])
-        self.background_control.setImage(bg_img)
+        self.loading_control.setAnimations([('conditional', 'effect=fade start=100 end=0 time=500 condition=true')])
+        self.background_control.setAnimations([('conditional', 'effect=fade start=0 end=100 time=500 delay=500 condition=true')])
+        self.background_control.setImage(self.BACKGROUND_IMAGE)
 
     def process_image(self, image_control, image_url):
         # Needs to be implemented in sub class
         raise NotImplementedError
 
     def preload_image(self, image_url):
-        # set the next image to an unvisible image-control for caching
+        # set the next image to an invisible image-control for caching
         log('Screensaver: preloading image: %s' % repr(image_url))
         self.preload_control.setImage(image_url)
         log('Screensaver: preloading done')
@@ -269,9 +259,8 @@ class ScreensaverBase(object):
 
 
 class TableDropScreensaver(ScreensaverBase):
-
     MODE = 'TableDrop'
-    BACKGROUND_IMAGE = 'table.jpg'
+    BACKGROUND_IMAGE = MediaFiles.TABLE_IMAGE
     IMAGE_CONTROL_COUNT = 20
     FAST_IMAGE_COUNT = 0
     NEXT_IMAGE_TIME = 1500
@@ -282,18 +271,9 @@ class TableDropScreensaver(ScreensaverBase):
         self.NEXT_IMAGE_TIME = ScreensaverSettings.getTableDropWait()
 
     def process_image(self, image_control, image_url):
-        ROTATE_ANIMATION = (
-            'effect=rotate start=0 end=%d center=auto time=%d '
-            'delay=0 tween=circle condition=true'
-        )
-        DROP_ANIMATION = (
-            'effect=zoom start=%d end=100 center=auto time=%d '
-            'delay=0 tween=circle condition=true'
-        )
-        FADE_ANIMATION = (
-            'effect=fade start=0 end=100 time=200 '
-            'condition=true'
-        )
+        ROTATE_ANIMATION = ('effect=rotate start=0 end=%d center=auto time=%d delay=0 tween=circle condition=true')
+        DROP_ANIMATION = ('effect=zoom start=%d end=100 center=auto time=%d delay=0 tween=circle condition=true')
+        FADE_ANIMATION = ('effect=fade start=0 end=100 time=200 condition=true')
         # hide the image
         image_control.setVisible(False)
         image_control.setImage('')
@@ -309,13 +289,9 @@ class TableDropScreensaver(ScreensaverBase):
         drop_duration = drop_height * 1.5
         rotation_degrees = random.uniform(-20, 20)
         rotation_duration = drop_duration
-        animations = [
-            ('conditional', FADE_ANIMATION),
-            ('conditional',
-             ROTATE_ANIMATION % (rotation_degrees, rotation_duration)),
-            ('conditional',
-             DROP_ANIMATION % (drop_height, drop_duration)),
-        ]
+        animations = [('conditional', FADE_ANIMATION),
+                      ('conditional', ROTATE_ANIMATION % (rotation_degrees, rotation_duration)),
+                      ('conditional', DROP_ANIMATION % (drop_height, drop_duration))]
         # set all parameters and properties
         image_control.setImage(image_url)
         image_control.setPosition(x_position, y_position)
@@ -327,9 +303,8 @@ class TableDropScreensaver(ScreensaverBase):
 
 
 class StarWarsScreensaver(ScreensaverBase):
-
     MODE = 'StarWars'
-    BACKGROUND_IMAGE = 'stars.jpg'
+    BACKGROUND_IMAGE = MediaFiles.STARS_IMAGE
     IMAGE_CONTROL_COUNT = 6
     SPEED = 0.5
 
@@ -339,14 +314,8 @@ class StarWarsScreensaver(ScreensaverBase):
         self.NEXT_IMAGE_TIME = self.EFFECT_TIME / 7.6
 
     def process_image(self, image_control, image_url):
-        TILT_ANIMATION = (
-            'effect=rotatex start=0 end=55 center=auto time=0 '
-            'condition=true'
-        )
-        MOVE_ANIMATION = (
-            'effect=slide start=0,1280 end=0,-2560 time=%d '
-            'tween=linear condition=true'
-        )
+        TILT_ANIMATION = ('effect=rotatex start=0 end=55 center=auto time=0 condition=true')
+        MOVE_ANIMATION = ('effect=slide start=0,1280 end=0,-2560 time=%d tween=linear condition=true')
         # hide the image
         image_control.setImage('')
         image_control.setVisible(False)
@@ -358,10 +327,8 @@ class StarWarsScreensaver(ScreensaverBase):
         height = 720
         x_position = 0
         y_position = 0
-        animations = [
-            ('conditional', TILT_ANIMATION),
-            ('conditional', MOVE_ANIMATION % self.EFFECT_TIME),
-        ]
+        animations = [('conditional', TILT_ANIMATION),
+                      ('conditional', MOVE_ANIMATION % self.EFFECT_TIME)]
         # set all parameters and properties
         image_control.setPosition(x_position, y_position)
         image_control.setWidth(width)
@@ -373,7 +340,6 @@ class StarWarsScreensaver(ScreensaverBase):
 
 
 class RandomZoomInScreensaver(ScreensaverBase):
-
     MODE = 'RandomZoomIn'
     IMAGE_CONTROL_COUNT = 7
     NEXT_IMAGE_TIME = 2000
@@ -384,10 +350,7 @@ class RandomZoomInScreensaver(ScreensaverBase):
         self.EFFECT_TIME = ScreensaverSettings.getRandonZoomEffect()
 
     def process_image(self, image_control, image_url):
-        ZOOM_ANIMATION = (
-            'effect=zoom start=1 end=100 center=%d,%d time=%d '
-            'tween=quadratic condition=true'
-        )
+        ZOOM_ANIMATION = ('effect=zoom start=1 end=100 center=%d,%d time=%d tween=quadratic condition=true')
         # hide the image
         image_control.setVisible(False)
         image_control.setImage('')
@@ -401,9 +364,7 @@ class RandomZoomInScreensaver(ScreensaverBase):
         y_position = 0
         zoom_x = random.randint(0, 1280)
         zoom_y = random.randint(0, 720)
-        animations = [
-            ('conditional', ZOOM_ANIMATION % (zoom_x, zoom_y, self.EFFECT_TIME)),
-        ]
+        animations = [('conditional', ZOOM_ANIMATION % (zoom_x, zoom_y, self.EFFECT_TIME))]
         # set all parameters and properties
         image_control.setImage(image_url)
         image_control.setPosition(x_position, y_position)
@@ -415,7 +376,6 @@ class RandomZoomInScreensaver(ScreensaverBase):
 
 
 class AppleTVLikeScreensaver(ScreensaverBase):
-
     MODE = 'AppleTVLike'
     IMAGE_CONTROL_COUNT = 35
     FAST_IMAGE_COUNT = 2
@@ -439,20 +399,15 @@ class AppleTVLikeScreensaver(ScreensaverBase):
 
         for image_control in self.image_controls:
             zoom = int(random.betavariate(2, 2) * 40) + 10
-            #zoom = int(random.randint(10, 70))
+            # zoom = int(random.randint(10, 70))
             width = 1280 / 100 * zoom
             image_control.setWidth(width)
-        self.image_controls = sorted(
-            self.image_controls, key=lambda c: c.getWidth()
-        )
+        self.image_controls = sorted(self.image_controls, key=lambda c: c.getWidth())
         self.xbmc_window.addControls(self.image_controls)
         random.shuffle(self.image_controls)
 
     def process_image(self, image_control, image_url):
-        MOVE_ANIMATION = (
-            'effect=slide start=0,720 end=0,-720 center=auto time=%s '
-            'tween=linear delay=0 condition=true'
-        )
+        MOVE_ANIMATION = ('effect=slide start=0,720 end=0,-720 center=auto time=%s tween=linear delay=0 condition=true')
         image_control.setVisible(False)
         image_control.setImage('')
         # calculate all parameters and properties based on the already set
@@ -468,9 +423,7 @@ class AppleTVLikeScreensaver(ScreensaverBase):
 
         time = self.MAX_TIME / zoom * self.DISTANCE_RATIO * 100
 
-        animations = [
-            ('conditional', MOVE_ANIMATION % time),
-        ]
+        animations = [('conditional', MOVE_ANIMATION % time)]
         # set all parameters and properties
         image_control.setImage(image_url)
         image_control.setPosition(x_position, y_position)
@@ -482,9 +435,7 @@ class AppleTVLikeScreensaver(ScreensaverBase):
 
 
 class GridSwitchScreensaver(ScreensaverBase):
-
     MODE = 'GridSwitch'
-
     ROWS_AND_COLUMNS = 4
     NEXT_IMAGE_TIME = 1000
     EFFECT_TIME = 500
@@ -518,32 +469,14 @@ class GridSwitchScreensaver(ScreensaverBase):
 
     def process_image(self, image_control, image_url):
         if not self.image_count < self.FAST_IMAGE_COUNT:
-            FADE_OUT_ANIMATION = (
-                'effect=fade start=100 end=0 time=%d condition=true' % self.EFFECT_TIME
-            )
-            animations = [
-                ('conditional', FADE_OUT_ANIMATION),
-            ]
+            FADE_OUT_ANIMATION = ('effect=fade start=100 end=0 time=%d condition=true' % self.EFFECT_TIME)
+            animations = [('conditional', FADE_OUT_ANIMATION)]
             image_control.setAnimations(animations)
             xbmc.sleep(self.EFFECT_TIME)
         image_control.setImage(image_url)
-        FADE_IN_ANIMATION = (
-            'effect=fade start=0 end=100 time=%d condition=true' % self.EFFECT_TIME
-        )
-        animations = [
-            ('conditional', FADE_IN_ANIMATION),
-        ]
+        FADE_IN_ANIMATION = ('effect=fade start=0 end=100 time=%d condition=true' % self.EFFECT_TIME)
+        animations = [('conditional', FADE_IN_ANIMATION)]
         image_control.setAnimations(animations)
-
-
-def cycle(iterable):
-    saved = []
-    for element in iterable:
-        yield element
-        saved.append(element)
-    while saved:
-        for element in saved:
-            yield element
 
 
 if __name__ == '__main__':

@@ -453,7 +453,6 @@ if __name__ == '__main__':
 
     elif mode[0] == 'screensaver':
         log("TvTunesPlugin: Mode is Screensaver")
-        
+
         # TODO: This will change to call the screensaver as a library when it's been split up
         xbmc.executebuiltin('XBMC.RunScript(%s)' % (os.path.join(__cwd__, "screensaver.py")))
-

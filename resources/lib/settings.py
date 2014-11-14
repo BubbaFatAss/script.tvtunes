@@ -347,8 +347,7 @@ class ScreensaverSettings():
     SOURCES = (
         'movies',
         'image_folder',
-        'albums',
-        'shows',
+        'tvshows',
     )
     PROPS = (
         'fanart',
