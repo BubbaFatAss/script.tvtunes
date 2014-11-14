@@ -144,6 +144,86 @@ msgctxt "#32029"
 msgid "Play themes when browsing Music Video list"
 msgstr ""
 
+msgctxt "#32040"
+msgid "Screensaver"
+msgstr ""
+
+msgctxt "#32041"
+msgid "TableDrop"
+msgstr ""
+
+msgctxt "#32042"
+msgid "StarWars"
+msgstr ""
+
+msgctxt "#32043"
+msgid "RandomZoomIn"
+msgstr ""
+
+msgctxt "#32044"
+msgid "AppleTVLike"
+msgstr ""
+
+msgctxt "#32045"
+msgid "GridSwitch"
+msgstr ""
+
+msgctxt "#32046"
+msgid "Random"
+msgstr ""
+
+msgctxt "#32047"
+msgid "Wait Time"
+msgstr ""
+
+msgctxt "#32048"
+msgid "Effect Time"
+msgstr ""
+
+msgctxt "#32049"
+msgid "Rows and Columns"
+msgstr ""
+
+msgctxt "#32050"
+msgid "Speed"
+msgstr ""
+
+msgctxt "#32051"
+msgid "Image Concurrency"
+msgstr ""
+
+msgctxt "#32052"
+msgid "Random Order"
+msgstr ""
+
+msgctxt "#32053"
+msgid "Image Source"
+msgstr ""
+
+msgctxt "#32054"
+msgid "Property"
+msgstr ""
+
+msgctxt "#32055"
+msgid "Folder"
+msgstr ""
+
+msgctxt "#32056"
+msgid "Recursive"
+msgstr ""
+
+msgctxt "#32057"
+msgid "Fanart"
+msgstr ""
+
+msgctxt "#32058"
+msgid "Thumbnail"
+msgstr ""
+
+msgctxt "#32059"
+msgid "Albums"
+msgstr ""
+
 #empty strings from id 32030 to 32100
 
 msgctxt "#32101"
@@ -256,6 +336,10 @@ msgstr ""
 
 msgctxt "#32207"
 msgid "Move themes into themes folder?"
+msgstr ""
+
+msgctxt "#32208"
+msgid "[Action]: Start Screensaver"
 msgstr ""
 
 #empty strings from id 32208 to 32990

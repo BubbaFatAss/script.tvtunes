@@ -332,3 +332,94 @@ class Settings():
     @staticmethod
     def getSearchEngine():
         return __addon__.getSetting("themeSearchSource")
+
+
+# Class to handle all the screen saver settings
+class ScreensaverSettings():
+    MODES = (
+        'TableDrop',
+        'StarWars',
+        'RandomZoomIn',
+        'AppleTVLike',
+        'GridSwitch',
+        'Random',
+    )
+    SOURCES = (
+        'movies',
+        'image_folder',
+        'albums',
+        'shows',
+    )
+    PROPS = (
+        'fanart',
+        'thumbnail',
+    )
+
+    @staticmethod
+    def getMode():
+        if __addon__.getSetting("screensaver_mode"):
+            return ScreensaverSettings.MODES[int(__addon__.getSetting("screensaver_mode"))]
+        else:
+            return 'Random'
+
+    @staticmethod
+    def getRandomOrder():
+        return __addon__.getSetting("screensaver_random_order") == 'true'
+
+    @staticmethod
+    def getSource():
+        if __addon__.getSetting("screensaver_source"):
+            return ScreensaverSettings.SOURCES[int(__addon__.getSetting("screensaver_source"))]
+        else:
+            return 'movies'
+
+    @staticmethod
+    def getProps():
+        if __addon__.getSetting("screensaver_prop"):
+            return ScreensaverSettings.PROPS[int(__addon__.getSetting("screensaver_prop"))]
+        else:
+            return 'fanart'
+
+    @staticmethod
+    def getImagePath():
+        return __addon__.getSetting("screensaver_image_path").decode("utf-8")
+
+    @staticmethod
+    def getRecursive():
+        return __addon__.getSetting("screensaver_recursive") == 'true'
+
+    @staticmethod
+    def getTableDropWait():
+        return int(__addon__.getSetting('screensaver_tabledrop_wait'))
+
+    @staticmethod
+    def getStarwarsSpeed():
+        return float(__addon__.getSetting('screensaver_starwars_speed'))
+
+    @staticmethod
+    def getRandonZoomWait():
+        return int(__addon__.getSetting('screensaver_randomzoom_wait'))
+
+    @staticmethod
+    def getRandonZoomEffect():
+        return int(__addon__.getSetting('screensaver_randomzoom_effect'))
+
+    @staticmethod
+    def getAppletvlikeSpeed():
+        return float(__addon__.getSetting('screensaver_appletvlike_speed'))
+
+    @staticmethod
+    def getAppletvlikeConcurrency():
+        return float(__addon__.getSetting('screensaver_appletvlike_concurrency'))
+
+    @staticmethod
+    def getGridswitchWait():
+        return int(__addon__.getSetting('screensaver_gridswitch_wait'))
+
+    @staticmethod
+    def getGridswitchRowsColumns():
+        return int(__addon__.getSetting('screensaver_gridswitch_rows_columns'))
+
+    @staticmethod
+    def getGridswitchRandom():
+        return __addon__.getSetting("screensaver_gridswitch_random") == 'true'

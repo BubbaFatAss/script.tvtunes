@@ -111,6 +111,14 @@ class MenuNavigator():
         li.addContextMenuItems([], replaceItems=True)
         xbmcplugin.addDirectoryItem(handle=self.addon_handle, url=url, listitem=li, isFolder=False)
 
+        # Action: Start Screensaver
+        url = self._build_url({'mode': 'screensaver', 'actiontype': 'StartScreensaver'})
+        filterTitle = "  %s" % __addon__.getLocalizedString(32208)
+        li = xbmcgui.ListItem(filterTitle, iconImage=__icon__)
+        li.setProperty("Fanart_Image", __fanart__)
+        li.addContextMenuItems([], replaceItems=True)
+        xbmcplugin.addDirectoryItem(handle=self.addon_handle, url=url, listitem=li, isFolder=False)
+
         xbmcplugin.endOfDirectory(self.addon_handle)
 
     # Show the list of videos in a given set
@@ -442,3 +450,10 @@ if __name__ == '__main__':
         # Only one action at the moment
         menuNav = MenuNavigator(base_url, addon_handle)
         menuNav.fetchAllMissingThemes()
+
+    elif mode[0] == 'screensaver':
+        log("TvTunesPlugin: Mode is Screensaver")
+        
+        # TODO: This will change to call the screensaver as a library when it's been split up
+        xbmc.executebuiltin('XBMC.RunScript(%s)' % (os.path.join(__cwd__, "screensaver.py")))
+

@@ -1,3 +1,6 @@
+v4.5.1
+- Initial version of TvTunes screensaver
+
 v4.5.0
 - Update to BeautifulSoup 4
 - Update directory existence check for Helix
