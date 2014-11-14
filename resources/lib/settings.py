@@ -392,12 +392,6 @@ class ScreensaverSettings():
         else:
             return ['fanart', 'thumbnail', 'cast']
 
-        
-        if __addon__.getSetting("screensaver_image_type"):
-            return ScreensaverSettings.PROPS[int(__addon__.getSetting("screensaver_image_type"))]
-        else:
-            return 'fanart'
-
     @staticmethod
     def getImagePath():
         return __addon__.getSetting("screensaver_image_path").decode("utf-8")

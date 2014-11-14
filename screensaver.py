@@ -88,7 +88,7 @@ class ScreensaverBase(object):
     FAST_IMAGE_COUNT = 0
     NEXT_IMAGE_TIME = 2000
     BACKGROUND_IMAGE = MediaFiles.BLACK_IMAGE
-    
+
     def __init__(self):
         log('Screensaver: __init__ start')
         self.exit_requested = False
@@ -98,7 +98,6 @@ class ScreensaverBase(object):
         self.background_control = xbmcgui.ControlImage(0, 0, 1280, 720, '')
         self.preload_control = xbmcgui.ControlImage(-1, -1, 1, 1, '')
         self.global_controls = [self.preload_control, self.background_control, self.loading_control]
-
 
         self.image_count = 0
         self.image_controls = []
@@ -196,17 +195,17 @@ class ScreensaverBase(object):
                         # If we are dealing with fanart or thumbnail, then we can just store this value
                         if prop in ['fanart']:
                             # Set the aspect radio based on the type of image being shown
-                            imageDetails = {'file': item[prop], 'aspect_ratio': 16.0 / 9.0 }
+                            imageDetails = {'file': item[prop], 'aspect_ratio': 16.0 / 9.0}
                             images.append(imageDetails)
                         elif prop in ['thumbnail']:
-                            imageDetails = {'file': item[prop], 'aspect_ratio': 2.0 / 3.0 }
+                            imageDetails = {'file': item[prop], 'aspect_ratio': 2.0 / 3.0}
                             images.append(imageDetails)
                         elif prop in ['cast']:
                             log("prop is cast")
                             # If this cast member has an image, add it to the array
                             for castItem in item['cast']:
                                 if 'thumbnail' in castItem:
-                                    imageDetails = {'file': castItem['thumbnail'], 'aspect_ratio': 2.0 / 3.0 }
+                                    imageDetails = {'file': castItem['thumbnail'], 'aspect_ratio': 2.0 / 3.0}
                                     images.append(imageDetails)
         log("Screensaver: Found %d images for %s" % (len(images), key))
         return images
@@ -336,6 +335,9 @@ class StarWarsScreensaver(ScreensaverBase):
         self.NEXT_IMAGE_TIME = self.EFFECT_TIME / 7.6
 
     def process_image(self, image_control, imageDetails):
+#        self.NEXT_IMAGE_TIME = self.EFFECT_TIME / (4.3 / imageDetails['aspect_ratio'])
+
+        
         TILT_ANIMATION = ('effect=rotatex start=0 end=55 center=auto time=0 condition=true')
         MOVE_ANIMATION = ('effect=slide start=0,1280 end=0,-2560 time=%d tween=linear condition=true')
         # hide the image
@@ -346,9 +348,12 @@ class StarWarsScreensaver(ScreensaverBase):
         self.xbmc_window.addControl(image_control)
         # calculate all parameters and properties
         width = 1280
-        height = 720
+        height = int(width / imageDetails['aspect_ratio'])
+#        height = 720
         x_position = 0
         y_position = 0
+        if height > 720:
+            y_position = int((height - 720) / -2)
         animations = [('conditional', TILT_ANIMATION),
                       ('conditional', MOVE_ANIMATION % self.EFFECT_TIME)]
         # set all parameters and properties
@@ -381,9 +386,13 @@ class RandomZoomInScreensaver(ScreensaverBase):
         self.xbmc_window.addControl(image_control)
         # calculate all parameters and properties
         width = 1280
-        height = 720
+        height = int(width / imageDetails['aspect_ratio'])
         x_position = 0
         y_position = 0
+        # Make sure if the image is too large to all fit on the screen
+        # then make sure it is zoomed into the center
+        if height > 720:
+            y_position = int((height - 720) / -2)
         zoom_x = random.randint(0, 1280)
         zoom_y = random.randint(0, 720)
         animations = [('conditional', ZOOM_ANIMATION % (zoom_x, zoom_y, self.EFFECT_TIME))]
