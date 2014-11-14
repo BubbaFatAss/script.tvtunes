@@ -148,7 +148,8 @@ class ScreensaverBase(object):
                 self.image_count += 1
             else:
                 self.preload_image(imageDetails['file'])
-                self.wait()
+                # Wait before showing the next image
+                self.wait(imageDetails)
         log('Screensaver: start_loop end')
 
     def _cycle(self, iterable):
@@ -238,11 +239,12 @@ class ScreensaverBase(object):
         self.preload_control.setImage(image_url)
         log('Screensaver: preloading done')
 
-    def wait(self):
+    # Wait for the image to finish being displayed before starting on the next one
+    def wait(self, imageDetails):
         CHUNK_WAIT_TIME = 250
         # wait in chunks of 500ms to react earlier on exit request
         chunk_wait_time = int(CHUNK_WAIT_TIME)
-        remaining_wait_time = int(self.NEXT_IMAGE_TIME)
+        remaining_wait_time = self.getNextImageTime(imageDetails)
         while remaining_wait_time > 0:
             if self.exit_requested:
                 log('Screensaver: wait aborted')
@@ -251,6 +253,11 @@ class ScreensaverBase(object):
                 chunk_wait_time = remaining_wait_time
             remaining_wait_time -= chunk_wait_time
             xbmc.sleep(chunk_wait_time)
+
+    # Get how long to wait until the next image is shown
+    def getNextImageTime(self, imageDetails):
+        # Needs to be implemented in sub class
+        raise NotImplementedError
 
     def stop(self):
         log('Screensaver: stop')
@@ -285,6 +292,11 @@ class TableDropScreensaver(ScreensaverBase):
 
     def load_settings(self):
         self.NEXT_IMAGE_TIME = ScreensaverSettings.getTableDropWait()
+
+    # Get how long to wait until the next image is shown
+    def getNextImageTime(self, imageDetails):
+        # There is an even amount of time between each image drop
+        return int(self.NEXT_IMAGE_TIME)
 
     def process_image(self, image_control, imageDetails):
         ROTATE_ANIMATION = ('effect=rotate start=0 end=%d center=auto time=%d delay=0 tween=circle condition=true')
@@ -334,10 +346,13 @@ class StarWarsScreensaver(ScreensaverBase):
         self.EFFECT_TIME = 9000.0 / self.SPEED
         self.NEXT_IMAGE_TIME = self.EFFECT_TIME / 7.6
 
-    def process_image(self, image_control, imageDetails):
-#        self.NEXT_IMAGE_TIME = self.EFFECT_TIME / (4.3 / imageDetails['aspect_ratio'])
+    # Get how long to wait until the next image is shown
+    def getNextImageTime(self, imageDetails):
+        # Needs to be implemented in sub class
+        return int(self.EFFECT_TIME / 7.6)
+#        return int(self.EFFECT_TIME / (7.6 / imageDetails['aspect_ratio']))
 
-        
+    def process_image(self, image_control, imageDetails):
         TILT_ANIMATION = ('effect=rotatex start=0 end=55 center=auto time=0 condition=true')
         MOVE_ANIMATION = ('effect=slide start=0,1280 end=0,-2560 time=%d tween=linear condition=true')
         # hide the image
@@ -375,6 +390,11 @@ class RandomZoomInScreensaver(ScreensaverBase):
     def load_settings(self):
         self.NEXT_IMAGE_TIME = ScreensaverSettings.getRandonZoomWait()
         self.EFFECT_TIME = ScreensaverSettings.getRandonZoomEffect()
+
+    # Get how long to wait until the next image is shown
+    def getNextImageTime(self, imageDetails):
+        # Even amount of time between each zoom
+        return int(self.NEXT_IMAGE_TIME)
 
     def process_image(self, image_control, imageDetails):
         ZOOM_ANIMATION = ('effect=zoom start=1 end=100 center=%d,%d time=%d tween=quadratic condition=true')
@@ -420,6 +440,10 @@ class AppleTVLikeScreensaver(ScreensaverBase):
         self.MAX_TIME = int(15000 / self.SPEED)
         self.NEXT_IMAGE_TIME = int(4500.0 / self.CONCURRENCY / self.SPEED)
 
+    # Get how long to wait until the next image is shown
+    def getNextImageTime(self, imageDetails):
+        return int(self.NEXT_IMAGE_TIME)
+
     def stack_cycle_controls(self):
         # randomly generate a zoom in percent as betavariant
         # between 10 and 70 and assign calculated width to control.
@@ -446,10 +470,7 @@ class AppleTVLikeScreensaver(ScreensaverBase):
         # to be added to the window in size order.
         width = image_control.getWidth()
         zoom = width * 100 / 1280
-        if imageDetails['aspect_ratio'] < 1:
-            height = int(width * imageDetails['aspect_ratio'])
-        else:
-            height = int(width / imageDetails['aspect_ratio'])
+        height = int(width / imageDetails['aspect_ratio'])
         # let images overlap max 1/2w left or right
         center = random.randint(0, 1280)
         x_position = center - width / 2
@@ -484,6 +505,11 @@ class GridSwitchScreensaver(ScreensaverBase):
         self.RANDOM_ORDER = ScreensaverSettings.getGridswitchRandom()
         self.IMAGE_CONTROL_COUNT = self.ROWS_AND_COLUMNS ** 2
         self.FAST_IMAGE_COUNT = self.IMAGE_CONTROL_COUNT
+
+    # Get how long to wait until the next image is shown
+    def getNextImageTime(self, imageDetails):
+        # Needs to be implemented in sub class
+        return int(self.NEXT_IMAGE_TIME)
 
     def stack_cycle_controls(self):
         # Set position and dimensions based on stack position.
