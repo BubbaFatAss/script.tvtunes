@@ -228,6 +228,11 @@ msgctxt "#32060"
 msgid "All"
 msgstr ""
 
+msgctxt "#32061"
+msgid "Play Themes During Screensaver"
+msgstr ""
+
+
 #empty strings from id 32030 to 32100
 
 msgctxt "#32101"

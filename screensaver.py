@@ -83,10 +83,14 @@ class MediaFiles(object):
 
 # Class to hold groups of images and media
 class MediaGroup(object):
-    def __init__(self, videoPath=None, imageArray=[]):
-        self.themeFiles = None
-        if videoPath is not None:
+    def __init__(self, videoPath="", imageArray=[]):
+        self.isPlayingTheme = False
+        # Check if the user wants to play themes
+        if ScreensaverSettings.isPlayThemes():
             self.themeFiles = ThemeFiles(videoPath)
+        else:
+            # If the user does not want to play themes, just have an empty set of themes
+            self.themeFiles = ThemeFiles("")
         self.images = []
         for img in imageArray:
             self.addImage(img, 16.0 / 9.0)
@@ -97,12 +101,36 @@ class MediaGroup(object):
         self.images.append(imageDetails)
 
     # get all the images in the group
-    def getImages(self):
+    def getImageDetails(self):
+        # Before returning the images, make sure they are all random
+        random.shuffle(self.images)
         return self.images
 
     # Gets the number of images in the group
     def imageCount(self):
         return len(self.images)
+
+    # Start playing a theme if there is one to play
+    def startTheme(self):
+        if self.themeFiles.hasThemes() and not xbmc.Player().isPlayingAudio():
+            self.isPlayingTheme = True
+            xbmc.Player().play(self.themeFiles.getThemePlaylist())
+
+    # Check if the theme has completed playing
+    def completedGroup(self):
+        if self.themeFiles.hasThemes() and xbmc.Player().isPlayingAudio():
+            return False
+        self.isPlayingTheme = False
+        return True
+
+    # Stop the theme playing if it is currently playing
+    # NOTE: If you stop a theme that is playing, then it will also
+    # exit out of the screensaver
+    def stopTheme(self):
+        if self.isPlayingTheme:
+            self.isPlayingTheme = False
+            if xbmc.Player().isPlayingAudio():
+                xbmc.Player().stop()
 
 
 # Base Screensaver class that handles all of the operations for a screensaver
@@ -156,29 +184,59 @@ class ScreensaverBase(object):
     def start_loop(self):
         log('Screensaver: start_loop start')
         imageGroups = self.getImageGroups()
-        # Extract all the images out of the groups and flatten them into an array
-        images = []
-        for imgGrp in imageGroups:
-            images.extend(imgGrp.getImages())
-        if ScreensaverSettings.getRandomOrder():
-            random.shuffle(images)
-        image_details_cycle = self._cycle(images)
+        # We have a lot of groups (Each different Movie or TV Show) so
+        # mix them all up so they are not always in the same order
+        random.shuffle(imageGroups)
+
+        imageGroup_cycle = self._cycle(imageGroups)
         image_controls_cycle = self._cycle(self.image_controls)
         self.hide_loading_indicator()
-        imageDetails = image_details_cycle.next()
+        imageGroup = imageGroup_cycle.next()
+        # Get all the images in this group
+        images = imageGroup.getImageDetails()
+        imageDetails_cycle = self._cycle(images)
+        imageDetails = imageDetails_cycle.next()
+
+        # Save off the first image shown
+        firstImage = imageDetails['file']
+        hasLooped = False
         while not self.exit_requested:
             log('Screensaver: using image: %s' % repr(imageDetails['file']))
+            # Start playing theme if there is one
+            imageGroup.startTheme()
             image_control = image_controls_cycle.next()
             self.process_image(image_control, imageDetails)
-            imageDetails = image_details_cycle.next()
+            imageDetails = imageDetails_cycle.next()
+
+            # At this point we have moved the image onto the next one
+            # so check if we have gone in a complete loop and there is
+            # another group of images to pre-load
+            if firstImage == imageDetails['file']:
+                hasLooped = True
+            # Wait for the theme to complete playing at least once
+            if hasLooped and (len(imageGroups) > 1) and imageGroup.completedGroup():
+                # Move onto the next group, and the first image in that group
+                imageGroup = imageGroup_cycle.next()
+                images = imageGroup.getImageDetails()
+                imageDetails_cycle = self._cycle(images)
+                imageDetails = imageDetails_cycle.next()
+                firstImage = imageDetails['file']
+                hasLooped = False
+
             if self.image_count < self.FAST_IMAGE_COUNT:
                 self.image_count += 1
             else:
+                # Pre-load the next image that is going to be shown
                 self.preload_image(imageDetails['file'])
                 # Wait before showing the next image
                 self.wait(imageDetails)
+
+        # Make sure we stop any outstanding playing theme
+        imageGroup.stopTheme()
+
         log('Screensaver: start_loop end')
 
+    # Helper method to allow the cycling through a list of values
     def _cycle(self, iterable):
         saved = []
         for element in iterable:
@@ -254,7 +312,7 @@ class ScreensaverBase(object):
         dirs, files = xbmcvfs.listdir(path)
         images = [xbmc.validatePath(path + f) for f in files
                   if f.lower()[-3:] in ('jpg', 'png')]
-        if ScreensaverSettings.getRecursive():
+        if ScreensaverSettings.isRecursive():
             for directory in dirs:
                 if directory.startswith('.'):
                     continue
@@ -449,9 +507,11 @@ class RandomZoomInScreensaver(ScreensaverBase):
         x_position = 0
         y_position = 0
         # Make sure if the image is too large to all fit on the screen
-        # then make sure it is zoomed into the center
+        # then make sure it is zoomed into about a third down, this is because
+        # it is most probably a DVD Cover of Cast member, so it will result in
+        # the focus at a better location after the zoom
         if height > 720:
-            y_position = int((height - 720) / -2)
+            y_position = int((height - 720) / -3)
         zoom_x = random.randint(0, 1280)
         zoom_y = random.randint(0, 720)
         animations = [('conditional', ZOOM_ANIMATION % (zoom_x, zoom_y, self.EFFECT_TIME))]
@@ -541,7 +601,7 @@ class GridSwitchScreensaver(ScreensaverBase):
     def load_settings(self):
         self.NEXT_IMAGE_TIME = ScreensaverSettings.getWaitTime()
         self.ROWS_AND_COLUMNS = ScreensaverSettings.getGridswitchRowsColumns()
-        self.RANDOM_ORDER = ScreensaverSettings.getGridswitchRandom()
+        self.RANDOM_ORDER = ScreensaverSettings.isGridswitchRandom()
         self.IMAGE_CONTROL_COUNT = self.ROWS_AND_COLUMNS ** 2
         self.FAST_IMAGE_COUNT = self.IMAGE_CONTROL_COUNT
 

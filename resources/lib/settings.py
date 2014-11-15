@@ -365,10 +365,6 @@ class ScreensaverSettings():
             return 'Random'
 
     @staticmethod
-    def getRandomOrder():
-        return __addon__.getSetting("screensaver_random_order") == 'true'
-
-    @staticmethod
     def getSource():
         selectedSource = __addon__.getSetting("screensaver_source")
         if selectedSource:
@@ -397,7 +393,7 @@ class ScreensaverSettings():
         return __addon__.getSetting("screensaver_image_path").decode("utf-8")
 
     @staticmethod
-    def getRecursive():
+    def isRecursive():
         return __addon__.getSetting("screensaver_recursive") == 'true'
 
     @staticmethod
@@ -421,5 +417,12 @@ class ScreensaverSettings():
         return int(__addon__.getSetting('screensaver_gridswitch_rows_columns'))
 
     @staticmethod
-    def getGridswitchRandom():
+    def isGridswitchRandom():
         return __addon__.getSetting("screensaver_gridswitch_random") == 'true'
+
+    @staticmethod
+    def isPlayThemes():
+        # Currently only support playing themes in 2 of the modes
+        if int(__addon__.getSetting("screensaver_mode")) in [0, 2]:
+            return __addon__.getSetting("screensaver_playthemes") == 'true'
+        return False
