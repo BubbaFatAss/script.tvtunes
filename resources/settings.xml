@@ -48,11 +48,12 @@
         <setting id="screensaver_gridswitch_rows_columns" label="32049" visible="eq(-4,4)" subsetting="true" type="slider" default="4" range="2,1,5" option="int"/>
         <setting id="screensaver_gridswitch_random" type="bool" visible="eq(-5,4)"  subsetting="true" label="32052" default="true"/>
         <setting id="screensaver_appletvlike_concurrency" label="32051" visible="eq(-6,3)" subsetting="true" type="slider" default="1" range="0.5,0.25,5.0" option="float"/>
+    	<setting type="sep"/>
         <setting id="screensaver_source" type="enum" label="32053" lvalues="32060|32201|32202|32055" default="0"/>
-        <setting id="screensaver_image_type" type="enum" label="32054" visible="eq(-1,0)|eq(-1,1)|eq(-1,2)" subsetting="true" lvalues="32060|32057|32058|32059" default="0"/>
+        <setting id="screensaver_image_type" type="enum" label="32054" visible="!eq(-1,3)" subsetting="true" lvalues="32062|32063|32057|32058|32059" default="0"/>
         <setting id="screensaver_image_path" type="folder" source="pictures" label="32055" visible="eq(-2,3)" subsetting="true" default=""/>
         <setting id="screensaver_recursive" type="bool" label="32056" visible="eq(-3,3)" subsetting="true" default="true"/>
-		<setting id="screensaver_playthemes" type="bool" label="32061" visible="eq(-11,0)|eq(-11,2)|eq(-11,3)|eq(-11,4)" default="true"/>
+    	<setting type="sep"/>
+		<setting id="screensaver_playthemes" type="bool" label="32061" visible="!eq(-5,3)" default="true"/>
     </category>
-
 </settings>

@@ -225,11 +225,19 @@ msgid "Cast"
 msgstr ""
 
 msgctxt "#32060"
-msgid "All"
+msgid "Movies, TV Shows"
 msgstr ""
 
 msgctxt "#32061"
 msgid "Play Themes During Screensaver"
+msgstr ""
+
+msgctxt "#32062"
+msgid "Fanart,Thumbnail,Cast"
+msgstr ""
+
+msgctxt "#32063"
+msgid "Fanart,Thumbnail"
 msgstr ""
 
 

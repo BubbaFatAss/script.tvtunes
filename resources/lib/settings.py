@@ -345,16 +345,17 @@ class ScreensaverSettings():
         'Random'
     )
     SOURCES = (
-        'all',
-        'movies',
-        'tvshows',
-        'image_folder'
+        ['movies', 'tvshows'],
+        ['movies'],
+        ['tvshows'],
+        ['image_folder']
     )
     IMAGE_TYPES = (
-        'all',
-        'fanart',
-        'thumbnail',
-        'cast'
+        ['fanart', 'thumbnail', 'cast'],
+        ['fanart', 'thumbnail'],
+        ['fanart'],
+        ['thumbnail'],
+        ['cast']
     )
 
     @staticmethod
@@ -367,26 +368,21 @@ class ScreensaverSettings():
     @staticmethod
     def getSource():
         selectedSource = __addon__.getSetting("screensaver_source")
+        sourceId = 0
         if selectedSource:
             sourceId = int(selectedSource)
-            if sourceId == 0:
-                return ['movies', 'tvshows']
-            else:
-                return [ScreensaverSettings.SOURCES[sourceId]]
-        else:
-            return ['movies', 'tvshows']
+        return ScreensaverSettings.SOURCES[sourceId]
 
     @staticmethod
     def getImageTypes():
         imageTypes = __addon__.getSetting("screensaver_image_type")
+        # If dealing with a custom folder, then no image type defined
+        if ScreensaverSettings.getSource() == ['image_folder']:
+            return []
+        imageTypeId = 0
         if imageTypes:
             imageTypeId = int(imageTypes)
-            if imageTypeId == 0:
-                return ['fanart', 'thumbnail', 'cast']
-            else:
-                return [ScreensaverSettings.IMAGE_TYPES[imageTypeId]]
-        else:
-            return ['fanart', 'thumbnail', 'cast']
+        return ScreensaverSettings.IMAGE_TYPES[imageTypeId]
 
     @staticmethod
     def getImagePath():
@@ -422,7 +418,4 @@ class ScreensaverSettings():
 
     @staticmethod
     def isPlayThemes():
-        # Currently only support playing themes in 2 of the modes
-        if int(__addon__.getSetting("screensaver_mode")) in [0, 2, 3, 4]:
-            return __addon__.getSetting("screensaver_playthemes") == 'true'
-        return False
+        return __addon__.getSetting("screensaver_playthemes") == 'true'
