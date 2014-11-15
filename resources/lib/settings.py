@@ -401,32 +401,20 @@ class ScreensaverSettings():
         return __addon__.getSetting("screensaver_recursive") == 'true'
 
     @staticmethod
-    def getTableDropWait():
-        return int(__addon__.getSetting('screensaver_tabledrop_wait'))
+    def getWaitTime():
+        return int(float(__addon__.getSetting('screensaver_wait_time'))*1000)
 
     @staticmethod
-    def getStarwarsSpeed():
-        return float(__addon__.getSetting('screensaver_starwars_speed'))
+    def getSpeed():
+        return float(__addon__.getSetting('screensaver_speed'))
 
     @staticmethod
-    def getRandonZoomWait():
-        return int(__addon__.getSetting('screensaver_randomzoom_wait'))
-
-    @staticmethod
-    def getRandonZoomEffect():
-        return int(__addon__.getSetting('screensaver_randomzoom_effect'))
-
-    @staticmethod
-    def getAppletvlikeSpeed():
-        return float(__addon__.getSetting('screensaver_appletvlike_speed'))
+    def getEffectTime():
+        return int(float(__addon__.getSetting('screensaver_effect_time'))*1000)
 
     @staticmethod
     def getAppletvlikeConcurrency():
         return float(__addon__.getSetting('screensaver_appletvlike_concurrency'))
-
-    @staticmethod
-    def getGridswitchWait():
-        return int(__addon__.getSetting('screensaver_gridswitch_wait'))
 
     @staticmethod
     def getGridswitchRowsColumns():

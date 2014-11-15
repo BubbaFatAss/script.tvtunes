@@ -173,11 +173,11 @@ msgid "Random"
 msgstr ""
 
 msgctxt "#32047"
-msgid "Wait Time"
+msgid "Wait Time (Seconds)"
 msgstr ""
 
 msgctxt "#32048"
-msgid "Effect Time"
+msgid "Effect Time (Seconds)"
 msgstr ""
 
 msgctxt "#32049"

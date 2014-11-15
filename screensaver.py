@@ -291,7 +291,7 @@ class TableDropScreensaver(ScreensaverBase):
     MAX_WIDEST_DIMENSION = 700
 
     def load_settings(self):
-        self.NEXT_IMAGE_TIME = ScreensaverSettings.getTableDropWait()
+        self.NEXT_IMAGE_TIME = ScreensaverSettings.getWaitTime()
 
     # Get how long to wait until the next image is shown
     def getNextImageTime(self, imageDetails):
@@ -342,7 +342,7 @@ class StarWarsScreensaver(ScreensaverBase):
     SPEED = 0.5
 
     def load_settings(self):
-        self.SPEED = ScreensaverSettings.getStarwarsSpeed()
+        self.SPEED = ScreensaverSettings.getSpeed()
         self.EFFECT_TIME = 9000.0 / self.SPEED
         self.NEXT_IMAGE_TIME = self.EFFECT_TIME / 7.6
 
@@ -388,8 +388,8 @@ class RandomZoomInScreensaver(ScreensaverBase):
     EFFECT_TIME = 5000
 
     def load_settings(self):
-        self.NEXT_IMAGE_TIME = ScreensaverSettings.getRandonZoomWait()
-        self.EFFECT_TIME = ScreensaverSettings.getRandonZoomEffect()
+        self.NEXT_IMAGE_TIME = ScreensaverSettings.getWaitTime()
+        self.EFFECT_TIME = ScreensaverSettings.getEffectTime()
 
     # Get how long to wait until the next image is shown
     def getNextImageTime(self, imageDetails):
@@ -435,7 +435,7 @@ class AppleTVLikeScreensaver(ScreensaverBase):
     CONCURRENCY = 1.0
 
     def load_settings(self):
-        self.SPEED = ScreensaverSettings.getAppletvlikeSpeed()
+        self.SPEED = ScreensaverSettings.getSpeed()
         self.CONCURRENCY = ScreensaverSettings.getAppletvlikeConcurrency()
         self.MAX_TIME = int(15000 / self.SPEED)
         self.NEXT_IMAGE_TIME = int(4500.0 / self.CONCURRENCY / self.SPEED)
@@ -500,7 +500,7 @@ class GridSwitchScreensaver(ScreensaverBase):
     FAST_IMAGE_COUNT = IMAGE_CONTROL_COUNT
 
     def load_settings(self):
-        self.NEXT_IMAGE_TIME = ScreensaverSettings.getGridswitchWait()
+        self.NEXT_IMAGE_TIME = ScreensaverSettings.getWaitTime()
         self.ROWS_AND_COLUMNS = ScreensaverSettings.getGridswitchRowsColumns()
         self.RANDOM_ORDER = ScreensaverSettings.getGridswitchRandom()
         self.IMAGE_CONTROL_COUNT = self.ROWS_AND_COLUMNS ** 2
