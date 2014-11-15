@@ -402,7 +402,7 @@ class ScreensaverSettings():
 
     @staticmethod
     def getWaitTime():
-        return int(float(__addon__.getSetting('screensaver_wait_time'))*1000)
+        return int(float(__addon__.getSetting('screensaver_wait_time')) * 1000)
 
     @staticmethod
     def getSpeed():
@@ -410,7 +410,7 @@ class ScreensaverSettings():
 
     @staticmethod
     def getEffectTime():
-        return int(float(__addon__.getSetting('screensaver_effect_time'))*1000)
+        return int(float(__addon__.getSetting('screensaver_effect_time')) * 1000)
 
     @staticmethod
     def getAppletvlikeConcurrency():

@@ -21,9 +21,9 @@ __media__ = xbmc.translatePath(os.path.join(__resource__, 'media').encode("utf-8
 
 sys.path.append(__lib__)
 
-
 from settings import ScreensaverSettings
 from settings import log
+from themeFinder import ThemeFiles
 
 
 class NoImagesException(Exception):
@@ -81,12 +81,35 @@ class MediaFiles(object):
     TABLE_IMAGE = os.path.join(__media__, 'table.jpg')
 
 
+# Class to hold groups of images and media
+class MediaGroup(object):
+    def __init__(self, videoPath=None, imageArray=[]):
+        self.themeFiles = None
+        if videoPath is not None:
+            self.themeFiles = ThemeFiles(videoPath)
+        self.images = []
+        for img in imageArray:
+            self.addImage(img, 16.0 / 9.0)
+
+    # Add an image to the group, giving it's aspect radio
+    def addImage(self, imageURL, aspectRatio):
+        imageDetails = {'file': imageURL, 'aspect_ratio': aspectRatio}
+        self.images.append(imageDetails)
+
+    # get all the images in the group
+    def getImages(self):
+        return self.images
+
+    # Gets the number of images in the group
+    def imageCount(self):
+        return len(self.images)
+
+
 # Base Screensaver class that handles all of the operations for a screensaver
 class ScreensaverBase(object):
     MODE = None
     IMAGE_CONTROL_COUNT = 10
     FAST_IMAGE_COUNT = 0
-    NEXT_IMAGE_TIME = 2000
     BACKGROUND_IMAGE = MediaFiles.BLACK_IMAGE
 
     def __init__(self):
@@ -132,7 +155,11 @@ class ScreensaverBase(object):
 
     def start_loop(self):
         log('Screensaver: start_loop start')
-        images = self.get_images()
+        imageGroups = self.getImageGroups()
+        # Extract all the images out of the groups and flatten them into an array
+        images = []
+        for imgGrp in imageGroups:
+            images.extend(imgGrp.getImages())
         if ScreensaverSettings.getRandomOrder():
             random.shuffle(images)
         image_details_cycle = self._cycle(images)
@@ -162,55 +189,66 @@ class ScreensaverBase(object):
                 yield element
 
     # Gets the set of images that are going to be used
-    def get_images(self):
-        log('Screensaver: get_images')
+    def getImageGroups(self):
+        log('Screensaver: getImageGroups')
         source = ScreensaverSettings.getSource()
         imageTypes = ScreensaverSettings.getImageTypes()
 
-        images = []
+        imageGroups = []
         if 'movies' in source:
-            images.extend(self._getJsonImages('VideoLibrary.GetMovies', 'movies', imageTypes))
+            imgGrp = self._getJsonImageGroups('VideoLibrary.GetMovies', 'movies', imageTypes)
+            imageGroups.extend(imgGrp)
         if 'tvshows' in source:
-            images.extend(self._getJsonImages('VideoLibrary.GetTVShows', 'tvshows', imageTypes))
+            self._getJsonImageGroups('VideoLibrary.GetTVShows', 'tvshows', imageTypes)
+            imageGroups.extend(imgGrp)
         if 'image_folder' in source:
             path = ScreensaverSettings.getImagePath()
             if path:
-                images.extend(self._getFolderImages(path))
-        if not images:
+                imgGrp = self._getFolderImages(path)
+                imageGroups.extend(imgGrp)
+        if not imageGroups:
             cmd = 'XBMC.Notification("{0}", "{1}")'.format(__addon__.getLocalizedString(32101), __addon__.getLocalizedString(32995))
             xbmc.executebuiltin(cmd)
             raise NoImagesException
-        return images
+        return imageGroups
 
     # Makes a JSON call to get the images for a given category
-    def _getJsonImages(self, method, key, imageTypes):
+    def _getJsonImageGroups(self, method, key, imageTypes):
         log("Screensaver: getJsonImages for %s" % key)
-        query = {'jsonrpc': '2.0', 'id': 0, 'method': method, 'params': {'properties': imageTypes}}
+        jsonProps = list(imageTypes)
+        # The file is actually the path for a TV Show, the video file for movies
+        jsonProps.append('file')
+        query = {'jsonrpc': '2.0', 'id': 0, 'method': method, 'params': {'properties': jsonProps}}
         response = json.loads(xbmc.executeJSONRPC(json.dumps(query)))
 
-        images = []
+        mediaGroups = []
         if ('result' in response) and (key in response['result']):
             for item in response['result'][key]:
-                for prop in imageTypes:
-                    if prop in item:
-                        # If we are dealing with fanart or thumbnail, then we can just store this value
-                        if prop in ['fanart']:
-                            # Set the aspect radio based on the type of image being shown
-                            imageDetails = {'file': item[prop], 'aspect_ratio': 16.0 / 9.0}
-                            images.append(imageDetails)
-                        elif prop in ['thumbnail']:
-                            imageDetails = {'file': item[prop], 'aspect_ratio': 2.0 / 3.0}
-                            images.append(imageDetails)
-                        elif prop in ['cast']:
-                            log("prop is cast")
-                            # If this cast member has an image, add it to the array
-                            for castItem in item['cast']:
-                                if 'thumbnail' in castItem:
-                                    imageDetails = {'file': castItem['thumbnail'], 'aspect_ratio': 2.0 / 3.0}
-                                    images.append(imageDetails)
-        log("Screensaver: Found %d images for %s" % (len(images), key))
-        return images
+                # Check to see if we can get the path or file for the video
+                if 'file' in item:
+                    mediaGroup = MediaGroup(item['file'])
+                    # Now get all the image information
+                    for prop in imageTypes:
+                        if prop in item:
+                            # If we are dealing with fanart or thumbnail, then we can just store this value
+                            if prop in ['fanart']:
+                                # Set the aspect radio based on the type of image being shown
+                                mediaGroup.addImage(item[prop], 16.0 / 9.0)
+                            elif prop in ['thumbnail']:
+                                mediaGroup.addImage(item[prop], 2.0 / 3.0)
+                            elif prop in ['cast']:
+                                # If this cast member has an image, add it to the array
+                                for castItem in item['cast']:
+                                    if 'thumbnail' in castItem:
+                                        mediaGroup.addImage(castItem['thumbnail'], 2.0 / 3.0)
+                    # Don't return an empty image list if there are no images
+                    if mediaGroup.imageCount > 0:
+                        mediaGroups.append(mediaGroup)
 
+        log("Screensaver: Found %d image sets for %s" % (len(mediaGroups), key))
+        return mediaGroups
+
+    # Creates a group containing all the images in a given directory
     def _getFolderImages(self, path):
         log('Screensaver: getFolderImages for path: %s' % repr(path))
         dirs, files = xbmcvfs.listdir(path)
@@ -222,7 +260,8 @@ class ScreensaverBase(object):
                     continue
                 images.extend(self._getFolderImages(xbmc.validatePath('/'.join((path, directory, '')))))
         log("Screensaver: Found %d images for %s" % (len(images), path))
-        return images
+        mediaGroup = MediaGroup(imageArray=images)
+        return mediaGroup
 
     def hide_loading_indicator(self):
         self.loading_control.setAnimations([('conditional', 'effect=fade start=100 end=0 time=500 condition=true')])
