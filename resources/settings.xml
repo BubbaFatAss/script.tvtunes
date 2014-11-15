@@ -52,7 +52,7 @@
         <setting id="screensaver_image_type" type="enum" label="32054" visible="eq(-1,0)|eq(-1,1)|eq(-1,2)" subsetting="true" lvalues="32060|32057|32058|32059" default="0"/>
         <setting id="screensaver_image_path" type="folder" source="pictures" label="32055" visible="eq(-2,3)" subsetting="true" default=""/>
         <setting id="screensaver_recursive" type="bool" label="32056" visible="eq(-3,3)" subsetting="true" default="true"/>
-		<setting id="screensaver_playthemes" type="bool" label="32061" visible="eq(-11,0)|eq(-11,2)" default="true"/>
+		<setting id="screensaver_playthemes" type="bool" label="32061" visible="eq(-11,0)|eq(-11,2)|eq(-11,3)|eq(-11,4)" default="true"/>
     </category>
 
 </settings>

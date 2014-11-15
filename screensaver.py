@@ -26,6 +26,17 @@ from settings import log
 from themeFinder import ThemeFiles
 
 
+# Helper method to allow the cycling through a list of values
+def _cycle(iterable):
+    saved = []
+    for element in iterable:
+        yield element
+        saved.append(element)
+    while saved:
+        for element in saved:
+            yield element
+
+
 class NoImagesException(Exception):
     pass
 
@@ -92,8 +103,12 @@ class MediaGroup(object):
             # If the user does not want to play themes, just have an empty set of themes
             self.themeFiles = ThemeFiles("")
         self.images = []
+        # If images were supplied, then add them to the list
         for img in imageArray:
             self.addImage(img, 16.0 / 9.0)
+        self.imageDetails_cycle = None
+        self.firstImage = None
+        self.imageRepeat = False
 
     # Add an image to the group, giving it's aspect radio
     def addImage(self, imageURL, aspectRatio):
@@ -110,11 +125,16 @@ class MediaGroup(object):
     def imageCount(self):
         return len(self.images)
 
+    def hasLooped(self):
+        return self.imageRepeat
+
     # Start playing a theme if there is one to play
     def startTheme(self):
         if self.themeFiles.hasThemes() and not xbmc.Player().isPlayingAudio():
-            self.isPlayingTheme = True
-            xbmc.Player().play(self.themeFiles.getThemePlaylist())
+            # Don't start the theme if we have already  shown all the images
+            if not self.imageRepeat:
+                self.isPlayingTheme = True
+                xbmc.Player().play(self.themeFiles.getThemePlaylist())
 
     # Check if the theme has completed playing
     def completedGroup(self):
@@ -131,6 +151,26 @@ class MediaGroup(object):
             self.isPlayingTheme = False
             if xbmc.Player().isPlayingAudio():
                 xbmc.Player().stop()
+
+    # Gets the next image details
+    def getNextImage(self):
+        if self.imageDetails_cycle is None:
+            # Before using the images, make sure they are all random
+            random.shuffle(self.images)
+            # Create the handle for the cycle
+            self.imageDetails_cycle = _cycle(self.images)
+        # Get the next image details
+        imageDetails = self.imageDetails_cycle.next()
+        # Check to see if we have stored details of the first image processed
+        # This was we know where the list started and ends
+        if self.firstImage is None:
+            self.firstImage = imageDetails['file']
+        else:
+            # Check if we have looped through all the images
+            if imageDetails['file'] == self.firstImage:
+                self.imageRepeat = True
+
+        return imageDetails
 
 
 # Base Screensaver class that handles all of the operations for a screensaver
@@ -188,40 +228,35 @@ class ScreensaverBase(object):
         # mix them all up so they are not always in the same order
         random.shuffle(imageGroups)
 
-        imageGroup_cycle = self._cycle(imageGroups)
-        image_controls_cycle = self._cycle(self.image_controls)
+        imageGroup_cycle = _cycle(imageGroups)
+        image_controls_cycle = _cycle(self.image_controls)
         self.hide_loading_indicator()
         imageGroup = imageGroup_cycle.next()
-        # Get all the images in this group
-        images = imageGroup.getImageDetails()
-        imageDetails_cycle = self._cycle(images)
-        imageDetails = imageDetails_cycle.next()
+        imageDetails = imageGroup.getNextImage()
 
-        # Save off the first image shown
-        firstImage = imageDetails['file']
-        hasLooped = False
         while not self.exit_requested:
             log('Screensaver: using image: %s' % repr(imageDetails['file']))
+
             # Start playing theme if there is one
             imageGroup.startTheme()
+            # Get the next control and set it displaying the image
             image_control = image_controls_cycle.next()
             self.process_image(image_control, imageDetails)
-            imageDetails = imageDetails_cycle.next()
+            # Now that we are showing the last image, load up the next one
+            imageDetails = imageGroup.getNextImage()
 
             # At this point we have moved the image onto the next one
             # so check if we have gone in a complete loop and there is
             # another group of images to pre-load
-            if firstImage == imageDetails['file']:
-                hasLooped = True
-            # Wait for the theme to complete playing at least once
-            if hasLooped and (len(imageGroups) > 1) and imageGroup.completedGroup():
+
+            # Wait for the theme to complete playing at least once, if it has not
+            # completed playing the theme at least once, then we can safely repeat
+            # the images we show
+            if imageGroup.hasLooped() and (len(imageGroups) > 1) and imageGroup.completedGroup():
                 # Move onto the next group, and the first image in that group
                 imageGroup = imageGroup_cycle.next()
-                images = imageGroup.getImageDetails()
-                imageDetails_cycle = self._cycle(images)
-                imageDetails = imageDetails_cycle.next()
-                firstImage = imageDetails['file']
-                hasLooped = False
+                # Get the next image from the new group
+                imageDetails = imageGroup.getNextImage()
 
             if self.image_count < self.FAST_IMAGE_COUNT:
                 self.image_count += 1
@@ -235,16 +270,6 @@ class ScreensaverBase(object):
         imageGroup.stopTheme()
 
         log('Screensaver: start_loop end')
-
-    # Helper method to allow the cycling through a list of values
-    def _cycle(self, iterable):
-        saved = []
-        for element in iterable:
-            yield element
-            saved.append(element)
-        while saved:
-            for element in saved:
-                yield element
 
     # Gets the set of images that are going to be used
     def getImageGroups(self):

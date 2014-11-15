@@ -423,6 +423,6 @@ class ScreensaverSettings():
     @staticmethod
     def isPlayThemes():
         # Currently only support playing themes in 2 of the modes
-        if int(__addon__.getSetting("screensaver_mode")) in [0, 2]:
+        if int(__addon__.getSetting("screensaver_mode")) in [0, 2, 3, 4]:
             return __addon__.getSetting("screensaver_playthemes") == 'true'
         return False
