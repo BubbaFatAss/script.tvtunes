@@ -16,10 +16,8 @@ else:
 __addon__ = xbmcaddon.Addon(id='script.tvtunes')
 __cwd__ = __addon__.getAddonInfo('path').decode("utf-8")
 __resource__ = xbmc.translatePath(os.path.join(__cwd__, 'resources').encode("utf-8")).decode("utf-8")
-__lib__ = xbmc.translatePath(os.path.join(__resource__, 'lib').encode("utf-8")).decode("utf-8")
 __media__ = xbmc.translatePath(os.path.join(__resource__, 'media').encode("utf-8")).decode("utf-8")
 
-sys.path.append(__lib__)
 
 from settings import ScreensaverSettings
 from settings import log
@@ -220,12 +218,12 @@ class ScreensaverBase(object):
     def start_loop(self):
         log('Screensaver: start_loop start')
         imageGroups = self.getImageGroups()
-        
+
         # Check to see if we failed to find any images
         if (imageGroups is None) or (not imageGroups):
             # A notification has already been shown
             return
-        
+
         # We have a lot of groups (Each different Movie or TV Show) so
         # mix them all up so they are not always in the same order
         random.shuffle(imageGroups)
@@ -339,7 +337,7 @@ class ScreensaverBase(object):
         dirs, files = xbmcvfs.listdir(path)
         images = [xbmc.validatePath(path + f) for f in files
                   if f.lower()[-3:] in ('jpg', 'png')]
-        if ScreensaverSettings.isRecursive()  and not self.exit_requested:
+        if ScreensaverSettings.isRecursive() and not self.exit_requested:
             for directory in dirs:
                 if directory.startswith('.'):
                     continue
@@ -671,7 +669,9 @@ class GridSwitchScreensaver(ScreensaverBase):
         image_control.setAnimations(animations)
 
 
-if __name__ == '__main__':
+# Function that will launch the screensaver and deal with all the work
+# to tidy it up afterwards
+def launchScreensaver():
     screensaver = ScreensaverManager()
     screensaver.start_loop()
     screensaver.close()

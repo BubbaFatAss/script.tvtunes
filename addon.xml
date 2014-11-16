@@ -12,7 +12,7 @@
 	<extension point="xbmc.python.pluginsource" library="plugin.py">
 		<provides>video</provides>
 	</extension>
-	<extension point="xbmc.ui.screensaver" library="screensaver.py"/>
+	<extension point="xbmc.ui.screensaver" library="saver.py"/>
 	<extension point="xbmc.addon.metadata">
 	
 		<summary lang="bg">Сваля и възпроизвежда мелодиите от вашите филми и сериали</summary>

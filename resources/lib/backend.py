@@ -527,6 +527,8 @@ class TunesBackend():
                 # will be if:
                 # 1) A Video is selected to play
                 # 2) We exit to the main menu away from the video view
+                # NOTE: The screensaver kicking in will only be picked up if the option
+                # "Use Visualization if Playing Audio" is disabled
                 screensaverStarted = WindowShowing.isScreensaver()
                 if (not WindowShowing.isVideoLibrary()) or screensaverStarted:
                     log("TunesBackend: Video Library no longer visible")
