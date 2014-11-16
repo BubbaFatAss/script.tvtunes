@@ -532,7 +532,7 @@ class TunesBackend():
                     log("TunesBackend: Video Library no longer visible")
                     # End playing cleanly (including any fade out) and then stop everything
                     if TvTunesStatus.isAlive():
-                        self.themePlayer.endPlaying()
+                        self.themePlayer.endPlaying(fastFade=screensaverStarted)
                     self.stop()
 
                     # It may be possible that we stopped for the screen-saver about to kick in
@@ -540,6 +540,7 @@ class TunesBackend():
                     # screen-saver, otherwise the action of us stopping the theme will reset the
                     # timeout and the user will have to wait longer
                     if screensaverStarted and (Settings.getXbmcMajorVersion() > 12):
+                        log("TunesBackend: Restarting screensaver that TvTunes stopped")
                         xbmc.executebuiltin("xbmc.ActivateScreensaver", True)
                     break
 
