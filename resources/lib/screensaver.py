@@ -203,8 +203,9 @@ class ScreensaverBase(object):
 
     def init_cycle_controls(self):
         log('Screensaver: init_cycle_controls start')
+        dimSetting = ScreensaverSettings.getDimValue()
         for i in xrange(self.IMAGE_CONTROL_COUNT):
-            img_control = xbmcgui.ControlImage(0, 0, 0, 0, '', aspectRatio=1, colorDiffuse=ScreensaverSettings.getDimValue())
+            img_control = xbmcgui.ControlImage(0, 0, 0, 0, '', aspectRatio=1, colorDiffuse=dimSetting)
             self.image_controls.append(img_control)
         log('Screensaver: init_cycle_controls end')
 
