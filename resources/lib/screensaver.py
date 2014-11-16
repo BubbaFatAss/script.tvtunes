@@ -180,7 +180,7 @@ class ScreensaverBase(object):
 
         # Set up all the required controls for the window
         self.loading_control = xbmcgui.ControlImage(576, 296, 128, 128, MediaFiles.LOADING_IMAGE)
-        self.background_control = xbmcgui.ControlImage(0, 0, 1280, 720, '')
+        self.background_control = xbmcgui.ControlImage(0, 0, 1280, 720, '', colorDiffuse=ScreensaverSettings.getDimValue())
         self.preload_control = xbmcgui.ControlImage(-1, -1, 1, 1, '')
         self.global_controls = [self.preload_control, self.background_control, self.loading_control]
 
@@ -204,7 +204,7 @@ class ScreensaverBase(object):
     def init_cycle_controls(self):
         log('Screensaver: init_cycle_controls start')
         for i in xrange(self.IMAGE_CONTROL_COUNT):
-            img_control = xbmcgui.ControlImage(0, 0, 0, 0, '', aspectRatio=1)
+            img_control = xbmcgui.ControlImage(0, 0, 0, 0, '', aspectRatio=1, colorDiffuse=ScreensaverSettings.getDimValue())
             self.image_controls.append(img_control)
         log('Screensaver: init_cycle_controls end')
 

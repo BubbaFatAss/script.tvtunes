@@ -277,6 +277,24 @@ class ScreensaverSettings():
         ['thumbnail'],
         ['cast']
     )
+    DIM_LEVEL = (
+        'FFFFFFFF',
+        'FFEEEEEE',
+        'FFEEEEEE',
+        'FFDDDDDD',
+        'FFCCCCCC',
+        'FFBBBBBB',
+        'FFAAAAAA',
+        'FF999999',
+        'FF888888',
+        'FF777777',
+        'FF666666',
+        'FF555555',
+        'FF444444',
+        'FF333333',
+        'FF222222',
+        'FF111111'
+    )
 
     @staticmethod
     def getMode():
@@ -339,3 +357,14 @@ class ScreensaverSettings():
     @staticmethod
     def isPlayThemes():
         return __addon__.getSetting("screensaver_playthemes") == 'true'
+
+    @staticmethod
+    def getDimValue():
+        # The actual dim level (Hex) is one of
+        # FF111111, FF222222 ... FFEEEEEE, FFFFFFFF
+        # Where FFFFFFFF is not changes
+        # So that is a total of 15 different options
+        if __addon__.getSetting("screensaver_dimlevel"):
+            return ScreensaverSettings.DIM_LEVEL[int(__addon__.getSetting("screensaver_dimlevel"))]
+        else:
+            return 'FFFFFFFF'

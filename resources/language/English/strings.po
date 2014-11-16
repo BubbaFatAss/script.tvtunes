@@ -240,8 +240,12 @@ msgctxt "#32063"
 msgid "Fanart,Thumbnail"
 msgstr ""
 
+msgctxt "#32064"
+msgid "Dim Level"
+msgstr ""
 
-#empty strings from id 32030 to 32100
+
+#empty strings from id 32065 to 32100
 
 msgctxt "#32101"
 msgid "ERROR"
