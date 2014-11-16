@@ -105,73 +105,6 @@ def dir_exists(dirpath):
 class Settings():
     # Value to calculate which version of XBMC we are using
     xbmcMajorVersion = 0
-    # The time the screensaver is set to (-1 for not set)
-    screensaverTime = 0
-
-    # Loads the Screensaver settings
-    # In Frodo there is no way to get the time before the screensaver
-    # is set to start, this means that the only way open to us is to
-    # load up the XML config file and read it from there.
-    # One of the many down sides of this is that the XML file will not
-    # be updated to reflect changes until the user exits XMBC
-    # This isn't a big problem as screensaver times are not changed
-    # too often
-    #
-    # Unfortunately the act of stopping the theme is seem as "activity"
-    # so it will reset the time, in Gotham, there will be a way to
-    # actually start the screensaver again, but until then there is
-    # not mush we can do
-    @staticmethod
-    def loadScreensaverSettings():
-        Settings.screensaverTime = -1
-        return -1
-
-#####################################################################
-# IMPORTANT NOTE
-# --------------
-# The method _loadScreensaverSettings has been commented out
-# because it breaks the rules for getting Add-ons accepted into
-# the official repository, the bug still exists but can be solved
-# in one of two ways:
-# 1) After installation of the addon, uncomment the following method
-# 2) Set the "Fade out after playing for (minutes)" to less than the
-#    screen saver value in TvTunes setting
-# Option 2 is recommended as will not need re-applying after updates
-#####################################################################
-
-#     def loadScreensaverSettings():
-#         if Settings.screensaverTime == 0:
-#             Settings.screenTimeOutSeconds = -1
-#             pguisettings = xbmc.translatePath('special://profile/guisettings.xml')
-#
-#             log("Settings: guisettings.xml location = %s" % pguisettings)
-#
-#             # Make sure we found the file and it exists
-#             if os.path.exists(pguisettings):
-#                 # Create an XML parser
-#                 elemTree = ET.ElementTree()
-#                 elemTree.parse(pguisettings)
-#
-#                 # First check to see if any screensaver is set
-#                 isEnabled = elemTree.findtext('screensaver/mode')
-#                 if (isEnabled == None) or (isEnabled == ""):
-#                     log("Settings: No Screensaver enabled")
-#                 else:
-#                     log("Settings: Screensaver set to %s" % isEnabled)
-#
-#                     # Get the screensaver setting in minutes
-#                     result = elemTree.findtext('screensaver/time')
-#                     if result != None:
-#                         log("Settings: Screensaver timeout set to %s" % result)
-#                         # Convert from minutes to seconds, also reduce by 30 seconds
-#                         # as we want to ensure we have time to stop before the
-#                         # screensaver kicks in
-#                         Settings.screenTimeOutSeconds = (int(result) * 60) - 10
-#                     else:
-#                         log("Settings: No Screensaver timeout found")
-#
-#                 del elemTree
-#         return Settings.screenTimeOutSeconds
 
     @staticmethod
     def isCustomPathEnabled():
@@ -237,19 +170,6 @@ class Settings():
         if extensionOnly:
             themeRegEx = '(.(' + fileTypes + ')$)'
         return themeRegEx
-
-    @staticmethod
-    def isTimout():
-        screensaverTime = Settings.loadScreensaverSettings()
-        if screensaverTime == -1:
-            return False
-        # It is a timeout if the idle time is larger that the time stored
-        # for when the screensaver is due to kick in
-        if (xbmc.getGlobalIdleTime() > screensaverTime):
-            log("Settings: Stopping due to screensaver")
-            return True
-        else:
-            return False
 
     @staticmethod
     def isShuffleThemes():

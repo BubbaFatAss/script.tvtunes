@@ -37,10 +37,6 @@ def _cycle(iterable):
             yield element
 
 
-class NoImagesException(Exception):
-    pass
-
-
 # Class used to create the correct type of screensaver class
 class ScreensaverManager(object):
     # Creates the correct type of Screensaver class
@@ -224,6 +220,12 @@ class ScreensaverBase(object):
     def start_loop(self):
         log('Screensaver: start_loop start')
         imageGroups = self.getImageGroups()
+        
+        # Check to see if we failed to find any images
+        if (imageGroups is None) or (not imageGroups):
+            # A notification has already been shown
+            return
+        
         # We have a lot of groups (Each different Movie or TV Show) so
         # mix them all up so they are not always in the same order
         random.shuffle(imageGroups)
@@ -278,21 +280,20 @@ class ScreensaverBase(object):
         imageTypes = ScreensaverSettings.getImageTypes()
 
         imageGroups = []
-        if 'movies' in source:
+        if ('movies' in source) and not self.exit_requested:
             imgGrp = self._getJsonImageGroups('VideoLibrary.GetMovies', 'movies', imageTypes)
             imageGroups.extend(imgGrp)
-        if 'tvshows' in source:
+        if ('tvshows' in source) and not self.exit_requested:
             imgGrp = self._getJsonImageGroups('VideoLibrary.GetTVShows', 'tvshows', imageTypes)
             imageGroups.extend(imgGrp)
-        if 'image_folder' in source:
+        if ('image_folder' in source) and not self.exit_requested:
             path = ScreensaverSettings.getImagePath()
             if path:
                 imgGrp = self._getFolderImages(path)
                 imageGroups.extend(imgGrp)
-        if not imageGroups:
+        if not imageGroups and not self.exit_requested:
             cmd = 'XBMC.Notification("{0}", "{1}")'.format(__addon__.getLocalizedString(32101), __addon__.getLocalizedString(32995))
             xbmc.executebuiltin(cmd)
-            raise NoImagesException
         return imageGroups
 
     # Makes a JSON call to get the images for a given category
@@ -308,7 +309,7 @@ class ScreensaverBase(object):
         if ('result' in response) and (key in response['result']):
             for item in response['result'][key]:
                 # Check to see if we can get the path or file for the video
-                if 'file' in item:
+                if ('file' in item) and not self.exit_requested:
                     mediaGroup = MediaGroup(item['file'])
                     # Now get all the image information
                     for prop in imageTypes:
@@ -338,7 +339,7 @@ class ScreensaverBase(object):
         dirs, files = xbmcvfs.listdir(path)
         images = [xbmc.validatePath(path + f) for f in files
                   if f.lower()[-3:] in ('jpg', 'png')]
-        if ScreensaverSettings.isRecursive():
+        if ScreensaverSettings.isRecursive()  and not self.exit_requested:
             for directory in dirs:
                 if directory.startswith('.'):
                     continue
@@ -672,10 +673,7 @@ class GridSwitchScreensaver(ScreensaverBase):
 
 if __name__ == '__main__':
     screensaver = ScreensaverManager()
-    try:
-        screensaver.start_loop()
-    except NoImagesException:
-        pass
+    screensaver.start_loop()
     screensaver.close()
     del screensaver
     sys.modules.clear()
