@@ -2,6 +2,7 @@
 import random
 import sys
 import os
+import traceback
 import xbmc
 import xbmcaddon
 import xbmcvfs
@@ -20,6 +21,7 @@ __media__ = xbmc.translatePath(os.path.join(__resource__, 'media').encode("utf-8
 
 
 from settings import ScreensaverSettings
+from settings import Settings
 from settings import log
 from themeFinder import ThemeFiles
 
@@ -86,6 +88,53 @@ class MediaFiles(object):
     TABLE_IMAGE = os.path.join(__media__, 'table.jpg')
 
 
+class VolumeDrop(object):
+    def __init__(self, *args):
+        self.reduceVolume = Settings.getDownVolume()
+        if self.reduceVolume != 0:
+            # Save the volume from before any alterations
+            self.original_volume = self._getVolume()
+
+    # This will return the volume in a range of 0-100
+    def _getVolume(self):
+        result = xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "Application.GetProperties", "params": { "properties": [ "volume" ] }, "id": 1}')
+
+        json_query = json.loads(result)
+        if ("result" in json_query) and ('volume' in json_query['result']):
+            # Get the volume value
+            volume = json_query['result']['volume']
+
+        log("VolumeDrop: current volume: %s%%" % str(volume))
+        return volume
+
+    # Sets the volume in the range 0-100
+    def _setVolume(self, newvolume):
+        # Can't use the RPC version as that will display the volume dialog
+        # '{"jsonrpc": "2.0", "method": "Application.SetVolume", "params": { "volume": %d }, "id": 1}'
+        xbmc.executebuiltin('XBMC.SetVolume(%d)' % newvolume, True)
+
+    def lowerVolume(self):
+        try:
+            if self.reduceVolume != 0:
+                vol = self.original_volume - self.reduceVolume
+                # Make sure the volume still has a value
+                if vol < 1:
+                    vol = 1
+                log("Player: volume goal: %d%%" % vol)
+                self._setVolume(vol)
+            else:
+                log("Player: No reduced volume option set")
+        except:
+            log("VolumeDrop: %s" % traceback.format_exc())
+
+    def restoreVolume(self):
+        try:
+            if self.reduceVolume != 0:
+                self._setVolume(self.original_volume)
+        except:
+            log("VolumeDrop: %s" % traceback.format_exc())
+
+
 # Class to hold groups of images and media
 class MediaGroup(object):
     def __init__(self, videoPath="", imageArray=[]):
@@ -125,7 +174,7 @@ class MediaGroup(object):
     # Start playing a theme if there is one to play
     def startTheme(self):
         if self.themeFiles.hasThemes() and not xbmc.Player().isPlayingAudio():
-            # Don't start the theme if we have already  shown all the images
+            # Don't start the theme if we have already shown all the images
             if not self.imageRepeat:
                 self.isPlayingTheme = True
                 xbmc.Player().play(self.themeFiles.getThemePlaylist())
@@ -216,6 +265,11 @@ class ScreensaverBase(object):
             # A notification has already been shown
             return
 
+        # We are at the point of starting the screensaver we should decrease the volume
+        # this point if needed
+        volumeCtrl = VolumeDrop()
+        volumeCtrl.lowerVolume()
+
         # We have a lot of groups (Each different Movie or TV Show) so
         # mix them all up so they are not always in the same order
         random.shuffle(imageGroups)
@@ -260,6 +314,9 @@ class ScreensaverBase(object):
 
         # Make sure we stop any outstanding playing theme
         imageGroup.stopTheme()
+
+        # Now restore the volume to what it should be
+        volumeCtrl.restoreVolume()
 
         log('Screensaver: start_loop end')
 

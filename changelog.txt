@@ -1,5 +1,12 @@
-v4.5.1
+TODO: (Screensaver)
+- Add Option to load extra images from "Artwork Downloader"
+- Add Extra loading thread to improve performance
+
+v4.5.2
 - Improve Grid Layout (More Cells and improved dimensions)
+- Added Slideshow Screensaver
+- Added Crossfade Screensaver
+- Add support for Theme Volume decrease (if set)
 
 v4.5.1
 - Initial version of TvTunes screensaver
