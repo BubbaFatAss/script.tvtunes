@@ -680,6 +680,56 @@ class GridSwitchScreensaver(ScreensaverBase):
         image_control.setAnimations(animations)
 
 
+class SliderScreensaver(ScreensaverBase):
+    MODE = 'Slider'
+    IMAGE_CONTROL_COUNT = 2
+    NEXT_IMAGE_TIME = 2000
+    previousImageControl = None
+
+    def load_settings(self):
+        self.NEXT_IMAGE_TIME = ScreensaverSettings.getWaitTime()
+        self.EFFECT_TIME = ScreensaverSettings.getEffectTime()
+
+    # Get how long to wait until the next image is shown
+    def getNextImageTime(self):
+        # Even amount of time between each zoom
+        return int(self.NEXT_IMAGE_TIME)
+
+    def process_image(self, image_control, imageDetails):
+        SLIDE_IN_ANIMATION = ('effect=slide start=1280,0 end=0,0 time=%d tween=cubic easing="inout" condition=true')
+        SLIDE_OUT_ANIMATION = ('effect=slide start=0,0 end=-1280,0 time=%d tween=cubic easing="inout" condition=true')
+        # hide the image
+        image_control.setVisible(False)
+        image_control.setImage('')
+        
+        # Work out the dimensions of the image to fill the screen but aspect ratio
+        x_position = 0
+        y_position = 0
+        width = 1280
+        height = 720
+        if imageDetails['aspect_ratio'] < 1:
+            # Taller than it is wide
+            width = int(height * imageDetails['aspect_ratio'])
+            x_position = int((1280 - width) / 2)
+        
+        inAnimations = [('conditional', SLIDE_IN_ANIMATION % self.EFFECT_TIME)]
+        outAnimations = [('conditional', SLIDE_OUT_ANIMATION % self.EFFECT_TIME)]
+        # set all parameters and properties
+        image_control.setImage(imageDetails['file'])
+        image_control.setPosition(x_position, y_position)
+        image_control.setWidth(width)
+        image_control.setHeight(height)
+        image_control.setAnimations(inAnimations)
+
+        # If the previous image is set, then slide it out
+        if self.previousImageControl:
+            self.previousImageControl.setAnimations(outAnimations)
+        
+        # show the image
+        image_control.setVisible(True)
+        self.previousImageControl = image_control
+
+
 # Function that will launch the screensaver and deal with all the work
 # to tidy it up afterwards
 def launchScreensaver():
