@@ -272,8 +272,12 @@ msgctxt "#32071"
 msgid "Bottom"
 msgstr ""
 
+msgctxt "#32072"
+msgid "Crossfade"
+msgstr ""
 
-#empty strings from id 32072 to 32100
+
+#empty strings from id 32073 to 32100
 
 msgctxt "#32101"
 msgid "ERROR"

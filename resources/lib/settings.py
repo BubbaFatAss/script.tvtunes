@@ -263,7 +263,8 @@ class ScreensaverSettings():
         'AppleTVLike',
         'GridSwitch',
         'Random',
-        'Slider'
+        'Slider',
+        'Crossfade'
     )
     SOURCES = (
         ['movies', 'tvshows'],

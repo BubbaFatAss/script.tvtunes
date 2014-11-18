@@ -803,6 +803,66 @@ class SliderScreensaver(ScreensaverBase):
         self.previousImageControl = image_control
 
 
+# Shows the images by fading the old one out and fading the new one in
+class CrossfadeScreensaver(ScreensaverBase):
+    MODE = 'Crossfade'
+
+    def __init__(self):
+        log('CrossfadeScreensaver: __init__')
+
+        self.previousImageControl = None
+        self.NEXT_IMAGE_TIME = ScreensaverSettings.getWaitTime()
+        self.EFFECT_TIME = ScreensaverSettings.getEffectTime()
+
+        # Default is to slide in from the left
+        FADE_IN_ANIMATION = ('effect=fade start=0 end=100 time=%d easing="inout" condition=true')
+        FADE_OUT_ANIMATION = ('effect=fade start=100 end=0 time=%d easing="inout" condition=true')
+
+        self.inAnimations = [('conditional', FADE_IN_ANIMATION % self.EFFECT_TIME)]
+        self.outAnimations = [('conditional', FADE_OUT_ANIMATION % self.EFFECT_TIME)]
+
+        ScreensaverBase.__init__(self)
+
+    # The number of image controls to create to handle the images
+    def getImageControlCount(self):
+        # Only need two image controls, one on the screen, and one to fade in next
+        return 2
+
+    # Get how long to wait until the next image is shown
+    def getNextImageTime(self):
+        # Even amount of time between each fade
+        return int(self.NEXT_IMAGE_TIME)
+
+    def process_image(self, image_control, imageDetails):
+        # hide the image
+        image_control.setVisible(False)
+
+        # Work out the dimensions of the image to fill the screen but aspect ratio
+        x_position = 0
+        y_position = 0
+        width = 1280
+        height = 720
+        if imageDetails['aspect_ratio'] < 1:
+            # Taller than it is wide
+            width = int(height * imageDetails['aspect_ratio'])
+            x_position = int((1280 - width) / 2)
+
+        # set all parameters and properties
+        image_control.setImage(imageDetails['file'])
+        image_control.setPosition(x_position, y_position)
+        image_control.setWidth(width)
+        image_control.setHeight(height)
+        image_control.setAnimations(self.inAnimations)
+
+        # If the previous image is set, then slide it out
+        if self.previousImageControl:
+            self.previousImageControl.setAnimations(self.outAnimations)
+
+        # show the image
+        image_control.setVisible(True)
+        self.previousImageControl = image_control
+
+
 # Function that will launch the screensaver and deal with all the work
 # to tidy it up afterwards
 def launchScreensaver():
