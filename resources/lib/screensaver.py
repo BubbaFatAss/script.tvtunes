@@ -404,14 +404,19 @@ class ScreensaverBase(object):
         log('Screensaver: del_controls end')
 
 
+# Shows the images as if they are being dropped one after the other onto a table
 class TableDropScreensaver(ScreensaverBase):
     MODE = 'TableDrop'
     BACKGROUND_IMAGE = MediaFiles.TABLE_IMAGE
     IMAGE_CONTROL_COUNT = 20
-    FAST_IMAGE_COUNT = 0
     NEXT_IMAGE_TIME = 1500
     MIN_WIDEST_DIMENSION = 500
     MAX_WIDEST_DIMENSION = 700
+
+    # Animation values
+    ROTATE_ANIMATION = ('effect=rotate start=0 end=%d center=auto time=%d delay=0 tween=circle condition=true')
+    DROP_ANIMATION = ('effect=zoom start=%d end=100 center=auto time=%d delay=0 tween=circle condition=true')
+    FADE_ANIMATION = ('effect=fade start=0 end=100 time=200 condition=true')
 
     def load_settings(self):
         self.NEXT_IMAGE_TIME = ScreensaverSettings.getWaitTime()
@@ -422,10 +427,8 @@ class TableDropScreensaver(ScreensaverBase):
         return int(self.NEXT_IMAGE_TIME)
 
     def process_image(self, image_control, imageDetails):
-        ROTATE_ANIMATION = ('effect=rotate start=0 end=%d center=auto time=%d delay=0 tween=circle condition=true')
-        DROP_ANIMATION = ('effect=zoom start=%d end=100 center=auto time=%d delay=0 tween=circle condition=true')
-        FADE_ANIMATION = ('effect=fade start=0 end=100 time=200 condition=true')
-        # hide the image
+        # Hide the image - this could have been used previously and visible at the bottom of the stack
+        # of images that we have
         image_control.setVisible(False)
         image_control.setImage('')
         # re-stack it (to be on top)
@@ -445,9 +448,9 @@ class TableDropScreensaver(ScreensaverBase):
         drop_duration = drop_height * 1.5
         rotation_degrees = random.uniform(-20, 20)
         rotation_duration = drop_duration
-        animations = [('conditional', FADE_ANIMATION),
-                      ('conditional', ROTATE_ANIMATION % (rotation_degrees, rotation_duration)),
-                      ('conditional', DROP_ANIMATION % (drop_height, drop_duration))]
+        animations = [('conditional', self.FADE_ANIMATION),
+                      ('conditional', self.ROTATE_ANIMATION % (rotation_degrees, rotation_duration)),
+                      ('conditional', self.DROP_ANIMATION % (drop_height, drop_duration))]
         # set all parameters and properties
         image_control.setImage(imageDetails['file'])
         image_control.setPosition(x_position, y_position)
@@ -458,11 +461,16 @@ class TableDropScreensaver(ScreensaverBase):
         image_control.setVisible(True)
 
 
+# Shows the images like the Star Wars introduction sequence moving of into the distance
 class StarWarsScreensaver(ScreensaverBase):
     MODE = 'StarWars'
     BACKGROUND_IMAGE = MediaFiles.STARS_IMAGE
     IMAGE_CONTROL_COUNT = 6
     SPEED = 0.5
+
+    # Animation values
+    TILT_ANIMATION = ('effect=rotatex start=0 end=55 center=auto time=0 condition=true')
+    MOVE_ANIMATION = ('effect=slide start=0,2000 end=0,-3840 time=%d tween=linear condition=true')
 
     def load_settings(self):
         self.SPEED = ScreensaverSettings.getSpeed()
@@ -484,11 +492,9 @@ class StarWarsScreensaver(ScreensaverBase):
         return int(self.NEXT_IMAGE_TIME)
 
     def process_image(self, image_control, imageDetails):
-        TILT_ANIMATION = ('effect=rotatex start=0 end=55 center=auto time=0 condition=true')
-        MOVE_ANIMATION = ('effect=slide start=0,2000 end=0,-3840 time=%d tween=linear condition=true')
-        # hide the image
-        image_control.setImage('')
+        # Hide the image (It should have already disappeared off the screen, but just in case)
         image_control.setVisible(False)
+        image_control.setImage('')
         # re-stack it (to be on top)
         self.xbmc_window.removeControl(image_control)
         self.xbmc_window.addControl(image_control)
@@ -499,8 +505,8 @@ class StarWarsScreensaver(ScreensaverBase):
         y_position = 0
         if height > 720:
             y_position = int((height - 720) / -2)
-        animations = [('conditional', TILT_ANIMATION),
-                      ('conditional', MOVE_ANIMATION % self.EFFECT_TIME)]
+        animations = [('conditional', self.TILT_ANIMATION),
+                      ('conditional', self.MOVE_ANIMATION % self.EFFECT_TIME)]
         # set all parameters and properties
         image_control.setPosition(x_position, y_position)
         image_control.setWidth(width)
@@ -511,11 +517,15 @@ class StarWarsScreensaver(ScreensaverBase):
         image_control.setVisible(True)
 
 
+# Shows the images being zoomed into one after the other
 class RandomZoomInScreensaver(ScreensaverBase):
     MODE = 'RandomZoomIn'
     IMAGE_CONTROL_COUNT = 7
     NEXT_IMAGE_TIME = 2000
     EFFECT_TIME = 5000
+
+    # Animation values
+    ZOOM_ANIMATION = ('effect=zoom start=1 end=100 center=%d,%d time=%d tween=quadratic condition=true')
 
     def load_settings(self):
         self.NEXT_IMAGE_TIME = ScreensaverSettings.getWaitTime()
@@ -527,7 +537,6 @@ class RandomZoomInScreensaver(ScreensaverBase):
         return int(self.NEXT_IMAGE_TIME)
 
     def process_image(self, image_control, imageDetails):
-        ZOOM_ANIMATION = ('effect=zoom start=1 end=100 center=%d,%d time=%d tween=quadratic condition=true')
         # hide the image
         image_control.setVisible(False)
         image_control.setImage('')
@@ -547,7 +556,7 @@ class RandomZoomInScreensaver(ScreensaverBase):
             y_position = int((height - 720) / -3)
         zoom_x = random.randint(0, 1280)
         zoom_y = random.randint(0, 720)
-        animations = [('conditional', ZOOM_ANIMATION % (zoom_x, zoom_y, self.EFFECT_TIME))]
+        animations = [('conditional', self.ZOOM_ANIMATION % (zoom_x, zoom_y, self.EFFECT_TIME))]
         # set all parameters and properties
         image_control.setImage(imageDetails['file'])
         image_control.setPosition(x_position, y_position)
@@ -558,6 +567,7 @@ class RandomZoomInScreensaver(ScreensaverBase):
         image_control.setVisible(True)
 
 
+# Shows images creeping up from the bottom of the screen with a random overlap
 class AppleTVLikeScreensaver(ScreensaverBase):
     MODE = 'AppleTVLike'
     IMAGE_CONTROL_COUNT = 35
@@ -565,6 +575,9 @@ class AppleTVLikeScreensaver(ScreensaverBase):
     DISTANCE_RATIO = 0.7
     SPEED = 1.0
     CONCURRENCY = 1.0
+
+    # Animation values
+    MOVE_ANIMATION = ('effect=slide start=0,720 end=0,-720 center=auto time=%s tween=linear delay=0 condition=true')
 
     def load_settings(self):
         self.SPEED = ScreensaverSettings.getSpeed()
@@ -593,7 +606,6 @@ class AppleTVLikeScreensaver(ScreensaverBase):
         random.shuffle(self.image_controls)
 
     def process_image(self, image_control, imageDetails):
-        MOVE_ANIMATION = ('effect=slide start=0,720 end=0,-720 center=auto time=%s tween=linear delay=0 condition=true')
         image_control.setVisible(False)
         image_control.setImage('')
         # calculate all parameters and properties based on the already set
@@ -609,7 +621,7 @@ class AppleTVLikeScreensaver(ScreensaverBase):
 
         time = self.MAX_TIME / zoom * self.DISTANCE_RATIO * 100
 
-        animations = [('conditional', MOVE_ANIMATION % time)]
+        animations = [('conditional', self.MOVE_ANIMATION % time)]
         # set all parameters and properties
         image_control.setImage(imageDetails['file'])
         image_control.setPosition(x_position, y_position)
@@ -620,6 +632,7 @@ class AppleTVLikeScreensaver(ScreensaverBase):
         image_control.setVisible(True)
 
 
+# Shows all the images in a grid and then fades new images in over time
 class GridSwitchScreensaver(ScreensaverBase):
     MODE = 'GridSwitch'
     COLUMNS = 4
@@ -630,6 +643,10 @@ class GridSwitchScreensaver(ScreensaverBase):
 
     IMAGE_CONTROL_COUNT = COLUMNS * ROWS
     FAST_IMAGE_COUNT = IMAGE_CONTROL_COUNT
+
+    # Animation values
+    FADE_OUT_ANIMATION = ('effect=fade start=100 end=0 time=%d condition=true')
+    FADE_IN_ANIMATION = ('effect=fade start=0 end=100 time=%d condition=true')
 
     def load_settings(self):
         self.NEXT_IMAGE_TIME = ScreensaverSettings.getWaitTime()
@@ -670,18 +687,18 @@ class GridSwitchScreensaver(ScreensaverBase):
 
     def process_image(self, image_control, imageDetails):
         if not self.image_count < self.FAST_IMAGE_COUNT:
-            FADE_OUT_ANIMATION = ('effect=fade start=100 end=0 time=%d condition=true' % self.EFFECT_TIME)
-            animations = [('conditional', FADE_OUT_ANIMATION)]
+            animations = [('conditional', self.FADE_OUT_ANIMATION % self.EFFECT_TIME)]
             image_control.setAnimations(animations)
             xbmc.sleep(self.EFFECT_TIME)
         image_control.setImage(imageDetails['file'])
-        FADE_IN_ANIMATION = ('effect=fade start=0 end=100 time=%d condition=true' % self.EFFECT_TIME)
-        animations = [('conditional', FADE_IN_ANIMATION)]
+        animations = [('conditional', self.FADE_IN_ANIMATION % self.EFFECT_TIME)]
         image_control.setAnimations(animations)
 
 
+# Shows the images by sliding one image into view while sliding the old one out of view
 class SliderScreensaver(ScreensaverBase):
     MODE = 'Slider'
+    # Only need two image controls, one on the screen, and one to slide on next
     IMAGE_CONTROL_COUNT = 2
     NEXT_IMAGE_TIME = 2000
     previousImageControl = None
@@ -690,18 +707,32 @@ class SliderScreensaver(ScreensaverBase):
         self.NEXT_IMAGE_TIME = ScreensaverSettings.getWaitTime()
         self.EFFECT_TIME = ScreensaverSettings.getEffectTime()
 
+        # Default is to slide in from the left
+        SLIDE_IN_ANIMATION = ('effect=slide start=-1280.0 end=0,0 time=%d tween=cubic easing="inout" condition=true')
+        SLIDE_OUT_ANIMATION = ('effect=slide start=0,0 end=1280,0 time=%d tween=cubic easing="inout" condition=true')
+        origin = ScreensaverSettings.getSlideFromOrigin()
+        if origin == 'Right':
+            SLIDE_IN_ANIMATION = ('effect=slide start=1280,0 end=0,0 time=%d tween=cubic easing="inout" condition=true')
+            SLIDE_OUT_ANIMATION = ('effect=slide start=0,0 end=-1280,0 time=%d tween=cubic easing="inout" condition=true')
+        elif origin == 'Top':
+            SLIDE_IN_ANIMATION = ('effect=slide start=0,-1280 end=0,0 time=%d tween=cubic easing="inout" condition=true')
+            SLIDE_OUT_ANIMATION = ('effect=slide start=0,0 end=0,1280 time=%d tween=cubic easing="inout" condition=true')
+        elif origin == 'Bottom':
+            SLIDE_IN_ANIMATION = ('effect=slide start=0,1280 end=0,0 time=%d tween=cubic easing="inout" condition=true')
+            SLIDE_OUT_ANIMATION = ('effect=slide start=0,0 end=0,-1280 time=%d tween=cubic easing="inout" condition=true')
+
+        self.inAnimations = [('conditional', SLIDE_IN_ANIMATION % self.EFFECT_TIME)]
+        self.outAnimations = [('conditional', SLIDE_OUT_ANIMATION % self.EFFECT_TIME)]
+
     # Get how long to wait until the next image is shown
     def getNextImageTime(self):
         # Even amount of time between each zoom
         return int(self.NEXT_IMAGE_TIME)
 
     def process_image(self, image_control, imageDetails):
-        SLIDE_IN_ANIMATION = ('effect=slide start=1280,0 end=0,0 time=%d tween=cubic easing="inout" condition=true')
-        SLIDE_OUT_ANIMATION = ('effect=slide start=0,0 end=-1280,0 time=%d tween=cubic easing="inout" condition=true')
         # hide the image
         image_control.setVisible(False)
-        image_control.setImage('')
-        
+
         # Work out the dimensions of the image to fill the screen but aspect ratio
         x_position = 0
         y_position = 0
@@ -711,20 +742,18 @@ class SliderScreensaver(ScreensaverBase):
             # Taller than it is wide
             width = int(height * imageDetails['aspect_ratio'])
             x_position = int((1280 - width) / 2)
-        
-        inAnimations = [('conditional', SLIDE_IN_ANIMATION % self.EFFECT_TIME)]
-        outAnimations = [('conditional', SLIDE_OUT_ANIMATION % self.EFFECT_TIME)]
+
         # set all parameters and properties
         image_control.setImage(imageDetails['file'])
         image_control.setPosition(x_position, y_position)
         image_control.setWidth(width)
         image_control.setHeight(height)
-        image_control.setAnimations(inAnimations)
+        image_control.setAnimations(self.inAnimations)
 
         # If the previous image is set, then slide it out
         if self.previousImageControl:
-            self.previousImageControl.setAnimations(outAnimations)
-        
+            self.previousImageControl.setAnimations(self.outAnimations)
+
         # show the image
         image_control.setVisible(True)
         self.previousImageControl = image_control

@@ -252,8 +252,28 @@ msgctxt "#32066"
 msgid "Slider"
 msgstr ""
 
+msgctxt "#32067"
+msgid "Slide In From"
+msgstr ""
 
-#empty strings from id 32065 to 32100
+msgctxt "#32068"
+msgid "Left"
+msgstr ""
+
+msgctxt "#32069"
+msgid "Right"
+msgstr ""
+
+msgctxt "#32070"
+msgid "Top"
+msgstr ""
+
+msgctxt "#32071"
+msgid "Bottom"
+msgstr ""
+
+
+#empty strings from id 32072 to 32100
 
 msgctxt "#32101"
 msgid "ERROR"

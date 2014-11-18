@@ -48,6 +48,7 @@
         <setting id="screensaver_gridswitch_columns" label="32049" visible="eq(-4,4)" subsetting="true" type="slider" default="4" range="2,1,10" option="int"/>
         <setting id="screensaver_gridswitch_random" type="bool" visible="eq(-5,4)"  subsetting="true" label="32052" default="true"/>
         <setting id="screensaver_appletvlike_concurrency" label="32051" visible="eq(-6,3)" subsetting="true" type="slider" default="1" range="0.5,0.25,5.0" option="float"/>
+        <setting id="screensaver_slide_from" type="enum" label="32067" visible="eq(-7,6)" subsetting="true" lvalues="32068|32069|32070|32071" default="0"/>
     	<setting type="sep"/>
         <setting id="screensaver_source" type="enum" label="32053" lvalues="32060|32201|32202|32055" default="0"/>
         <setting id="screensaver_image_type" type="enum" label="32054" visible="!eq(-1,3)" subsetting="true" lvalues="32062|32063|32065|32057|32058|32059" default="0"/>

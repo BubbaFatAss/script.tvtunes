@@ -297,6 +297,12 @@ class ScreensaverSettings():
         'FF222222',
         'FF111111'
     )
+    SLIDE_FROM = (
+        'Left',
+        'Right',
+        'Top',
+        'Bottom'
+    )
 
     @staticmethod
     def getMode():
@@ -370,3 +376,11 @@ class ScreensaverSettings():
             return ScreensaverSettings.DIM_LEVEL[int(__addon__.getSetting("screensaver_dimlevel"))]
         else:
             return 'FFFFFFFF'
+
+    @staticmethod
+    def getSlideFromOrigin():
+        selectedOrigin = __addon__.getSetting("screensaver_slide_from")
+        originId = 0
+        if selectedOrigin:
+            originId = int(selectedOrigin)
+        return ScreensaverSettings.SLIDE_FROM[originId]
