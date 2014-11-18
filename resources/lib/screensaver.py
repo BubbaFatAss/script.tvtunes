@@ -622,19 +622,29 @@ class AppleTVLikeScreensaver(ScreensaverBase):
 
 class GridSwitchScreensaver(ScreensaverBase):
     MODE = 'GridSwitch'
-    ROWS_AND_COLUMNS = 4
+    COLUMNS = 4
+    ROWS = 4
     NEXT_IMAGE_TIME = 1000
     EFFECT_TIME = 500
     RANDOM_ORDER = False
 
-    IMAGE_CONTROL_COUNT = ROWS_AND_COLUMNS ** 2
+    IMAGE_CONTROL_COUNT = COLUMNS * ROWS
     FAST_IMAGE_COUNT = IMAGE_CONTROL_COUNT
 
     def load_settings(self):
         self.NEXT_IMAGE_TIME = ScreensaverSettings.getWaitTime()
-        self.ROWS_AND_COLUMNS = ScreensaverSettings.getGridswitchRowsColumns()
+        self.COLUMNS = ScreensaverSettings.getGridswitchRowsColumns()
         self.RANDOM_ORDER = ScreensaverSettings.isGridswitchRandom()
-        self.IMAGE_CONTROL_COUNT = self.ROWS_AND_COLUMNS ** 2
+
+        # Work out if we are dealing with images that are 16.0 / 9.0 (Fanart)
+        # or 2.0 / 3.0 (Thumbnail and Cast)
+        self.ROWS = self.COLUMNS
+        if 'fanart' not in ScreensaverSettings.getImageTypes():
+            # Screen is 16 x 9, but images are 2 x 3
+            # So for every 8 across we get 3 down
+            self.ROWS = int(self.COLUMNS * 3 / 8) + 1
+        self.IMAGE_CONTROL_COUNT = self.COLUMNS * self.ROWS
+
         self.FAST_IMAGE_COUNT = self.IMAGE_CONTROL_COUNT
 
     # Get how long to wait until the next image is shown
@@ -647,9 +657,9 @@ class GridSwitchScreensaver(ScreensaverBase):
         # Shuffle image list to have random order.
         super(GridSwitchScreensaver, self).stack_cycle_controls()
         for i, image_control in enumerate(self.image_controls):
-            current_row, current_col = divmod(i, self.ROWS_AND_COLUMNS)
-            width = 1280 / self.ROWS_AND_COLUMNS
-            height = 720 / self.ROWS_AND_COLUMNS
+            current_row, current_col = divmod(i, self.COLUMNS)
+            width = int(1280 / self.COLUMNS)
+            height = int(720 / self.ROWS)
             x_position = width * current_col
             y_position = height * current_row
             image_control.setPosition(x_position, y_position)

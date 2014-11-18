@@ -1,4 +1,7 @@
 v4.5.1
+- Improve Grid Layout (More Cells and improved dimensions)
+
+v4.5.1
 - Initial version of TvTunes screensaver
 
 v4.5.0

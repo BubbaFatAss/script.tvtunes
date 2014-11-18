@@ -181,7 +181,7 @@ msgid "Effect Time (Seconds)"
 msgstr ""
 
 msgctxt "#32049"
-msgid "Rows and Columns"
+msgid "Columns"
 msgstr ""
 
 msgctxt "#32050"
@@ -242,6 +242,14 @@ msgstr ""
 
 msgctxt "#32064"
 msgid "Dim Level"
+msgstr ""
+
+msgctxt "#32065"
+msgid "Thumbnail,Cast"
+msgstr ""
+
+msgctxt "#32066"
+msgid "Slider"
 msgstr ""
 
 

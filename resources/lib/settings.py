@@ -262,7 +262,8 @@ class ScreensaverSettings():
         'RandomZoomIn',
         'AppleTVLike',
         'GridSwitch',
-        'Random'
+        'Random',
+        'Slider'
     )
     SOURCES = (
         ['movies', 'tvshows'],
@@ -273,6 +274,7 @@ class ScreensaverSettings():
     IMAGE_TYPES = (
         ['fanart', 'thumbnail', 'cast'],
         ['fanart', 'thumbnail'],
+        ['thumbnail', 'cast'],
         ['fanart'],
         ['thumbnail'],
         ['cast']
@@ -348,7 +350,7 @@ class ScreensaverSettings():
 
     @staticmethod
     def getGridswitchRowsColumns():
-        return int(__addon__.getSetting('screensaver_gridswitch_rows_columns'))
+        return int(__addon__.getSetting('screensaver_gridswitch_columns'))
 
     @staticmethod
     def isGridswitchRandom():
