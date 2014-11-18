@@ -170,9 +170,6 @@ class MediaGroup(object):
 # Base Screensaver class that handles all of the operations for a screensaver
 class ScreensaverBase(object):
     MODE = None
-    IMAGE_CONTROL_COUNT = 10
-    FAST_IMAGE_COUNT = 0
-    BACKGROUND_IMAGE = MediaFiles.BLACK_IMAGE
 
     def __init__(self):
         log('Screensaver: __init__ start')
@@ -193,32 +190,26 @@ class ScreensaverBase(object):
         # Add all the controls to the window
         self.xbmc_window.addControls(self.global_controls)
 
-        self.load_settings()
-        self.init_cycle_controls()
+        self._init_cycle_controls()
         self.stack_cycle_controls()
         log('Screensaver: __init__ end')
 
-    def load_settings(self):
-        pass
-
-    def init_cycle_controls(self):
+    def _init_cycle_controls(self):
         log('Screensaver: init_cycle_controls start')
         dimSetting = ScreensaverSettings.getDimValue()
-        for i in xrange(self.IMAGE_CONTROL_COUNT):
+        for i in xrange(self.getImageControlCount()):
             img_control = xbmcgui.ControlImage(0, 0, 0, 0, '', aspectRatio=1, colorDiffuse=dimSetting)
             self.image_controls.append(img_control)
-        log('Screensaver: init_cycle_controls end')
 
     def stack_cycle_controls(self):
-        log('Screensaver: stack_cycle_controls start')
+        log('Screensaver: stack_cycle_controls')
         # add controls to the window in same order as image_controls list
         # so any new image will be in front of all previous images
         self.xbmc_window.addControls(self.image_controls)
-        log('Screensaver: stack_cycle_controls end')
 
     def start_loop(self):
         log('Screensaver: start_loop start')
-        imageGroups = self.getImageGroups()
+        imageGroups = self._getImageGroups()
 
         # Check to see if we failed to find any images
         if (imageGroups is None) or (not imageGroups):
@@ -231,12 +222,12 @@ class ScreensaverBase(object):
 
         imageGroup_cycle = _cycle(imageGroups)
         image_controls_cycle = _cycle(self.image_controls)
-        self.hide_loading_indicator()
+        self._hide_loading_indicator()
         imageGroup = imageGroup_cycle.next()
         imageDetails = imageGroup.getNextImage()
 
         while not self.exit_requested:
-            log('Screensaver: using image: %s' % repr(imageDetails['file']))
+            log('Screensaver: Using image: %s' % repr(imageDetails['file']))
 
             # Start playing theme if there is one
             imageGroup.startTheme()
@@ -259,11 +250,11 @@ class ScreensaverBase(object):
                 # Get the next image from the new group
                 imageDetails = imageGroup.getNextImage()
 
-            if self.image_count < self.FAST_IMAGE_COUNT:
+            if self.image_count < self.getFastImageCount():
                 self.image_count += 1
             else:
                 # Pre-load the next image that is going to be shown
-                self.preload_image(imageDetails['file'])
+                self._preload_image(imageDetails['file'])
                 # Wait before showing the next image
                 self.wait()
 
@@ -273,7 +264,7 @@ class ScreensaverBase(object):
         log('Screensaver: start_loop end')
 
     # Gets the set of images that are going to be used
-    def getImageGroups(self):
+    def _getImageGroups(self):
         log('Screensaver: getImageGroups')
         source = ScreensaverSettings.getSource()
         imageTypes = ScreensaverSettings.getImageTypes()
@@ -347,16 +338,36 @@ class ScreensaverBase(object):
         mediaGroup = MediaGroup(imageArray=images)
         return [mediaGroup]
 
-    def hide_loading_indicator(self):
+    def _hide_loading_indicator(self):
         self.loading_control.setAnimations([('conditional', 'effect=fade start=100 end=0 time=500 condition=true')])
         self.background_control.setAnimations([('conditional', 'effect=fade start=0 end=100 time=500 delay=500 condition=true')])
-        self.background_control.setImage(self.BACKGROUND_IMAGE)
+        self.background_control.setImage(self.getBackgroundImage())
+
+    # Gets the image to use as the background
+    def getBackgroundImage(self):
+        # Default to a black image
+        return MediaFiles.BLACK_IMAGE
+
+    # The number of image controls to create to handle the images
+    def getImageControlCount(self):
+        # Needs to be implemented in sub class
+        raise NotImplementedError
+
+    # The number of images that need to be loaded quickly when launching the screen saver
+    def getFastImageCount(self):
+        # Allow specific screen savers to override this - default is none loaded quickly
+        return 0
+
+    # Get how long to wait until the next image is shown
+    def getNextImageTime(self):
+        # Needs to be implemented in sub class
+        raise NotImplementedError
 
     def process_image(self, image_control, imageDetails):
         # Needs to be implemented in sub class
         raise NotImplementedError
 
-    def preload_image(self, image_url):
+    def _preload_image(self, image_url):
         # set the next image to an invisible image-control for caching
         log('Screensaver: preloading image: %s' % repr(image_url))
         self.preload_control.setImage(image_url)
@@ -377,21 +388,14 @@ class ScreensaverBase(object):
             remaining_wait_time -= chunk_wait_time
             xbmc.sleep(chunk_wait_time)
 
-    # Get how long to wait until the next image is shown
-    def getNextImageTime(self):
-        # Needs to be implemented in sub class
-        raise NotImplementedError
-
     def stop(self):
         log('Screensaver: stop')
         self.exit_requested = True
         self.exit_monitor = None
 
     def close(self):
-        self.del_controls()
-
-    def del_controls(self):
-        log('Screensaver: del_controls start')
+        # Delete all the controls on close
+        log('Screensaver: close')
         self.xbmc_window.removeControls(self.image_controls)
         self.xbmc_window.removeControls(self.global_controls)
         self.preload_control = None
@@ -401,25 +405,34 @@ class ScreensaverBase(object):
         self.global_controls = []
         self.xbmc_window.close()
         self.xbmc_window = None
-        log('Screensaver: del_controls end')
 
 
 # Shows the images as if they are being dropped one after the other onto a table
 class TableDropScreensaver(ScreensaverBase):
     MODE = 'TableDrop'
-    BACKGROUND_IMAGE = MediaFiles.TABLE_IMAGE
-    IMAGE_CONTROL_COUNT = 20
-    NEXT_IMAGE_TIME = 1500
-    MIN_WIDEST_DIMENSION = 500
-    MAX_WIDEST_DIMENSION = 700
 
-    # Animation values
-    ROTATE_ANIMATION = ('effect=rotate start=0 end=%d center=auto time=%d delay=0 tween=circle condition=true')
-    DROP_ANIMATION = ('effect=zoom start=%d end=100 center=auto time=%d delay=0 tween=circle condition=true')
-    FADE_ANIMATION = ('effect=fade start=0 end=100 time=200 condition=true')
+    def __init__(self):
+        log('TableDropScreensaver: __init__')
 
-    def load_settings(self):
+        # Animation values
+        self.ROTATE_ANIMATION = ('effect=rotate start=0 end=%d center=auto time=%d delay=0 tween=circle condition=true')
+        self.DROP_ANIMATION = ('effect=zoom start=%d end=100 center=auto time=%d delay=0 tween=circle condition=true')
+        self.FADE_ANIMATION = ('effect=fade start=0 end=100 time=200 condition=true')
+
         self.NEXT_IMAGE_TIME = ScreensaverSettings.getWaitTime()
+
+        self.MIN_WIDEST_DIMENSION = 500
+        self.MAX_WIDEST_DIMENSION = 700
+
+        ScreensaverBase.__init__(self)
+
+    # Gets the image to use as the background
+    def getBackgroundImage(self):
+        return MediaFiles.TABLE_IMAGE
+
+    # The number of image controls to create to handle the images
+    def getImageControlCount(self):
+        return 20
 
     # Get how long to wait until the next image is shown
     def getNextImageTime(self):
@@ -464,15 +477,16 @@ class TableDropScreensaver(ScreensaverBase):
 # Shows the images like the Star Wars introduction sequence moving of into the distance
 class StarWarsScreensaver(ScreensaverBase):
     MODE = 'StarWars'
-    BACKGROUND_IMAGE = MediaFiles.STARS_IMAGE
-    IMAGE_CONTROL_COUNT = 6
-    SPEED = 0.5
 
-    # Animation values
-    TILT_ANIMATION = ('effect=rotatex start=0 end=55 center=auto time=0 condition=true')
-    MOVE_ANIMATION = ('effect=slide start=0,2000 end=0,-3840 time=%d tween=linear condition=true')
+    def __init__(self):
+        log('StarWarsScreensaver: __init__')
 
-    def load_settings(self):
+        # Animation values
+        self.TILT_ANIMATION = ('effect=rotatex start=0 end=55 center=auto time=0 condition=true')
+        self.MOVE_ANIMATION = ('effect=slide start=0,2000 end=0,-3840 time=%d tween=linear condition=true')
+
+        self.NEXT_IMAGE_TIME = ScreensaverSettings.getWaitTime()
+
         self.SPEED = ScreensaverSettings.getSpeed()
         self.EFFECT_TIME = 9000.0 / self.SPEED
         self.NEXT_IMAGE_TIME = self.EFFECT_TIME / 11
@@ -486,6 +500,16 @@ class StarWarsScreensaver(ScreensaverBase):
             if imgType in ['thumbnail', 'cast']:
                 self.NEXT_IMAGE_TIME = self.NEXT_IMAGE_TIME * 2.7
                 break
+
+        ScreensaverBase.__init__(self)
+
+    # Gets the image to use as the background
+    def getBackgroundImage(self):
+        return MediaFiles.STARS_IMAGE
+
+    # The number of image controls to create to handle the images
+    def getImageControlCount(self):
+        return 6
 
     # Get how long to wait until the next image is shown
     def getNextImageTime(self):
@@ -520,16 +544,21 @@ class StarWarsScreensaver(ScreensaverBase):
 # Shows the images being zoomed into one after the other
 class RandomZoomInScreensaver(ScreensaverBase):
     MODE = 'RandomZoomIn'
-    IMAGE_CONTROL_COUNT = 7
-    NEXT_IMAGE_TIME = 2000
-    EFFECT_TIME = 5000
 
-    # Animation values
-    ZOOM_ANIMATION = ('effect=zoom start=1 end=100 center=%d,%d time=%d tween=quadratic condition=true')
+    def __init__(self):
+        log('RandomZoomInScreensaver: __init__')
 
-    def load_settings(self):
+        # Animation values
+        self.ZOOM_ANIMATION = ('effect=zoom start=1 end=100 center=%d,%d time=%d tween=quadratic condition=true')
+
         self.NEXT_IMAGE_TIME = ScreensaverSettings.getWaitTime()
         self.EFFECT_TIME = ScreensaverSettings.getEffectTime()
+
+        ScreensaverBase.__init__(self)
+
+    # The number of image controls to create to handle the images
+    def getImageControlCount(self):
+        return 7
 
     # Get how long to wait until the next image is shown
     def getNextImageTime(self):
@@ -570,20 +599,29 @@ class RandomZoomInScreensaver(ScreensaverBase):
 # Shows images creeping up from the bottom of the screen with a random overlap
 class AppleTVLikeScreensaver(ScreensaverBase):
     MODE = 'AppleTVLike'
-    IMAGE_CONTROL_COUNT = 35
-    FAST_IMAGE_COUNT = 2
-    DISTANCE_RATIO = 0.7
-    SPEED = 1.0
-    CONCURRENCY = 1.0
 
-    # Animation values
-    MOVE_ANIMATION = ('effect=slide start=0,720 end=0,-720 center=auto time=%s tween=linear delay=0 condition=true')
+    def __init__(self):
+        log('AppleTVLikeScreensaver: __init__')
 
-    def load_settings(self):
+        # Animation values
+        self.MOVE_ANIMATION = ('effect=slide start=0,720 end=0,-720 center=auto time=%s tween=linear delay=0 condition=true')
+
         self.SPEED = ScreensaverSettings.getSpeed()
         self.CONCURRENCY = ScreensaverSettings.getAppletvlikeConcurrency()
         self.MAX_TIME = int(15000 / self.SPEED)
         self.NEXT_IMAGE_TIME = int(4500.0 / self.CONCURRENCY / self.SPEED)
+
+        self.DISTANCE_RATIO = 0.7
+
+        ScreensaverBase.__init__(self)
+
+    # The number of image controls to create to handle the images
+    def getImageControlCount(self):
+        return 35
+
+    # The number of images that need to be loaded quickly when launching the screen saver
+    def getFastImageCount(self):
+        return 2
 
     # Get how long to wait until the next image is shown
     def getNextImageTime(self):
@@ -635,20 +673,15 @@ class AppleTVLikeScreensaver(ScreensaverBase):
 # Shows all the images in a grid and then fades new images in over time
 class GridSwitchScreensaver(ScreensaverBase):
     MODE = 'GridSwitch'
-    COLUMNS = 4
-    ROWS = 4
-    NEXT_IMAGE_TIME = 1000
-    EFFECT_TIME = 500
-    RANDOM_ORDER = False
 
-    IMAGE_CONTROL_COUNT = COLUMNS * ROWS
-    FAST_IMAGE_COUNT = IMAGE_CONTROL_COUNT
+    def __init__(self):
+        log('GridSwitchScreensaver: __init__')
 
-    # Animation values
-    FADE_OUT_ANIMATION = ('effect=fade start=100 end=0 time=%d condition=true')
-    FADE_IN_ANIMATION = ('effect=fade start=0 end=100 time=%d condition=true')
+        # Animation values (The effect time is fixes at 500)
+        self.EFFECT_TIME = 400
+        self.fadeOutAnimations = [('conditional', ('effect=fade start=100 end=0 time=%d condition=true' % self.EFFECT_TIME))]
+        self.fadeInAnimations = [('conditional', ('effect=fade start=0 end=100 time=%d condition=true' % self.EFFECT_TIME))]
 
-    def load_settings(self):
         self.NEXT_IMAGE_TIME = ScreensaverSettings.getWaitTime()
         self.COLUMNS = ScreensaverSettings.getGridswitchRowsColumns()
         self.RANDOM_ORDER = ScreensaverSettings.isGridswitchRandom()
@@ -660,13 +693,20 @@ class GridSwitchScreensaver(ScreensaverBase):
             # Screen is 16 x 9, but images are 2 x 3
             # So for every 8 across we get 3 down
             self.ROWS = int(self.COLUMNS * 3 / 8) + 1
-        self.IMAGE_CONTROL_COUNT = self.COLUMNS * self.ROWS
 
-        self.FAST_IMAGE_COUNT = self.IMAGE_CONTROL_COUNT
+        ScreensaverBase.__init__(self)
+
+    # The number of image controls to create to handle the images
+    def getImageControlCount(self):
+        return self.COLUMNS * self.ROWS
+
+    # The number of images that need to be loaded quickly when launching the screen saver
+    def getFastImageCount(self):
+        # As we display all the images at the same time, set it to all of them
+        return self.getImageControlCount()
 
     # Get how long to wait until the next image is shown
     def getNextImageTime(self):
-        # Needs to be implemented in sub class
         return int(self.NEXT_IMAGE_TIME)
 
     def stack_cycle_controls(self):
@@ -686,24 +726,21 @@ class GridSwitchScreensaver(ScreensaverBase):
             random.shuffle(self.image_controls)
 
     def process_image(self, image_control, imageDetails):
-        if not self.image_count < self.FAST_IMAGE_COUNT:
-            animations = [('conditional', self.FADE_OUT_ANIMATION % self.EFFECT_TIME)]
-            image_control.setAnimations(animations)
+        if not self.image_count < self.getFastImageCount():
+            image_control.setAnimations(self.fadeOutAnimations)
             xbmc.sleep(self.EFFECT_TIME)
         image_control.setImage(imageDetails['file'])
-        animations = [('conditional', self.FADE_IN_ANIMATION % self.EFFECT_TIME)]
-        image_control.setAnimations(animations)
+        image_control.setAnimations(self.fadeInAnimations)
 
 
 # Shows the images by sliding one image into view while sliding the old one out of view
 class SliderScreensaver(ScreensaverBase):
     MODE = 'Slider'
-    # Only need two image controls, one on the screen, and one to slide on next
-    IMAGE_CONTROL_COUNT = 2
-    NEXT_IMAGE_TIME = 2000
-    previousImageControl = None
 
-    def load_settings(self):
+    def __init__(self):
+        log('SliderScreensaver: __init__')
+
+        self.previousImageControl = None
         self.NEXT_IMAGE_TIME = ScreensaverSettings.getWaitTime()
         self.EFFECT_TIME = ScreensaverSettings.getEffectTime()
 
@@ -724,9 +761,16 @@ class SliderScreensaver(ScreensaverBase):
         self.inAnimations = [('conditional', SLIDE_IN_ANIMATION % self.EFFECT_TIME)]
         self.outAnimations = [('conditional', SLIDE_OUT_ANIMATION % self.EFFECT_TIME)]
 
+        ScreensaverBase.__init__(self)
+
+    # The number of image controls to create to handle the images
+    def getImageControlCount(self):
+        # Only need two image controls, one on the screen, and one to slide on next
+        return 2
+
     # Get how long to wait until the next image is shown
     def getNextImageTime(self):
-        # Even amount of time between each zoom
+        # Even amount of time between each slide
         return int(self.NEXT_IMAGE_TIME)
 
     def process_image(self, image_control, imageDetails):
