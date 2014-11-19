@@ -4,6 +4,7 @@ import sys
 import os
 import traceback
 import urllib
+import threading
 import xbmc
 import xbmcaddon
 import xbmcvfs
@@ -199,24 +200,20 @@ class ArtworkDownloaderSupport(object):
 class MediaGroup(object):
     def __init__(self, videoPath="", imageArray=[]):
         self.isPlayingTheme = False
-        # Check if the user wants to play themes
-        if ScreensaverSettings.isPlayThemes():
-            self.themeFiles = ThemeFiles(videoPath)
-        else:
-            # If the user does not want to play themes, just have an empty set of themes
-            self.themeFiles = ThemeFiles("")
+        self.path = videoPath
+        # If the user does not want to play themes, just have an empty set of themes
+        # have this as the default, as we will load the theme later
+        self.themeFiles = ThemeFiles("")
+
         self.images = []
         # If images were supplied, then add them to the list
         for img in imageArray:
             self.addImage(img, 16.0 / 9.0)
+
+        self.dataLoaded = False
         self.imageDetails_cycle = None
         self.firstImage = None
         self.imageRepeat = False
-
-        # Now add the Extra FanArt folders
-        artDownloader = ArtworkDownloaderSupport()
-        for artImg in artDownloader.loadExtraFanart(videoPath):
-            self.addImage(artImg, 16.0 / 9.0)
 
     # Add an image to the group, giving it's aspect radio
     def addImage(self, imageURL, aspectRatio):
@@ -232,6 +229,31 @@ class MediaGroup(object):
     # Gets the number of images in the group
     def imageCount(self):
         return len(self.images)
+
+    # Called when we need to load all the data that may take a little time
+    # this can even have to wait for NAS drives etc to spin up, so it has
+    # been done under a different method so that it can be launched in a
+    # different thread if needed
+    def loadData(self):
+        # We could be called multiple times, so make sure we only do it once
+        if not self.dataLoaded:
+            # Record the fact we have already started loading, we do not
+            # want multiple threads loading the data at the same time
+            self.dataLoaded = True
+
+            log("MediaGroup: Loading data for %s" % self.path)
+
+            # Check if the user wants to play themes
+            if ScreensaverSettings.isPlayThemes():
+                self.themeFiles = ThemeFiles(self.path)
+
+            # Now add the Extra FanArt folders
+            artDownloader = ArtworkDownloaderSupport()
+            for artImg in artDownloader.loadExtraFanart(self.path):
+                self.addImage(artImg, 16.0 / 9.0)
+
+            # Now that we have all of the images, mix them up
+            random.shuffle(self.images)
 
     def hasLooped(self):
         return self.imageRepeat
@@ -263,8 +285,9 @@ class MediaGroup(object):
     # Gets the next image details
     def getNextImage(self):
         if self.imageDetails_cycle is None:
-            # Before using the images, make sure they are all random
-            random.shuffle(self.images)
+            # Make sure that the required data has been loaded,
+            # if not, do it now, this will skip it if already done
+            self.loadData()
             # Create the handle for the cycle
             self.imageDetails_cycle = _cycle(self.images)
         # Get the next image details
@@ -279,6 +302,43 @@ class MediaGroup(object):
                 self.imageRepeat = True
 
         return imageDetails
+
+
+# Class to handle gathering all of the data for a given video in the background
+class BackgroundUpdater(object):
+    def __init__(self, imageGroupList):
+        self.imageGroups = imageGroupList
+        self.stop = False
+        self.stopping = False
+
+    def startProcessing(self):
+        # Create a thread to gather all the data in the background
+        self.athread = threading.Thread(target=self.loadExtraData)
+        self.athread.setDaemon(True)
+        self.athread.start()
+        log("BackgroundUpdater: Thread started")
+
+    def stopProcessing(self):
+        log("BackgroundUpdater: stopping")
+        if not self.stopping:
+            self.stopping = True
+            self.stop = True
+
+            if self.athread.is_alive():
+                # Make sure the thread is dead at this point
+                try:
+                    self.athread.join(3)
+                except:
+                    log("BackgroundUpdater: Thread join error: %s" % traceback.format_exc())
+
+    def loadExtraData(self):
+        log("BackgroundUpdater: Loading data")
+        # For every Image Group, tell it to gather all the other data it needs
+        # this will include themes and additional image files
+        for img in self.imageGroups:
+            if self.stop:
+                break
+            img.loadData()
 
 
 # Base Screensaver class that handles all of the operations for a screensaver
@@ -306,6 +366,8 @@ class ScreensaverBase(object):
 
         self._init_cycle_controls()
         self.stack_cycle_controls()
+
+        self.backgroundUpdate = None
         log('Screensaver: __init__ end')
 
     def _init_cycle_controls(self):
@@ -343,6 +405,14 @@ class ScreensaverBase(object):
         image_controls_cycle = _cycle(self.image_controls)
         self._hide_loading_indicator()
         imageGroup = imageGroup_cycle.next()
+
+        # Force the data to load for the first entry (Need that immediately)
+        imageGroup.loadData()
+
+        # For the rest we want to start the update in a different thread
+        self.backgroundUpdate = BackgroundUpdater(imageGroups)
+        self.backgroundUpdate.startProcessing()
+
         imageDetails = imageGroup.getNextImage()
 
         while not self.exit_requested:
@@ -376,6 +446,11 @@ class ScreensaverBase(object):
                 self._preload_image(imageDetails['file'])
                 # Wait before showing the next image
                 self.wait()
+
+        # Make sure we are not still gathering images
+        if self.backgroundUpdate is not None:
+            self.backgroundUpdate.stopProcessing()
+            self.backgroundUpdate = None
 
         # Make sure we stop any outstanding playing theme
         imageGroup.stopTheme()
@@ -527,6 +602,10 @@ class ScreensaverBase(object):
         self.global_controls = []
         self.xbmc_window.close()
         self.xbmc_window = None
+        # Make sure we are not still gathering images
+        if self.backgroundUpdate is not None:
+            self.backgroundUpdate.stopProcessing()
+            self.backgroundUpdate = None
 
 
 # Shows the images as if they are being dropped one after the other onto a table

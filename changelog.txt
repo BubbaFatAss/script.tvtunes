@@ -1,7 +1,5 @@
-TODO: (Screensaver)
-- Add Extra loading thread to improve performance
-- Investigate: Start with the currently selected Video File
-
+TODO:
+- Screensaver: Investigate: Replaying the theme if still images left to show
 - Scraper: Update auto download to restrict by priority (Not just only track)
 
 v4.5.2
@@ -11,6 +9,7 @@ v4.5.2
 - Add support for Theme Volume decrease (if set)
 - Add Option to load extra images from "Artwork Downloader"
 - Allow default TvTunes Theme scraper to be all search engines
+- Add Extra loading thread to improve screensaver performance
 
 v4.5.1
 - Initial version of TvTunes screensaver
