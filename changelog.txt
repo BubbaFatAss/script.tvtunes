@@ -1,12 +1,13 @@
 TODO: (Screensaver)
-- Add Option to load extra images from "Artwork Downloader"
 - Add Extra loading thread to improve performance
+- Investigate: Start with the currently selected Video File
 
 v4.5.2
 - Improve Grid Layout (More Cells and improved dimensions)
 - Added Slideshow Screensaver
 - Added Crossfade Screensaver
 - Add support for Theme Volume decrease (if set)
+- Add Option to load extra images from "Artwork Downloader"
 
 v4.5.1
 - Initial version of TvTunes screensaver

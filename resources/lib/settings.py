@@ -385,3 +385,12 @@ class ScreensaverSettings():
         if selectedOrigin:
             originId = int(selectedOrigin)
         return ScreensaverSettings.SLIDE_FROM[originId]
+
+    @staticmethod
+    def includeArtworkDownloader():
+        # Make sure that the fanart is actually selected to be used, otherwise there is no
+        # point in searching for it
+        if 'fanart' in ScreensaverSettings.getImageTypes():
+            return __addon__.getSetting("screensaver_artworkdownloader") == 'true'
+        else:
+            return False

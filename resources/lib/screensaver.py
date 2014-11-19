@@ -140,10 +140,15 @@ class VolumeDrop(object):
         except:
             log("VolumeDrop: %s" % traceback.format_exc())
 
-
+# Class to collect all the extra images provided by Artwork Downloader
 class ArtworkDownloaderSupport(object):
     def loadExtraFanart(self, path):
+        # Make sure a valid path is given
         if (path is None) or (path == ""):
+            return []
+
+        # Check if the user actually wants to include the extra artwork
+        if not ScreensaverSettings.includeArtworkDownloader():
             return []
 
         log("ArtworkDownloaderSupport: Loading extra images for: %s" % path)
@@ -169,15 +174,16 @@ class ArtworkDownloaderSupport(object):
 
         return extraFanartFiles
 
+    # Gets the path that is the root of the given media
     def _media_path(self, path):
         # Check for stacked movies
         try:
-            path = os.path.split(path)[0].rsplit(' , ', 1)[1].replace(",,", ",")
+            path = os_path_split(path)[0].rsplit(' , ', 1)[1].replace(",,", ",")
         except:
-            path = os.path.split(path)[0]
+            path = os_path_split(path)[0]
         # Fixes problems with rared movies and multipath
         if path.startswith("rar://"):
-            path = [os.path.split(urllib.url2pathname(path.replace("rar://", "")))[0]]
+            path = [os_path_split(urllib.url2pathname(path.replace("rar://", "")))[0]]
         elif path.startswith("multipath://"):
             temp_path = path.replace("multipath://", "").split('%2f/')
             path = []
