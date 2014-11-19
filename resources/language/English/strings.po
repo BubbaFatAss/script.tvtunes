@@ -144,6 +144,30 @@ msgctxt "#32029"
 msgid "Play themes when browsing Music Video list"
 msgstr ""
 
+msgctxt "#32030"
+msgid "All"
+msgstr ""
+
+msgctxt "#32031"
+msgid "televisiontunes.com"
+msgstr ""
+
+msgctxt "#32032"
+msgid "soundcloud.com"
+msgstr ""
+
+msgctxt "#32033"
+msgid "grooveshark.com"
+msgstr ""
+
+msgctxt "#32034"
+msgid "goear.com"
+msgstr ""
+
+msgctxt "#32035"
+msgid "Prompt User"
+msgstr ""
+
 msgctxt "#32040"
 msgid "Screensaver"
 msgstr ""

@@ -140,6 +140,7 @@ class VolumeDrop(object):
         except:
             log("VolumeDrop: %s" % traceback.format_exc())
 
+
 # Class to collect all the extra images provided by Artwork Downloader
 class ArtworkDownloaderSupport(object):
     def loadExtraFanart(self, path):

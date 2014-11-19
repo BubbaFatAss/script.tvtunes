@@ -106,6 +106,13 @@ class Settings():
     # Value to calculate which version of XBMC we are using
     xbmcMajorVersion = 0
 
+    ALL_ENGINES = 'All'
+    TELEVISION_TUNES = 'televisiontunes.com'
+    SOUNDCLOUD = 'soundcloud.com'
+    GROOVESHARK = 'grooveshark.com'
+    GOEAR = 'goear.com'
+    PROMPT_ENGINE = 'Prompt User'
+
     @staticmethod
     def isCustomPathEnabled():
         return __addon__.getSetting("custom_path_enable") == 'true'
@@ -251,7 +258,19 @@ class Settings():
 
     @staticmethod
     def getSearchEngine():
-        return __addon__.getSetting("themeSearchSource")
+        index = int(__addon__.getSetting("themeSearchSource"))
+        if index == 0:
+            return Settings.ALL_ENGINES
+        elif index == 1:
+            return Settings.TELEVISION_TUNES
+        elif index == 2:
+            return Settings.SOUNDCLOUD
+        elif index == 3:
+            return Settings.GROOVESHARK
+        elif index == 4:
+            return Settings.GOEAR
+        # Default is to prompt the user
+        return Settings.PROMPT_ENGINE
 
 
 # Class to handle all the screen saver settings

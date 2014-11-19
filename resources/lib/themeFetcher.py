@@ -36,13 +36,6 @@ from grooveshark import Client
 # Core TvTunes Scraper class
 #################################
 class TvTunesFetcher:
-    TELEVISION_TUNES = 'televisiontunes.com'
-    SOUNDCLOUD = 'soundcloud.com'
-    GROOVESHARK = 'grooveshark.com'
-    GOEAR = 'goear.com'
-    PROMPT = 'Prompt User'
-    ALL_ENGINES = 'ALL'
-
     def __init__(self, videoList):
         # Set up the addon directories if they do not already exist
         if not dir_exists(xbmc.translatePath('special://profile/addon_data/%s' % __addonid__).decode("utf-8")):
@@ -53,7 +46,7 @@ class TvTunesFetcher:
         # Get the currently selected search engine
         self.searchEngine = Settings.getSearchEngine()
 
-        if self.searchEngine == TvTunesFetcher.PROMPT:
+        if self.searchEngine == Settings.PROMPT_ENGINE:
             isManualSearch, engineSelected = self.promptForSearchEngine(False)
             # Exit if no engine was selected
             if engineSelected is None:
@@ -235,21 +228,21 @@ class TvTunesFetcher:
         searchListing = None
 
         # Check if the search engine being used is GoEar
-        if self.searchEngine == TvTunesFetcher.GOEAR:
+        if self.searchEngine == Settings.GOEAR:
             # Goeear is selected
             searchListing = GoearListing()
-        elif self.searchEngine == TvTunesFetcher.SOUNDCLOUD:
+        elif self.searchEngine == Settings.SOUNDCLOUD:
             # Soundcloud is selected
             searchListing = SoundcloudListing()
-        elif self.searchEngine == TvTunesFetcher.GROOVESHARK:
+        elif self.searchEngine == Settings.GROOVESHARK:
             # grooveshark is selected
             searchListing = GroovesharkListing()
-        elif self.searchEngine == TvTunesFetcher.TELEVISION_TUNES:
+        elif self.searchEngine == Settings.TELEVISION_TUNES:
             # Default to Television Tunes
             searchListing = TelevisionTunesListing()
 
         # Check the special case where we use all the engines
-        if self.searchEngine == TvTunesFetcher.ALL_ENGINES:
+        if self.searchEngine == Settings.ALL_ENGINES:
             # As part of this, we reset the search engine back to the default in settings
             # We do not want them doing this search all the time!
             self.searchEngine = Settings.getSearchEngine()
@@ -286,18 +279,18 @@ class TvTunesFetcher:
     # Prompt the user to select a different search option
     def promptForSearchEngine(self, showManualOptions=True):
         displayList = []
-        displayList.insert(0, TvTunesFetcher.TELEVISION_TUNES)
-        displayList.insert(1, TvTunesFetcher.SOUNDCLOUD)
-        displayList.insert(2, TvTunesFetcher.GROOVESHARK)
-        displayList.insert(3, TvTunesFetcher.GOEAR)
+        displayList.insert(0, Settings.TELEVISION_TUNES)
+        displayList.insert(1, Settings.SOUNDCLOUD)
+        displayList.insert(2, Settings.GROOVESHARK)
+        displayList.insert(3, Settings.GOEAR)
 
         displayList.insert(4, "** %s **" % __language__(32121))
 
         if showManualOptions:
-            displayList.insert(5, "%s %s" % (TvTunesFetcher.TELEVISION_TUNES, __language__(32118)))
-            displayList.insert(6, "%s %s" % (TvTunesFetcher.SOUNDCLOUD, __language__(32118)))
-            displayList.insert(7, "%s %s" % (TvTunesFetcher.GROOVESHARK, __language__(32118)))
-            displayList.insert(8, "%s %s" % (TvTunesFetcher.GOEAR, __language__(32118)))
+            displayList.insert(5, "%s %s" % (Settings.TELEVISION_TUNES, __language__(32118)))
+            displayList.insert(6, "%s %s" % (Settings.SOUNDCLOUD, __language__(32118)))
+            displayList.insert(7, "%s %s" % (Settings.GROOVESHARK, __language__(32118)))
+            displayList.insert(8, "%s %s" % (Settings.GOEAR, __language__(32118)))
 
         isManualSearch = False
 
@@ -308,15 +301,15 @@ class TvTunesFetcher:
             return False, None
         else:
             if (select == 0) or (select == 5):
-                self.searchEngine = TvTunesFetcher.TELEVISION_TUNES
+                self.searchEngine = Settings.TELEVISION_TUNES
             elif (select == 1) or (select == 6):
-                self.searchEngine = TvTunesFetcher.SOUNDCLOUD
+                self.searchEngine = Settings.SOUNDCLOUD
             elif (select == 2) or (select == 7):
-                self.searchEngine = TvTunesFetcher.GROOVESHARK
+                self.searchEngine = Settings.GROOVESHARK
             elif (select == 3) or (select == 8):
-                self.searchEngine = TvTunesFetcher.GOEAR
+                self.searchEngine = Settings.GOEAR
             elif (select == 4):
-                self.searchEngine = TvTunesFetcher.ALL_ENGINES
+                self.searchEngine = Settings.ALL_ENGINES
 
             # Record if this is a manual search
             if select > 4:
