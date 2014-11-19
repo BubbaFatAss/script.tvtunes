@@ -3,6 +3,7 @@ import random
 import sys
 import os
 import traceback
+import urllib
 import xbmc
 import xbmcaddon
 import xbmcvfs
@@ -23,6 +24,11 @@ __media__ = xbmc.translatePath(os.path.join(__resource__, 'media').encode("utf-8
 from settings import ScreensaverSettings
 from settings import Settings
 from settings import log
+from settings import list_dir
+from settings import dir_exists
+from settings import os_path_join
+from settings import os_path_split
+
 from themeFinder import ThemeFiles
 
 
@@ -135,6 +141,53 @@ class VolumeDrop(object):
             log("VolumeDrop: %s" % traceback.format_exc())
 
 
+class ArtworkDownloaderSupport(object):
+    def loadExtraFanart(self, path):
+        if (path is None) or (path == ""):
+            return []
+
+        log("ArtworkDownloaderSupport: Loading extra images for: %s" % path)
+
+        # Start by calculating the location of the extra fanart
+        extrafanartdirs = []
+        for item in self._media_path(path):
+            extrafanart_dir = os_path_join(item, 'extrafanart')
+            extrafanartdirs.append(extrafanart_dir)
+            log("ArtworkDownloaderSupport: Adding directory: %s" % extrafanart_dir)
+
+        extraFanartFiles = []
+
+        # Now read the contents of all the directories
+        for artDir in extrafanartdirs:
+            if dir_exists(artDir):
+                dirs, files = list_dir(artDir)
+                for aFile in files:
+                    artFile = os_path_join(artDir, aFile)
+                    log("ArtworkDownloaderSupport: Found file: %s" % artFile)
+                    # Add the file to the list
+                    extraFanartFiles.append(artFile)
+
+        return extraFanartFiles
+
+    def _media_path(self, path):
+        # Check for stacked movies
+        try:
+            path = os.path.split(path)[0].rsplit(' , ', 1)[1].replace(",,", ",")
+        except:
+            path = os.path.split(path)[0]
+        # Fixes problems with rared movies and multipath
+        if path.startswith("rar://"):
+            path = [os.path.split(urllib.url2pathname(path.replace("rar://", "")))[0]]
+        elif path.startswith("multipath://"):
+            temp_path = path.replace("multipath://", "").split('%2f/')
+            path = []
+            for item in temp_path:
+                path.append(urllib.url2pathname(item))
+        else:
+            path = [path]
+        return path
+
+
 # Class to hold groups of images and media
 class MediaGroup(object):
     def __init__(self, videoPath="", imageArray=[]):
@@ -152,6 +205,11 @@ class MediaGroup(object):
         self.imageDetails_cycle = None
         self.firstImage = None
         self.imageRepeat = False
+
+        # Now add the Extra FanArt folders
+        artDownloader = ArtworkDownloaderSupport()
+        for artImg in artDownloader.loadExtraFanart(videoPath):
+            self.addImage(artImg, 16.0 / 9.0)
 
     # Add an image to the group, giving it's aspect radio
     def addImage(self, imageURL, aspectRatio):
