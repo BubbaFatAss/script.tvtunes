@@ -1,3 +1,7 @@
+v4.5.4
+- Fix screensaver issue with non ascii characters
+- Fix possible race condition on loading images
+
 v4.5.3
 - Screensaver option to only use TV Shows/Movies that have themes
 - Screensaver option to repeat theme while still images to show

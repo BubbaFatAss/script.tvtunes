@@ -218,10 +218,17 @@ class MediaGroup(object):
         # Record the number of images that are shown while the theme is playing
         self.approxImagesPerTheme = -1
         self.themePlayed = False
+        
+        self.loadLock = threading.Lock()
 
     # Add an image to the group, giving it's aspect radio
     def addImage(self, imageURL, aspectRatio):
-        imageDetails = {'file': imageURL, 'aspect_ratio': aspectRatio}
+        try:
+            # Handle non ascii characters
+            safeImageURL = imageURL.encode('utf-8')
+        except:
+            safeImageURL = imageURL
+        imageDetails = {'file': safeImageURL, 'aspect_ratio': aspectRatio}
         self.images.append(imageDetails)
 
     # Gets the number of images in the group
@@ -235,32 +242,37 @@ class MediaGroup(object):
     # been done under a different method so that it can be launched in a
     # different thread if needed
     def loadData(self):
-        # We could be called multiple times, so make sure we only do it once
-        if not self.dataLoaded:
-            # Record the fact we have already started loading, we do not
-            # want multiple threads loading the data at the same time
-            self.dataLoaded = True
-
-            log("MediaGroup: Loading data for %s" % self.path)
-
-            # Check if the user wants to play themes
-            if ScreensaverSettings.isPlayThemes():
-                self.themeFiles = ThemeFiles(self.path)
-                # Check if we only want groups with themes in
-                if ScreensaverSettings.isOnlyIfThemes():
-                    if not self.themeFiles.hasThemes():
-                        # Clear all images, that will ensure we skip this one
-                        log("MediaGroup: Clearing image list for %s" % self.path)
-                        self.images = []
-                        return
-
-            # Now add the Extra FanArt folders
-            artDownloader = ArtworkDownloaderSupport()
-            for artImg in artDownloader.loadExtraFanart(self.path):
-                self.addImage(artImg, 16.0 / 9.0)
-
-            # Now that we have all of the images, mix them up
-            random.shuffle(self.images)
+        # Get the lock so that only one instance is updated at a time
+        self.loadLock.acquire()
+        try:
+            # We could be called multiple times, so make sure we only do it once
+            if not self.dataLoaded:
+                # Record the fact we have already started loading, we do not
+                # want multiple threads loading the data at the same time
+                self.dataLoaded = True
+    
+                log("MediaGroup: Loading data for %s" % self.path)
+    
+                # Check if the user wants to play themes
+                if ScreensaverSettings.isPlayThemes():
+                    self.themeFiles = ThemeFiles(self.path)
+                    # Check if we only want groups with themes in
+                    if ScreensaverSettings.isOnlyIfThemes():
+                        if not self.themeFiles.hasThemes():
+                            # Clear all images, that will ensure we skip this one
+                            log("MediaGroup: Clearing image list for %s" % self.path)
+                            self.images = []
+                            return
+    
+                # Now add the Extra FanArt folders
+                artDownloader = ArtworkDownloaderSupport()
+                for artImg in artDownloader.loadExtraFanart(self.path):
+                    self.addImage(artImg, 16.0 / 9.0)
+    
+                # Now that we have all of the images, mix them up
+                random.shuffle(self.images)
+        finally:
+            self.loadLock.release()
 
     # Start playing a theme if there is one to play
     # The fastImageCount records the number of images that were loaded
