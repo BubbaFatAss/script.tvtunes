@@ -1,4 +1,5 @@
 TODO:
+- Screensaver: Option to only use TV Shows/Movies that have themes
 - Screensaver: Investigate: Replaying the theme if still images left to show
 - Scraper: Update auto download to restrict by priority (Not just only track)
 

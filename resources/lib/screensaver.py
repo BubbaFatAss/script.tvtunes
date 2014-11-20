@@ -227,7 +227,9 @@ class MediaGroup(object):
         return self.images
 
     # Gets the number of images in the group
-    def imageCount(self):
+    def imageCount(self, forceLoad=False):
+        if forceLoad:
+            self.loadData()
         return len(self.images)
 
     # Called when we need to load all the data that may take a little time
@@ -246,6 +248,13 @@ class MediaGroup(object):
             # Check if the user wants to play themes
             if ScreensaverSettings.isPlayThemes():
                 self.themeFiles = ThemeFiles(self.path)
+                # Check if we only want groups with themes in
+                # TODO: Check setting
+                if not self.themeFiles.hasThemes():
+                    # Clear all images, that will ensure we skip this one
+                    log("MediaGroup: Clearing image list for %s" % self.path)
+                    self.images = []
+                    return
 
             # Now add the Extra FanArt folders
             artDownloader = ArtworkDownloaderSupport()
@@ -284,10 +293,11 @@ class MediaGroup(object):
 
     # Gets the next image details
     def getNextImage(self):
+        # Make sure that the required data has been loaded,
+        # if not, do it now, this will skip it if already done
+        self.loadData()
+
         if self.imageDetails_cycle is None:
-            # Make sure that the required data has been loaded,
-            # if not, do it now, this will skip it if already done
-            self.loadData()
             # Create the handle for the cycle
             self.imageDetails_cycle = _cycle(self.images)
         # Get the next image details
@@ -392,14 +402,25 @@ class ScreensaverBase(object):
             # A notification has already been shown
             return
 
+        # We have a lot of groups (Each different Movie or TV Show) so
+        # mix them all up so they are not always in the same order
+        random.shuffle(imageGroups)
+
+        # Before we start processing the groups, find the first item with
+        # images
+        for index, imgGrp in enumerate(imageGroups):
+            if imgGrp.imageCount(True) < 1:
+                del imageGroups[index]
+        
+        # Make sure there are still image groups to process
+        if len(imageGroups) < 1:
+            log("Screensaver: No image groups with images in")
+            return
+
         # We are at the point of starting the screensaver we should decrease the volume
         # this point if needed
         volumeCtrl = VolumeDrop()
         volumeCtrl.lowerVolume()
-
-        # We have a lot of groups (Each different Movie or TV Show) so
-        # mix them all up so they are not always in the same order
-        random.shuffle(imageGroups)
 
         imageGroup_cycle = _cycle(imageGroups)
         image_controls_cycle = _cycle(self.image_controls)
@@ -407,13 +428,11 @@ class ScreensaverBase(object):
         imageGroup = imageGroup_cycle.next()
 
         # Force the data to load for the first entry (Need that immediately)
-        imageGroup.loadData()
+        imageDetails = imageGroup.getNextImage()
 
         # For the rest we want to start the update in a different thread
         self.backgroundUpdate = BackgroundUpdater(imageGroups)
         self.backgroundUpdate.startProcessing()
-
-        imageDetails = imageGroup.getNextImage()
 
         while not self.exit_requested:
             log('Screensaver: Using image: %s' % repr(imageDetails['file']))
@@ -436,6 +455,10 @@ class ScreensaverBase(object):
             if imageGroup.hasLooped() and (len(imageGroups) > 1) and imageGroup.completedGroup():
                 # Move onto the next group, and the first image in that group
                 imageGroup = imageGroup_cycle.next()
+                # If there are no images in this group, skip to the next (We know there
+                # is at least one group with images as we have already checked that before the loop)
+                while imageGroup.imageCount(True) < 1:
+                    imageGroup = imageGroup_cycle.next()
                 # Get the next image from the new group
                 imageDetails = imageGroup.getNextImage()
 
@@ -513,7 +536,7 @@ class ScreensaverBase(object):
                                     if 'thumbnail' in castItem:
                                         mediaGroup.addImage(castItem['thumbnail'], 2.0 / 3.0)
                     # Don't return an empty image list if there are no images
-                    if mediaGroup.imageCount > 0:
+                    if mediaGroup.imageCount() > 0:
                         mediaGroups.append(mediaGroup)
                 else:
                     log("Screensaver: No file specified when searching")
