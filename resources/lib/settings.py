@@ -258,7 +258,7 @@ class Settings():
 
     @staticmethod
     def getSearchEngine():
-        index = int(__addon__.getSetting("themeSearchSource"))
+        index = int(__addon__.getSetting("searchSource"))
         if index == 0:
             return Settings.ALL_ENGINES
         elif index == 1:
