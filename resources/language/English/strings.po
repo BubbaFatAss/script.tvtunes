@@ -61,7 +61,7 @@ msgid "Fade tune out when exiting"
 msgstr ""
 
 msgctxt "#32009"
-msgid "Automatically download if an exact match is found"
+msgid "Automatically Download Theme If"
 msgstr ""
 
 msgctxt "#32010"
@@ -166,6 +166,22 @@ msgstr ""
 
 msgctxt "#32035"
 msgid "Prompt User"
+msgstr ""
+
+msgctxt "#32036"
+msgid "Never"
+msgstr ""
+
+msgctxt "#32037"
+msgid "Only Single Entry Found"
+msgstr ""
+
+msgctxt "#32038"
+msgid "Priority 1 (*) Entry Found"
+msgstr ""
+
+msgctxt "#32039"
+msgid "Priority 1 (*) or 2 (~) Entry Found"
 msgstr ""
 
 msgctxt "#32040"
@@ -325,6 +341,10 @@ msgid "Repeat Rules"
 msgstr ""
 
 #empty strings from id 32079 to 32100
+
+msgctxt "#32100"
+msgid "Show Selection Dialog If Auto Match Fails"
+msgstr ""
 
 msgctxt "#32101"
 msgid "ERROR"

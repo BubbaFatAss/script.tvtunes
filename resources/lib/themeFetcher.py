@@ -98,9 +98,23 @@ class TvTunesFetcher:
         # show[2] = Original Title (If set)
         theme_list = self.searchThemeList(show[0], show[2], manual=False, showProgressDialog=showProgressDialog)
         selectedTheme = None
-        if (len(theme_list) == 1) and Settings.isExactMatchEnabled():
+
+        # Check the case where we have an automatic download enabled
+        if (len(theme_list) == 1) and (Settings.getAutoDownloadSetting() == Settings.AUTO_DOWNLOAD_SINGLE_ITEM):
             selectedTheme = theme_list[0]
-        else:
+        elif len(theme_list) > 0:
+            if Settings.getAutoDownloadSetting() == Settings.AUTO_DOWNLOAD_PRIORITY_1:
+                # The themes are already in priority order, so see if the first theme is
+                # of the correct priority
+                if theme_list[0].getPriority() < 2:
+                    selectedTheme = theme_list[0]
+            elif Settings.getAutoDownloadSetting() == Settings.AUTO_DOWNLOAD_PRIORITY_1_OR_2:
+                if theme_list[0].getPriority() < 3:
+                    selectedTheme = theme_list[0]
+
+        # If there is still no theme selected, prompt the user
+        if (selectedTheme is None) and Settings.isAutoDownloadPromptUser():
+            # Prompt the user to select which theme they want
             selectedTheme = self.getUserChoice(theme_list, show[0], show[2])
 
         retVal = False
@@ -383,6 +397,9 @@ class ThemeItemDetails():
 
     def setPriority(self, rating):
         self.priority = rating
+
+    def getPriority(self):
+        return self.priority
 
     # Plays a preview of the given file
     def playPreview(self, theme_url=None):
@@ -848,13 +865,7 @@ class TelevisionTunesListing(DefaultListing):
                 log("TelevisionTunesListing: found %s (%s)" % (themeName, themeURL))
                 downloadUrl = self._getMediaURL(themeURL)
                 theme = ThemeItemDetails(themeName, downloadUrl)
-                # in case of an exact match (when enabled) only return this theme
-                if Settings.isExactMatchEnabled() and themeName == showname:
-                    theme_list = []
-                    theme_list.append(theme)
-                    return theme_list
-                else:
-                    theme_list.append(theme)
+                theme_list.append(theme)
             match = re.search(r'&search=Search(&page=\d)"><b>Next</b>', data)
             if match:
                 urlpage = match.group(1)

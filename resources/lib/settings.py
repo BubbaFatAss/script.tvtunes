@@ -113,6 +113,11 @@ class Settings():
     GOEAR = 'goear.com'
     PROMPT_ENGINE = 'Prompt User'
 
+    # Settings for Automatically Downloading
+    AUTO_DOWNLOAD_SINGLE_ITEM = 1
+    AUTO_DOWNLOAD_PRIORITY_1 = 2
+    AUTO_DOWNLOAD_PRIORITY_1_OR_2 = 2
+
     @staticmethod
     def isCustomPathEnabled():
         return __addon__.getSetting("custom_path_enable") == 'true'
@@ -245,8 +250,15 @@ class Settings():
         return __addon__.getSetting("subDirName")
 
     @staticmethod
-    def isExactMatchEnabled():
-        return __addon__.getSetting("exact_match") == 'true'
+    def getAutoDownloadSetting():
+        return int(__addon__.getSetting("auto_download"))
+
+    @staticmethod
+    def isAutoDownloadPromptUser():
+        # If no auto select is set, then always prompt the user
+        if Settings.getAutoDownloadSetting() == 0:
+            return True
+        return __addon__.getSetting("auto_prompt_user_if_required") == 'true'
 
     @staticmethod
     def isMultiThemesSupported():

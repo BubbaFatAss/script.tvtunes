@@ -1,10 +1,8 @@
-TODO:
-- Scraper: Update auto download to restrict by priority (Not just only track)
-
 v4.5.3
 - Screensaver option to only use TV Shows/Movies that have themes
 - Screensaver option to repeat theme while still images to show
 - Screensaver option to skip remaining images if theme complete
+- Improve automatic download of themes options 
 
 v4.5.2
 - Improve Grid Layout (More Cells and improved dimensions)
