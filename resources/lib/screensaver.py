@@ -211,20 +211,18 @@ class MediaGroup(object):
             self.addImage(img, 16.0 / 9.0)
 
         self.dataLoaded = False
-        self.imageDetails_cycle = None
-        self.firstImage = None
         self.imageRepeat = False
+
+        # Not currently showing any images
+        self.currentImageIdx = -1
+        # Record the number of images that are shown while the theme is playing
+        self.approxImagesPerTheme = -1
+        self.themePlayed = False
 
     # Add an image to the group, giving it's aspect radio
     def addImage(self, imageURL, aspectRatio):
         imageDetails = {'file': imageURL, 'aspect_ratio': aspectRatio}
         self.images.append(imageDetails)
-
-    # get all the images in the group
-    def getImageDetails(self):
-        # Before returning the images, make sure they are all random
-        random.shuffle(self.images)
-        return self.images
 
     # Gets the number of images in the group
     def imageCount(self, forceLoad=False):
@@ -264,23 +262,49 @@ class MediaGroup(object):
             # Now that we have all of the images, mix them up
             random.shuffle(self.images)
 
-    def hasLooped(self):
-        return self.imageRepeat
-
     # Start playing a theme if there is one to play
-    def startTheme(self):
+    # The fastImageCount records the number of images that were loaded
+    # quickly without the normal wait time
+    def startTheme(self, fastImageCount=0):
         if self.themeFiles.hasThemes() and not xbmc.Player().isPlayingAudio():
+            # There are cases where the theme is quite short and we have not
+            # shown all the images left, so should repeat the theme, so we first
+            # check to see how many images are getting shown
+            if self.themePlayed and (self.approxImagesPerTheme < 0):
+                # This is the first time the theme has completed, work out
+                # how many images were shown in that time
+                self.approxImagesPerTheme = (self.currentImageIdx - fastImageCount) + 1
+
             # Don't start the theme if we have already shown all the images
             if not self.imageRepeat:
-                self.isPlayingTheme = True
-                xbmc.Player().play(self.themeFiles.getThemePlaylist())
+                # So we have not shown all the images yet, work out if we have time to
+                # play the theme again
+                startPlayingTheme = not self.themePlayed
+                if (not startPlayingTheme) and ScreensaverSettings.isRepeatTheme():
+                    if self.imageCount() - (self.currentImageIdx + 1) > self.approxImagesPerTheme:
+                        startPlayingTheme = True
+                if startPlayingTheme:
+                    self.isPlayingTheme = True
+                    self.themePlayed = True
+                    xbmc.Player().play(self.themeFiles.getThemePlaylist())
 
     # Check if the theme has completed playing
     def completedGroup(self):
-        if self.themeFiles.hasThemes() and xbmc.Player().isPlayingAudio():
-            return False
-        self.isPlayingTheme = False
-        return True
+        # The group is never complete while there is a theme still playing
+        # We can't stop the theme, as sending the stop signal to the player
+        # will stop the screensaver running
+        if self.themeFiles.hasThemes():
+            if xbmc.Player().isPlayingAudio():
+                return False
+            self.isPlayingTheme = False
+
+            # Check to see if we have completed playing a theme and we are supposed
+            # to stop after one theme
+            if self.themePlayed and ScreensaverSettings.isSkipAfterThemeOnce():
+                return True
+
+        # Not playing a theme, so return if we have already shown all the images
+        return self.imageRepeat
 
     # Stop the theme playing if it is currently playing
     # NOTE: If you stop a theme that is playing, then it will also
@@ -288,6 +312,7 @@ class MediaGroup(object):
     def stopTheme(self):
         if self.isPlayingTheme:
             self.isPlayingTheme = False
+            self.themePlayed = True
             if xbmc.Player().isPlayingAudio():
                 xbmc.Player().stop()
 
@@ -297,21 +322,22 @@ class MediaGroup(object):
         # if not, do it now, this will skip it if already done
         self.loadData()
 
-        if self.imageDetails_cycle is None:
-            # Create the handle for the cycle
-            self.imageDetails_cycle = _cycle(self.images)
-        # Get the next image details
-        imageDetails = self.imageDetails_cycle.next()
-        # Check to see if we have stored details of the first image processed
-        # This was we know where the list started and ends
-        if self.firstImage is None:
-            self.firstImage = imageDetails['file']
-        else:
-            # Check if we have looped through all the images
-            if imageDetails['file'] == self.firstImage:
-                self.imageRepeat = True
+        # Move onto the next image
+        self.currentImageIdx = self.currentImageIdx + 1
 
-        return imageDetails
+        if self.currentImageIdx > self.imageCount() - 1:
+            # We have finished showing the images at least once each
+            # so flag that we have looped and reset to the start
+            self.imageRepeat = True
+            self.currentImageIdx = 0
+            # If we are resetting the images to the start, then we have looped.
+            # Check if we art still playing the theme for the first time and
+            # if so, record that it is longer than the time to show all the images
+            if self.approxImagesPerTheme < 0:
+                # Just make it large than all the images, doesn't matter how much more
+                self.approxImagesPerTheme = self.imageCount() + 100
+
+        return self.images[self.currentImageIdx]
 
 
 # Class to handle gathering all of the data for a given video in the background
@@ -443,7 +469,7 @@ class ScreensaverBase(object):
             log('Screensaver: Using image: %s' % repr(imageDetails['file']))
 
             # Start playing theme if there is one
-            imageGroup.startTheme()
+            imageGroup.startTheme(self.getFastImageCount())
             # Get the next control and set it displaying the image
             image_control = image_controls_cycle.next()
             self.process_image(image_control, imageDetails)
@@ -457,7 +483,7 @@ class ScreensaverBase(object):
             # Wait for the theme to complete playing at least once, if it has not
             # completed playing the theme at least once, then we can safely repeat
             # the images we show
-            if imageGroup.hasLooped() and (len(imageGroups) > 1) and imageGroup.completedGroup():
+            if (len(imageGroups) > 1) and imageGroup.completedGroup():
                 # Move onto the next group, and the first image in that group
                 imageGroup = imageGroup_cycle.next()
                 # If there are no images in this group, skip to the next (We know there

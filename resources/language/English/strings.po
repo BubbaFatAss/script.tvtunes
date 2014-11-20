@@ -308,7 +308,23 @@ msgctxt "#32074"
 msgid "Only Show Images When A Theme Exists"
 msgstr ""
 
-#empty strings from id 32075 to 32100
+msgctxt "#32075"
+msgid "Play Theme Once, Show All Images"
+msgstr ""
+
+msgctxt "#32076"
+msgid "Show All Images, Repeat Theme"
+msgstr ""
+
+msgctxt "#32077"
+msgid "Play Theme Once, Skip Remaining Images"
+msgstr ""
+
+msgctxt "#32078"
+msgid "Repeat Rules"
+msgstr ""
+
+#empty strings from id 32079 to 32100
 
 msgctxt "#32101"
 msgid "ERROR"

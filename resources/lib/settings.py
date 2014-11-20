@@ -391,10 +391,18 @@ class ScreensaverSettings():
         return __addon__.getSetting("screensaver_onlyifthemes") == 'true'
 
     @staticmethod
+    def isRepeatTheme():
+        return __addon__.getSetting("screensaver_themeControl") == '1'
+
+    @staticmethod
+    def isSkipAfterThemeOnce():
+        return __addon__.getSetting("screensaver_themeControl") == '2'
+
+    @staticmethod
     def getDimValue():
         # The actual dim level (Hex) is one of
         # FF111111, FF222222 ... FFEEEEEE, FFFFFFFF
-        # Where FFFFFFFF is not changes
+        # Where FFFFFFFF is not changed
         # So that is a total of 15 different options
         if __addon__.getSetting("screensaver_dimlevel"):
             return ScreensaverSettings.DIM_LEVEL[int(__addon__.getSetting("screensaver_dimlevel"))]
