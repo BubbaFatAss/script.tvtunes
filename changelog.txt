@@ -1,7 +1,9 @@
 TODO:
-- Screensaver: Option to only use TV Shows/Movies that have themes
 - Screensaver: Investigate: Replaying the theme if still images left to show
 - Scraper: Update auto download to restrict by priority (Not just only track)
+
+v4.5.3
+- Screensaver option to only use TV Shows/Movies that have themes
 
 v4.5.2
 - Improve Grid Layout (More Cells and improved dimensions)

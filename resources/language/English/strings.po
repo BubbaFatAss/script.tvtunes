@@ -304,7 +304,11 @@ msgctxt "#32073"
 msgid "Include Artwork Downloader Images"
 msgstr ""
 
-#empty strings from id 32074 to 32100
+msgctxt "#32074"
+msgid "Only Show Images When A Theme Exists"
+msgstr ""
+
+#empty strings from id 32075 to 32100
 
 msgctxt "#32101"
 msgid "ERROR"

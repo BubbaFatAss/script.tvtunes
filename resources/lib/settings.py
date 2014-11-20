@@ -387,6 +387,10 @@ class ScreensaverSettings():
         return __addon__.getSetting("screensaver_playthemes") == 'true'
 
     @staticmethod
+    def isOnlyIfThemes():
+        return __addon__.getSetting("screensaver_onlyifthemes") == 'true'
+
+    @staticmethod
     def getDimValue():
         # The actual dim level (Hex) is one of
         # FF111111, FF222222 ... FFEEEEEE, FFFFFFFF

@@ -249,12 +249,12 @@ class MediaGroup(object):
             if ScreensaverSettings.isPlayThemes():
                 self.themeFiles = ThemeFiles(self.path)
                 # Check if we only want groups with themes in
-                # TODO: Check setting
-                if not self.themeFiles.hasThemes():
-                    # Clear all images, that will ensure we skip this one
-                    log("MediaGroup: Clearing image list for %s" % self.path)
-                    self.images = []
-                    return
+                if ScreensaverSettings.isOnlyIfThemes():
+                    if not self.themeFiles.hasThemes():
+                        # Clear all images, that will ensure we skip this one
+                        log("MediaGroup: Clearing image list for %s" % self.path)
+                        self.images = []
+                        return
 
             # Now add the Extra FanArt folders
             artDownloader = ArtworkDownloaderSupport()
@@ -406,12 +406,17 @@ class ScreensaverBase(object):
         # mix them all up so they are not always in the same order
         random.shuffle(imageGroups)
 
+        log("Screensaver: Image group total = %d" % len(imageGroups))
+
         # Before we start processing the groups, find the first item with
         # images
         for index, imgGrp in enumerate(imageGroups):
             if imgGrp.imageCount(True) < 1:
+                # Demove the groups without any images
                 del imageGroups[index]
-        
+
+        log("Screensaver: Image groups being used = %d" % len(imageGroups))
+
         # Make sure there are still image groups to process
         if len(imageGroups) < 1:
             log("Screensaver: No image groups with images in")

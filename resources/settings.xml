@@ -56,6 +56,7 @@
         <setting id="screensaver_recursive" type="bool" label="32056" visible="eq(-3,3)" subsetting="true" default="true"/>
     	<setting type="sep"/>
 		<setting id="screensaver_playthemes" type="bool" label="32061" visible="!eq(-5,3)" default="true"/>
+		<setting id="screensaver_onlyifthemes" type="bool" label="32074" visible="eq(-1,true)" default="true"/>
 		<setting id="screensaver_artworkdownloader" type="bool" label="32073" visible="!eq(-6,3)" default="false"/>
 		<setting id="screensaver_dimlevel" type="slider" label="32064" range="0,1,15" option="int" default="0"/>
     </category>
