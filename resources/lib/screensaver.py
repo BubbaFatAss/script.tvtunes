@@ -870,8 +870,8 @@ class AppleTVLikeScreensaver(ScreensaverBase):
     def __init__(self):
         log('AppleTVLikeScreensaver: __init__')
 
-        # Animation values
-        self.MOVE_ANIMATION = ('effect=slide start=0,720 end=0,-720 center=auto time=%s tween=linear delay=0 condition=true')
+        # Animation values (Make sure the images scroll completely off the screen)
+        self.MOVE_ANIMATION = ('effect=slide start=0,720 end=0,-1280 center=auto time=%s tween=linear delay=0 condition=true')
 
         self.SPEED = ScreensaverSettings.getSpeed()
         self.CONCURRENCY = ScreensaverSettings.getAppletvlikeConcurrency()
