@@ -1,24 +1,7 @@
-v4.5.4
-- Fix screensaver issue with non ascii characters
-- Fix possible race condition on loading images
-
-v4.5.3
-- Screensaver option to only use TV Shows/Movies that have themes
-- Screensaver option to repeat theme while still images to show
-- Screensaver option to skip remaining images if theme complete
-- Improve automatic download of themes options 
-
-v4.5.2
-- Improve Grid Layout (More Cells and improved dimensions)
-- Added Slideshow Screensaver
-- Added Crossfade Screensaver
-- Add support for Theme Volume decrease (if set)
-- Add Option to load extra images from "Artwork Downloader"
+v4.6.0
+- Added TvTunes Screensaver
+- Improve automatic download of themes options
 - Allow default TvTunes Theme scraper to be all search engines
-- Add Extra loading thread to improve screensaver performance
-
-v4.5.1
-- Initial version of TvTunes screensaver
 
 v4.5.0
 - Update to BeautifulSoup 4

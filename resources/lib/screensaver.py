@@ -218,7 +218,7 @@ class MediaGroup(object):
         # Record the number of images that are shown while the theme is playing
         self.approxImagesPerTheme = -1
         self.themePlayed = False
-        
+
         self.loadLock = threading.Lock()
 
     # Add an image to the group, giving it's aspect radio
@@ -250,9 +250,9 @@ class MediaGroup(object):
                 # Record the fact we have already started loading, we do not
                 # want multiple threads loading the data at the same time
                 self.dataLoaded = True
-    
+
                 log("MediaGroup: Loading data for %s" % self.path)
-    
+
                 # Check if the user wants to play themes
                 if ScreensaverSettings.isPlayThemes():
                     self.themeFiles = ThemeFiles(self.path)
@@ -263,12 +263,12 @@ class MediaGroup(object):
                             log("MediaGroup: Clearing image list for %s" % self.path)
                             self.images = []
                             return
-    
+
                 # Now add the Extra FanArt folders
                 artDownloader = ArtworkDownloaderSupport()
                 for artImg in artDownloader.loadExtraFanart(self.path):
                     self.addImage(artImg, 16.0 / 9.0)
-    
+
                 # Now that we have all of the images, mix them up
                 random.shuffle(self.images)
         finally:
