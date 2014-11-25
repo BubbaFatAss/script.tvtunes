@@ -436,7 +436,7 @@ class ScreensaverBase(object):
         imageGroups = self._getImageGroups()
 
         # Check to see if we failed to find any images
-        if (imageGroups is None) or (not imageGroups):
+        if (imageGroups is None) or (not imageGroups) or self.exit_requested:
             # A notification has already been shown
             return
 
@@ -449,9 +449,16 @@ class ScreensaverBase(object):
         # Before we start processing the groups, find the first item with
         # images
         for index, imgGrp in enumerate(imageGroups):
+            # If we are required to exit while loading images, then stop loading them
+            if self.exit_requested:
+                return
             if imgGrp.imageCount(True) < 1:
-                # Demove the groups without any images
+                # Remove the groups without any images
                 del imageGroups[index]
+            else:
+                # Found an image so stop loading, only need to get all the images
+                # for the first entry
+                break
 
         log("Screensaver: Image groups being used = %d" % len(imageGroups))
 
@@ -639,7 +646,7 @@ class ScreensaverBase(object):
     # Wait for the image to finish being displayed before starting on the next one
     def wait(self):
         CHUNK_WAIT_TIME = 250
-        # wait in chunks of 500ms to react earlier on exit request
+        # wait in chunks of 250ms to react earlier on exit request
         chunk_wait_time = int(CHUNK_WAIT_TIME)
         remaining_wait_time = self.getNextImageTime()
         while remaining_wait_time > 0:
