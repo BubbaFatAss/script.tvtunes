@@ -447,8 +447,9 @@ class ScreensaverBase(object):
         log("Screensaver: Image group total = %d" % len(imageGroups))
 
         # Before we start processing the groups, find the first item with
-        # images
-        for index, imgGrp in enumerate(imageGroups):
+        # images, we actually iterate over a copy of the list so we can
+        # delete from the original list
+        for index, imgGrp in enumerate(list(imageGroups)):
             # If we are required to exit while loading images, then stop loading them
             if self.exit_requested:
                 return
