@@ -3,7 +3,6 @@ import random
 import sys
 import os
 import traceback
-import urllib
 import threading
 import xbmc
 import xbmcaddon
@@ -156,44 +155,43 @@ class ArtworkDownloaderSupport(object):
         log("ArtworkDownloaderSupport: Loading extra images for: %s" % path)
 
         # Start by calculating the location of the extra fanart
-        extrafanartdirs = []
-        for item in self._media_path(path):
-            extrafanart_dir = os_path_join(item, 'extrafanart')
-            extrafanartdirs.append(extrafanart_dir)
-            log("ArtworkDownloaderSupport: Adding directory: %s" % extrafanart_dir)
+        extrafanartdir = self._media_path(path)
 
         extraFanartFiles = []
 
-        # Now read the contents of all the directories
-        for artDir in extrafanartdirs:
-            if dir_exists(artDir):
-                dirs, files = list_dir(artDir)
-                for aFile in files:
-                    artFile = os_path_join(artDir, aFile)
-                    log("ArtworkDownloaderSupport: Found file: %s" % artFile)
-                    # Add the file to the list
-                    extraFanartFiles.append(artFile)
+        # Now read the contents of the directory
+        if dir_exists(extrafanartdir):
+            dirs, files = list_dir(extrafanartdir)
+            for aFile in files:
+                artFile = os_path_join(extrafanartdir, aFile)
+                log("ArtworkDownloaderSupport: Found file: %s" % artFile)
+                # Add the file to the list
+                extraFanartFiles.append(artFile)
 
         return extraFanartFiles
 
     # Gets the path that is the root of the given media
     def _media_path(self, path):
+        baseDirectory = path
+        # handle episodes stored as rar files
+        if baseDirectory.startswith("rar://"):
+            baseDirectory = baseDirectory.replace("rar://", "")
         # Check for stacked movies
-        try:
-            path = os_path_split(path)[0].rsplit(' , ', 1)[1].replace(",,", ",")
-        except:
-            path = os_path_split(path)[0]
-        # Fixes problems with rared movies and multipath
-        if path.startswith("rar://"):
-            path = [os_path_split(urllib.url2pathname(path.replace("rar://", "")))[0]]
-        elif path.startswith("multipath://"):
-            temp_path = path.replace("multipath://", "").split('%2f/')
-            path = []
-            for item in temp_path:
-                path.append(urllib.url2pathname(item))
-        else:
-            path = [path]
-        return path
+        elif baseDirectory.startswith("stack://"):
+            baseDirectory = baseDirectory.split(" , ")[0]
+            baseDirectory = baseDirectory.replace("stack://", "")
+
+        # Support special paths like smb:// means that we can not just call
+        # os.path.isfile as it will return false even if it is a file
+        # (A bit of a shame - but that's the way it is)
+        fileExt = os.path.splitext(baseDirectory)[1]
+        # If this is a file, then get it's parent directory
+        if fileExt is not None and fileExt != "":
+            baseDirectory = (os_path_split(baseDirectory))[0]
+
+        baseDirectory = os_path_join(baseDirectory, 'extrafanart')
+        log("ArtworkDownloaderSupport: Searching directory: %s" % baseDirectory)
+        return baseDirectory
 
 
 # Class to hold groups of images and media
