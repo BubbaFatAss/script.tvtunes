@@ -460,8 +460,7 @@ class ScreensaverBase(object):
             if imgGrp.imageCount(True) > 0:
                 # Found an image so stop loading, only need to get all the images
                 # for the first entry
-
-                # However we know that we do now want any of the items before
+                # However we know that we do not want any of the items before
                 # this group, so we need to delete the groups before this one
                 for idx in range(index):
                     del imageGroups[0]
