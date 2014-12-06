@@ -334,6 +334,11 @@ class MediaGroup(object):
         # if not, do it now, this will skip it if already done
         self.loadData()
 
+        # Make sure that we have some images to show
+        if self.imageCount() < 1:
+            log("MediaGroup: No Images for %s" % self.path)
+            return None
+
         # Move onto the next image
         self.currentImageIdx = self.currentImageIdx + 1
 
@@ -447,18 +452,19 @@ class ScreensaverBase(object):
         log("Screensaver: Image group total = %d" % len(imageGroups))
 
         # Before we start processing the groups, find the first item with
-        # images, we actually iterate over a copy of the list so we can
-        # delete from the original list
-        for index, imgGrp in enumerate(list(imageGroups)):
+        # images and remove the other ones
+        for index, imgGrp in enumerate(imageGroups):
             # If we are required to exit while loading images, then stop loading them
             if self.exit_requested:
                 return
-            if imgGrp.imageCount(True) < 1:
-                # Remove the groups without any images
-                del imageGroups[index]
-            else:
+            if imgGrp.imageCount(True) > 0:
                 # Found an image so stop loading, only need to get all the images
                 # for the first entry
+
+                # However we know that we do now want any of the items before
+                # this group, so we need to delete the groups before this one
+                for idx in range(index):
+                    del imageGroups[0]
                 break
 
         log("Screensaver: Image groups being used = %d" % len(imageGroups))
