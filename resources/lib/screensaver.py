@@ -556,7 +556,7 @@ class ScreensaverBase(object):
                 imgGrp = self._getFolderImages(path)
                 imageGroups.extend(imgGrp)
         if not imageGroups and not self.exit_requested:
-            cmd = 'XBMC.Notification("{0}", "{1}")'.format(__addon__.getLocalizedString(32101), __addon__.getLocalizedString(32995))
+            cmd = 'XBMC.Notification("{0}", "{1}")'.format(__addon__.getLocalizedString(32101).encode('utf-8'), __addon__.getLocalizedString(32995).encode('utf-8'))
             xbmc.executebuiltin(cmd)
         return imageGroups
 
