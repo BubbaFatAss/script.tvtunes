@@ -181,6 +181,15 @@ class ArtworkDownloaderSupport(object):
             baseDirectory = baseDirectory.split(" , ")[0]
             baseDirectory = baseDirectory.replace("stack://", "")
 
+        if Settings.isSmbEnabled() and not ('@' in baseDirectory):
+            if baseDirectory.startswith("smb://"):
+                log("ArtworkDownloaderSupport: Try authentication share")
+                baseDirectory = baseDirectory.replace("smb://", "smb://%s:%s@" % (Settings.getSmbUser(), Settings.getSmbPassword()))
+            # Also handle the apple format
+            elif baseDirectory.startswith("afp://"):
+                log("ArtworkDownloaderSupport: Try authentication share")
+                baseDirectory = baseDirectory.replace("afp://", "afp://%s:%s@" % (Settings.getSmbUser(), Settings.getSmbPassword()))
+
         # Support special paths like smb:// means that we can not just call
         # os.path.isfile as it will return false even if it is a file
         # (A bit of a shame - but that's the way it is)

@@ -88,6 +88,12 @@ def list_dir(dirpath):
 
 # Checks if a directory exists (Do not use for files)
 def dir_exists(dirpath):
+    # There is an issue with password protected smb shares, in that they seem to
+    # always return false for a directory exists call, so if we have a smb with
+    # a password and user name, then we return true
+    if Settings.isSmbEnabled() and ('@' in dirpath):
+        return True
+
     directoryPath = dirpath
     # The xbmcvfs exists interface require that directories end in a slash
     # It used to be OK not to have the slash in Gotham, but it is now required
