@@ -22,7 +22,7 @@
 		<setting id="showVideoInfoButton" type="bool" label="32020" default="true"/>
 		<setting id="searchSource" type="enum" label="32028" lvalues="32030|32031|32032|32033|32034|32035" default="1" />
 		<setting label="32022" type="lsep"/>
-		<setting label="32023" type="action" action="RunScript($CWD/default.py)"/>
+		<setting label="32023" type="action" option="close" action="RunScript($CWD/default.py)"/>
 	</category>
 	<category label="32993">
 		<setting id="smb_share" type="bool" label="32003" default="false"/>
