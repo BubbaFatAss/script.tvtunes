@@ -354,15 +354,21 @@ class WindowShowing():
         return xbmc.getInfoLabel("container.folderpath") == folderPathId
 
     @staticmethod
-    def isTvShowTitles(currentPath=None):
+    def isTvShowTitles():
         folderPathId = "videodb://2/2/"
         # The ID for the TV Show Title changed in Gotham
         if Settings.getXbmcMajorVersion() > 12:
             folderPathId = "videodb://tvshows/titles/"
-        if currentPath is None:
-            return xbmc.getInfoLabel("container.folderpath") == folderPathId
-        else:
-            return currentPath == folderPathId
+        showingTvShowTitles = (xbmc.getInfoLabel("container.folderpath") == folderPathId)
+        # There is a case where the user may have created a smart playlist that then
+        # groups together all the TV Shows, if they also have the option to play themes
+        # while browsing TV Shows enabled, then we need to return True for this case
+        if not showingTvShowTitles:
+            # Check if we are viewing a video playlist
+            if 'special://profile/playlists/video/' in xbmc.getInfoLabel("container.folderpath"):
+                # Check if what is being showed is actually TV Shows
+                showingTvShowTitles = WindowShowing.isTvShows()
+        return showingTvShowTitles
 
     @staticmethod
     def isMusicVideoTitles(currentPath=None):
