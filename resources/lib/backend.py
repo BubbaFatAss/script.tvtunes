@@ -26,6 +26,9 @@ from themeFinder import ThemeFiles
 ###################################
 class Player(xbmc.Player):
     def __init__(self, *args):
+        # Record if the volume is currently altered
+        self.hasChangedVolume = False
+        self.hasChangedRepeat = False
         # Save the volume from before any alterations
         self.original_volume = self._getVolume()
 
@@ -67,13 +70,18 @@ class Player(xbmc.Player):
         log("Player: Restoring player settings")
         while self.isPlayingAudio():
             xbmc.sleep(1)
-        # Force the volume to the starting volume
-        self._setVolume(self.original_volume)
+        # Force the volume to the starting volume, but onlyif we have changed it
+        if self.hasChangedVolume:
+            self._setVolume(self.original_volume)
+            # Record that the volume has been restored
+            self.hasChangedVolume = False
+            log("Player: Restored volume to %d" % self.original_volume)
         # restore repeat state
-        xbmc.executeJSONRPC('{ "jsonrpc": "2.0", "method": "Player.SetRepeat", "params": {"playerid": 0, "repeat": "%s" }, "id": 1 }' % self.repeat)
+        if self.hasChangedRepeat:
+            xbmc.executeJSONRPC('{ "jsonrpc": "2.0", "method": "Player.SetRepeat", "params": {"playerid": 0, "repeat": "%s" }, "id": 1 }' % self.repeat)
+            self.hasChangedRepeat = False
         # Record the time that playing was started (0 is stopped)
         self.startTime = 0
-        log("Player: Restored volume to %d" % self.original_volume)
 
     def stop(self):
         log("Player: stop called")
@@ -137,6 +145,8 @@ class Player(xbmc.Player):
             else:
                 xbmc.executeJSONRPC('{ "jsonrpc": "2.0", "method": "Player.SetRepeat", "params": {"playerid": 0, "repeat": "off" }, "id": 1 }')
 
+            self.hasChangedRepeat = True
+
             # Record the time that playing was started
             self.startTime = int(time.time())
 
@@ -170,6 +180,7 @@ class Player(xbmc.Player):
         # Can't use the RPC version as that will display the volume dialog
         # '{"jsonrpc": "2.0", "method": "Application.SetVolume", "params": { "volume": %d }, "id": 1}'
         xbmc.executebuiltin('XBMC.SetVolume(%d)' % newvolume, True)
+        self.hasChangedVolume = True
 
     def _lowerVolume(self):
         try:
