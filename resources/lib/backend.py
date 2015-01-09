@@ -347,19 +347,11 @@ class WindowShowing():
 
     @staticmethod
     def isRecentEpisodesAdded():
-        folderPathId = "videodb://5/"
-        # The ID for the Recent Episodes changed in Gotham
-        if Settings.getXbmcMajorVersion() > 12:
-            folderPathId = "videodb://recentlyaddedepisodes/"
-        return xbmc.getInfoLabel("container.folderpath") == folderPathId
+        return xbmc.getInfoLabel("container.folderpath") == "videodb://recentlyaddedepisodes/"
 
     @staticmethod
     def isTvShowTitles():
-        folderPathId = "videodb://2/2/"
-        # The ID for the TV Show Title changed in Gotham
-        if Settings.getXbmcMajorVersion() > 12:
-            folderPathId = "videodb://tvshows/titles/"
-        showingTvShowTitles = (xbmc.getInfoLabel("container.folderpath") == folderPathId)
+        showingTvShowTitles = (xbmc.getInfoLabel("container.folderpath") == "videodb://tvshows/titles/")
         # There is a case where the user may have created a smart playlist that then
         # groups together all the TV Shows, if they also have the option to play themes
         # while browsing TV Shows enabled, then we need to return True for this case
@@ -371,15 +363,8 @@ class WindowShowing():
         return showingTvShowTitles
 
     @staticmethod
-    def isMusicVideoTitles(currentPath=None):
-        folderPathId = "videodb://3/2/"
-        # The ID for the TV Show Title changed in Gotham
-        if Settings.getXbmcMajorVersion() > 12:
-            folderPathId = "videodb://musicvideos/"
-        if currentPath is None:
-            return xbmc.getInfoLabel("container.folderpath") == folderPathId
-        else:
-            return currentPath == folderPathId
+    def isMusicVideoTitles():
+        return xbmc.getInfoLabel("container.folderpath") == "videodb://musicvideos/"
 
     @staticmethod
     def isPluginPath():
@@ -387,10 +372,7 @@ class WindowShowing():
 
     @staticmethod
     def isMovieSet():
-        folderPathId = "videodb://1/7/"
-        # The ID for the TV Show Title changed in Gotham
-        if Settings.getXbmcMajorVersion() > 12:
-            folderPathId = "videodb://movies/sets/"
+        folderPathId = "videodb://movies/sets/"
         return xbmc.getCondVisibility("!IsEmpty(ListItem.DBID) + SubString(ListItem.Path," + folderPathId + ",left)")
 
 
@@ -547,7 +529,7 @@ class TunesBackend():
                     # If we are using Gotham or higher, it is possible for us to re-kick off the
                     # screen-saver, otherwise the action of us stopping the theme will reset the
                     # timeout and the user will have to wait longer
-                    if screensaverStarted and (Settings.getXbmcMajorVersion() > 12):
+                    if screensaverStarted:
                         log("TunesBackend: Restarting screensaver that TvTunes stopped")
                         xbmc.executebuiltin("xbmc.ActivateScreensaver", True)
                     break
