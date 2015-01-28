@@ -79,7 +79,7 @@ class Player(xbmc.Player):
             # There have been reports of some audio systems like PulseAudio return that they have
             # stopped playing the audio, however they have not quite finished, to accommodate
             # this we add an extra sleep in here
-            xbmc.sleep(250)
+            xbmc.sleep(350)
             self._setVolume(self.original_volume)
             # Record that the volume has been restored
             self.hasChangedVolume = False
