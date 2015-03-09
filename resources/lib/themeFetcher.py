@@ -961,7 +961,7 @@ class GoearListing(DefaultListing):
 
         # Loop until we do not get any entries for the given page
         while (len(lastThemeBatch) > 0) and (nextPageIndex < 40):
-            # Check if the user has reqested the operation to be cancelled
+            # Check if the user has requested the operation to be cancelled
             if progressDialog.isUserCancelled():
                 break
 
@@ -999,6 +999,7 @@ class GoearListing(DefaultListing):
 
         requestFailed = True
         maxAttempts = 3
+        is404error = False
 
         while requestFailed and (maxAttempts > 0):
             maxAttempts = maxAttempts - 1
@@ -1012,15 +1013,22 @@ class GoearListing(DefaultListing):
                 except:
                     log("GoearListing: Failed to close connection for %s" % fullUrl)
                 requestFailed = False
-            except:
-                # If we get an exception we have failed to perform the http request
-                # we will try again before giving up
-                log("GoearListing: Request failed for %s" % fullUrl)
-                log("GoearListing: %s" % traceback.format_exc())
+            except urllib2.HTTPError, e:
+                # Check for the case where we get a 404 as that means there are no more pages
+                if e.code == 404:
+                    log("GoearListing: 404 Error received, no more entries, attempt %d" % maxAttempts)
+                    is404error = True
+                else:
+                    # If we get an exception we have failed to perform the http request
+                    # we will try again before giving up
+                    log("GoearListing: Request failed for %s" % fullUrl)
+                    log("GoearListing: %s" % traceback.format_exc())
+                    is404error = False
 
         if requestFailed:
             # pop up a notification, and then return than none were found
-            xbmc.executebuiltin('Notification(%s, %s, %d, %s)' % (__language__(32105).encode('utf-8'), __language__(32994).encode('utf-8'), 5, __icon__))
+            if not is404error:
+                xbmc.executebuiltin('Notification(%s, %s, %d, %s)' % (__language__(32105).encode('utf-8'), __language__(32994).encode('utf-8'), 5, __icon__))
             return None
 
         # Load the output of the search request into Soup
