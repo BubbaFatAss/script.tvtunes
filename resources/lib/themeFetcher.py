@@ -164,7 +164,7 @@ class TvTunesFetcher:
                 try:
                     xbmcvfs.mkdir(path)
                 except:
-                    log("download: problem with path: %s" % destination)
+                    log("download: problem with path: %s" % destination, True, xbmc.LOGERROR)
             fp, h = urllib.urlretrieve(theme_url, tmpdestination, _report_hook)
             log(h)
             copy = xbmcvfs.copy(tmpdestination, destination)
@@ -174,8 +174,8 @@ class TvTunesFetcher:
                 log("download: copy failed")
             xbmcvfs.delete(tmpdestination)
         except:
-            log("download: Theme download Failed!!!")
-            log("download: %s" % traceback.format_exc())
+            log("download: Theme download Failed!!!", True, xbmc.LOGERROR)
+            log("download: %s" % traceback.format_exc(), True, xbmc.LOGERROR)
 
         # Make sure the progress dialog has been closed
         downloadProgressDialog.close()
@@ -752,11 +752,11 @@ class DefaultListing():
         try:
             asciiRegexCheck = re.sub(r'[^\x00-\x7F]', ' ', regexCheck)
             asciiRegexCheck = asciiRegexCheck.replace('\ ', '')
-            # Only want it if it is different from theone we have already
+            # Only want it if it is different from the one we have already
             if asciiRegexCheck == regexCheck:
                 asciiRegexCheck = None
         except:
-            log("DefaultListing: Failed to process asciiRegexCheck")
+            log("DefaultListing: Failed to process asciiRegexCheck", True, xbmc.LOGERROR)
             asciiRegexCheck = None
 
         # Also get the string where we remove the non ascii characters and
@@ -766,11 +766,11 @@ class DefaultListing():
             unicodeRegex = unicodedata.normalize('NFD', beforeRegexEscape).encode('ascii', 'ignore')
             unicodeRegex = re.escape(unicodeRegex)
             unicodeRegex = "%s%s%s%s" % ('(?=.*', unicodeRegex.replace('\\ ', ')(?=.*'), ')', searchAppend)
-            # Only want it if it is different from theone we have already
+            # Only want it if it is different from the one we have already
             if unicodeRegex == regexCheck:
                 unicodeRegex = None
         except:
-            log("DefaultListing: Failed to process unicodeRegex")
+            log("DefaultListing: Failed to process unicodeRegex", True, xbmc.LOGERROR)
             unicodeRegex = None
 
         if (asciiRegexCheck is not None) and (unicodeRegex is not None):
@@ -899,8 +899,8 @@ class TelevisionTunesListing(DefaultListing):
             sock.close()
             return htmlsource
         except:
-            log("getHtmlSource: ERROR opening page %s" % url)
-            log("getHtmlSource: %s" % traceback.format_exc())
+            log("getHtmlSource: ERROR opening page %s" % url, True, xbmc.LOGERROR)
+            log("getHtmlSource: %s" % traceback.format_exc(), True, xbmc.LOGERROR)
             xbmcgui.Dialog().ok(__language__(32101), __language__(32102))
             return None
 
@@ -940,7 +940,7 @@ class GoearListing(DefaultListing):
                 unicodeFullUrl = "%s%s" % (baseUrl, unicodeSearchName)
                 progressDivisor = progressDivisor + 1
         except:
-            log("GoearListing: Exception when converting to ascii %s" % traceback.format_exc())
+            log("GoearListing: Exception when converting to ascii %s" % traceback.format_exc(), True, xbmc.LOGERROR)
 
         # Perform the search using the supplied URL
         themeDetailsList = self._doSearch(fullUrl, progressDialog, progressDivisor)
@@ -1011,7 +1011,7 @@ class GoearListing(DefaultListing):
                 try:
                     response.close()
                 except:
-                    log("GoearListing: Failed to close connection for %s" % fullUrl)
+                    log("GoearListing: Failed to close connection for %s" % fullUrl, True, xbmc.LOGERROR)
                 requestFailed = False
             except urllib2.HTTPError, e:
                 # Check for the case where we get a 404 as that means there are no more pages
@@ -1093,7 +1093,7 @@ class GoearListing(DefaultListing):
                 log("GoearListing: Theme Details = %s" % themeScraperEntry.getDisplayString())
                 log("GoearListing: Theme URL = %s" % themeScraperEntry.getMediaURL())
             except:
-                log("GoearListing: Failed when processing page %s" % traceback.format_exc())
+                log("GoearListing: Failed when processing page %s" % traceback.format_exc(), True, xbmc.LOGERROR)
 
         return themeList
 
@@ -1173,8 +1173,8 @@ class SoundcloudListing(DefaultListing):
                 log("SoundcloudListing: Number of entries returned = %d, offset = %d" % (numTracksInBatch, offset))
                 offset = offset + numTracksInBatch
             except:
-                log("SoundcloudListing: Request failed for %s" % showname)
-                log("SoundcloudListing: %s" % traceback.format_exc())
+                log("SoundcloudListing: Request failed for %s" % showname, True, xbmc.LOGERROR)
+                log("SoundcloudListing: %s" % traceback.format_exc(), True, xbmc.LOGERROR)
                 numTracksInBatch = 0
 
             # Loop over the tracks produced assigning it to the list
@@ -1252,8 +1252,8 @@ class GroovesharkListing(DefaultListing):
             client.init()
             tracks = client.search(showname)
         except:
-            log("GroovesharkListing: Request failed for %s" % showname)
-            log("GroovesharkListing: %s" % traceback.format_exc())
+            log("GroovesharkListing: Request failed for %s" % showname, True, xbmc.LOGERROR)
+            log("GroovesharkListing: %s" % traceback.format_exc(), True, xbmc.LOGERROR)
 
         # Once the search has been done, go to 75%
         progressDialog.updateProgress(75)
@@ -1303,8 +1303,8 @@ class GroovesharkThemeItemDetails(ThemeItemDetails):
             self.trackUrl = self.grooveshark_track.stream.url
             log("GroovesharkThemeItemDetails: Stream url is %s" % self.trackUrl)
         except:
-            log("GroovesharkThemeItemDetails: Request failed for %s" % self.grooveshark_track.name)
-            log("GroovesharkThemeItemDetails: %s" % traceback.format_exc())
+            log("GroovesharkThemeItemDetails: Request failed for %s" % self.grooveshark_track.name, True, xbmc.LOGERROR)
+            log("GroovesharkThemeItemDetails: %s" % traceback.format_exc(), True, xbmc.LOGERROR)
 
         return self.trackUrl
 
@@ -1330,8 +1330,8 @@ class GroovesharkThemeItemDetails(ThemeItemDetails):
 
             xbmcvfs.delete(tmpdestination)
         except:
-            log("download: Theme download Failed!!!")
-            log("download: %s" % traceback.format_exc())
+            log("download: Theme download Failed!!!", True, xbmc.LOGERROR)
+            log("download: %s" % traceback.format_exc(), True, xbmc.LOGERROR)
         return isSelected
 
     # this method converts the time in milliseconds to human readable format.
