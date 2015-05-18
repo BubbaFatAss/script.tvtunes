@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-# Reference:
-# http://wiki.xbmc.org/index.php?title=Audio/Video_plugin_tutorial
 import sys
 import os
 import re
@@ -394,6 +392,9 @@ if __name__ == '__main__':
     base_url = sys.argv[0]
     addon_handle = int(sys.argv[1])
     args = urlparse.parse_qs(sys.argv[2][1:])
+
+    # Record what the plugin deals with, files in our case
+    xbmcplugin.setContent(addon_handle, 'files')
 
     # Get the current mode from the arguments, if none set, then use None
     mode = args.get('mode', None)
