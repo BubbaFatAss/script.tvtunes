@@ -284,6 +284,7 @@ class MediaGroup(object):
                 artDownloader = ArtworkDownloaderSupport()
                 for artImg in artDownloader.loadExtraFanart(self.path):
                     self.addImage(artImg, 16.0 / 9.0)
+                del artDownloader
 
                 # Now that we have all of the images, mix them up
                 random.shuffle(self.images)
@@ -552,6 +553,7 @@ class ScreensaverBase(object):
 
         # Now restore the volume to what it should be
         volumeCtrl.restoreVolume()
+        del volumeCtrl
 
         log('Screensaver: start_loop end')
 

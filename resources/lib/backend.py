@@ -785,5 +785,7 @@ def runBackend():
 
         # Start the themes running
         main.run()
+
+        del main
     else:
         log("TvTunes Already Running")

@@ -412,7 +412,9 @@ class ThemeFiles():
         workingPath = self._getUsablePath(rawPath)
 
         nfoRead = NfoReader(workingPath)
-        return nfoRead.getExcludeFromScreensaver()
+        toExclude = nfoRead.getExcludeFromScreensaver()
+        del nfoRead
+        return toExclude
 
     # Search for theme files in the given directory
     def _getThemeFiles(self, directory, extensionOnly=False):
@@ -425,6 +427,7 @@ class ThemeFiles():
             # Do not want the theme keyword if looking at an entire directory
             themeFiles = themeFiles + self._getThemeFiles(nfoDir, True)
 
+        del nfoRead
         log("ThemeFiles: Searching %s for %s" % (directory, Settings.getThemeFileRegEx(directory, extensionOnly)), self.debug_logging_enabled)
 
         # check if the directory exists before searching
