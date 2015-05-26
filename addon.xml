@@ -162,6 +162,6 @@
 	
 		<forum>http://forum.kodi.tv/showthread.php?tid=214287</forum>
 	
-		<source>http://robwebset.googlecode.com/svn/trunk/script.tvtunes/</source>
+		<source>https://github.com/robwebset/script.tvtunes</source>
 	</extension>
 </addon>
