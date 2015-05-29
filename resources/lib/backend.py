@@ -383,7 +383,15 @@ class WindowShowing():
 
     @staticmethod
     def isPluginPath():
-        return "plugin://" in xbmc.getInfoLabel("ListItem.Path")
+        currentPath = xbmc.getInfoLabel("ListItem.Path")
+        if "plugin://" in currentPath:
+            # There is a special case for Emby.Kodi that supports TvTunes
+            # https://github.com/MediaBrowser/Emby.Kodi
+            # So we pretend that isn't a plugin
+            if "plugin.video.emby" in currentPath:
+                return False
+            return True
+        return False
 
     @staticmethod
     def isMovieSet():
