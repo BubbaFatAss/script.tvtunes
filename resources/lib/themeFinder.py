@@ -53,6 +53,11 @@ class NfoReader():
         # Find out the name of the NFO file
         nfoFileName = os_path_join(directory, "tvtunes.nfo")
 
+        # If this is a plugin path, then don't try and get the NFO file
+        if "plugin://" in nfoFileName:
+            log("NfoReader: Plugin paths do not support NFO files: %s" % nfoFileName, self.debug_logging_enabled)
+            return
+
         log("NfoReader: Searching for NFO file: %s" % nfoFileName, self.debug_logging_enabled)
 
         # Return False if file does not exist
