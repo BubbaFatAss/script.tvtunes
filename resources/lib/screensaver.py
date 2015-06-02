@@ -271,7 +271,7 @@ class MediaGroup(object):
 
                 # Check if the user wants to play themes
                 if ScreensaverSettings.isPlayThemes():
-                    self.themeFiles = ThemeFiles(self.path)
+                    self.themeFiles = ThemeFiles(self.path, audioOnly=True)
                     # Check if we only want groups with themes in
                     if ScreensaverSettings.isOnlyIfThemes():
                         if not self.themeFiles.hasThemes():

@@ -213,9 +213,10 @@ class NfoReader():
 # Calculates file locations
 ##############################
 class ThemeFiles():
-    def __init__(self, rawPath, pathList=None, debug_logging_enabled=True):
+    def __init__(self, rawPath, pathList=None, debug_logging_enabled=True, audioOnly=False):
         self.debug_logging_enabled = debug_logging_enabled
         self.forceShuffle = False
+        self.audioOnly = audioOnly
         self.rawPath = rawPath
         if rawPath == "":
             self.clear()
@@ -433,13 +434,13 @@ class ThemeFiles():
             themeFiles = themeFiles + self._getThemeFiles(nfoDir, True)
 
         del nfoRead
-        log("ThemeFiles: Searching %s for %s" % (directory, Settings.getThemeFileRegEx(directory, extensionOnly)), self.debug_logging_enabled)
+        log("ThemeFiles: Searching %s for %s" % (directory, Settings.getThemeFileRegEx(directory, extensionOnly, self.audioOnly)), self.debug_logging_enabled)
 
         # check if the directory exists before searching
         if dir_exists(directory):
             dirs, files = list_dir(directory)
             for aFile in files:
-                m = re.search(Settings.getThemeFileRegEx(directory, extensionOnly), aFile, re.IGNORECASE)
+                m = re.search(Settings.getThemeFileRegEx(directory, extensionOnly, self.audioOnly), aFile, re.IGNORECASE)
                 if m:
                     path = os_path_join(directory, aFile)
                     log("ThemeFiles: Found match: %s" % path, self.debug_logging_enabled)
