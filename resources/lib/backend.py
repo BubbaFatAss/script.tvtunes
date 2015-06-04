@@ -407,8 +407,8 @@ class WindowShowing():
         if "plugin://" in currentPath:
             # There is a special case for Emby.Kodi that supports TvTunes
             # https://github.com/MediaBrowser/Emby.Kodi
-            # So we pretend that isn't a plugin
-            if "plugin.video.emby" in currentPath:
+            # So we pretend that isn't a plugin as long as Custom Path is set
+            if ("plugin.video.emby" in currentPath) and Settings.isCustomPathEnabled():
                 return False
             return True
         return False
