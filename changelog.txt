@@ -1,3 +1,6 @@
+v4.7.4
+- Fix issue with non ascii characters for screensaver path
+
 v4.7.3
 - Set the content value for the plugin part of TvTunes
 - Allow TvTunes to run for plugin.video.emby

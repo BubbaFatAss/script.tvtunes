@@ -54,6 +54,21 @@ def os_path_join(dir, file):
     return os.path.join(dir, file)
 
 
+# There has been problems with calling isfile with non ascii characters,
+# so we have this method to try and do the conversion for us
+def os_path_isfile(workingPath,):
+    # Convert each argument - if an error, then it will use the default value
+    # that was passed in
+    try:
+        workingPath = workingPath.decode("utf-8")
+    except:
+        pass
+    try:
+        return os.path.isfile(workingPath)
+    except:
+        return False
+
+
 # Splits a path the same way as os.path.split but supports paths of a different
 # OS than that being run on
 def os_path_split(fullpath):
