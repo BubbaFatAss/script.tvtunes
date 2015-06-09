@@ -1,5 +1,7 @@
 v4.7.4
 - Fix issue with non ascii characters for screensaver path
+- Fix theme search with soundcloud
+- Remove Grooveshark support
 
 v4.7.3
 - Set the content value for the plugin part of TvTunes

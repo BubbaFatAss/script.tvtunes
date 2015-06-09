@@ -131,7 +131,6 @@ class Settings():
     ALL_ENGINES = 'All'
     TELEVISION_TUNES = 'televisiontunes.com'
     SOUNDCLOUD = 'soundcloud.com'
-    GROOVESHARK = 'grooveshark.com'
     GOEAR = 'goear.com'
     PROMPT_ENGINE = 'Prompt User'
 
@@ -296,8 +295,6 @@ class Settings():
         elif index == 2:
             return Settings.SOUNDCLOUD
         elif index == 3:
-            return Settings.GROOVESHARK
-        elif index == 4:
             return Settings.GOEAR
         # Default is to prompt the user
         return Settings.PROMPT_ENGINE
