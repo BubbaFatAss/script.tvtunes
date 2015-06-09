@@ -1,19 +1,19 @@
 # -*- coding:utf-8 -*-
 #
-# Copyright (C) 2012, Maximilian Köhl <linuxmaxi@googlemail.com>
+# Copyright (C) 2015, Maximilian Köhl <mail@koehlma.de>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This library is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published
+# by the Free Software Foundation; either version 3.0 of the License, or
 # (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
+# This library is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public License
+# along with this library. If not, see <http://www.gnu.org/licenses/>.
 
 import sys
 
@@ -25,6 +25,7 @@ else:
     from urllib import quote_plus, urlencode
 
 from grooveshark.const import *
+
 
 class Stream(object):
     """
@@ -43,8 +44,10 @@ class Stream(object):
         self._size = None
 
     def _request(self):
-        request = urllib.Request('http://%s/stream.php' % (self._ip), data=urlencode({'streamKey' : self._key}).encode('utf-8'),
-                                         headers={'User-Agent' : USER_AGENT})
+        request = urllib.Request(
+            'http://%s/stream.php' % (self._ip),
+            data=urlencode({'streamKey': self._key}).encode('utf-8'),
+            headers={'User-Agent': USER_AGENT})
         self._data = self._connection.urlopen(request)
         self._size = int(self.data.info()['Content-Length'])
 
@@ -67,7 +70,8 @@ class Stream(object):
         """
         stream URL
         """
-        return 'http://%s/stream.php?streamKey=%s' % (self._ip, quote_plus(self._key))
+        return 'http://%s/stream.php?streamKey=%s' % (self._ip,
+                                                      quote_plus(self._key))
 
     @property
     def data(self):

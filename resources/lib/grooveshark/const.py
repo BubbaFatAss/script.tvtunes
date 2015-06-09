@@ -1,19 +1,19 @@
 # -*- coding:utf-8 -*-
 #
-# Copyright (C) 2012, Maximilian Köhl <linuxmaxi@googlemail.com>
+# Copyright (C) 2015, Maximilian Köhl <mail@koehlma.de>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This library is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published
+# by the Free Software Foundation; either version 3.0 of the License, or
 # (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
+# This library is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public License
+# along with this library. If not, see <http://www.gnu.org/licenses/>.
 
 # time in seconds until a new communication token is needed
 TOKEN_TIMEOUT = 1200
@@ -29,9 +29,17 @@ NO_COVER_URL = 'http://images.grooveshark.com/static/albums/70_album.png'
 # because the ones I extracted out of Grooveshark do not work for some reason
 # (I meet SciLor, he tells me that they do some type of encryption but don't
 # know more) - thanks.
-CLIENTS = {'htmlshark' : {'version' : '20130520',
-                          'token' : 'nuggetsOfBaller'},
-           'jsqueue' : {'version' : '20130520',
-                        'token' : 'chickenFingers'}}
+CLIENTS = {'htmlshark': {'version': '20130520',
+                         'token': 'nuggetsOfBaller'},
+           'jsqueue': {'version': '20130520',
+                       'token': 'chickenFingers'}}
 # grooveshark country settings
-COUNTRY = {'ID': 221, 'CC1': 0, 'CC2': 0, 'CC3': 0, 'CC4': 0, 'DMA': 0, 'IPR': 0}
+COUNTRY = {
+    'ID': 221,
+    'CC1': 0,
+    'CC2': 0,
+    'CC3': 0,
+    'CC4': 0,
+    'DMA': 0,
+    'IPR': 0
+}

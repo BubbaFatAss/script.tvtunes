@@ -1179,10 +1179,13 @@ class SoundcloudListing(DefaultListing):
 
             # Loop over the tracks produced assigning it to the list
             for track in tracks:
-                # another dictionary for holding all the results for a specific song
-                themeName = track.title
-                duration = self._convertTime(track.duration)
+                if track in [None, ""]:
+                    continue
+
                 try:
+                    # another dictionary for holding all the results for a specific song
+                    themeName = track.title
+                    duration = self._convertTime(track.duration)
                     # Only allow the theme if it is streamable
                     if track.streamable:
                         id = track.id
