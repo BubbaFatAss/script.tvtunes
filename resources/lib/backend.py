@@ -288,13 +288,17 @@ class TvTunesPlayer(xbmc.Player):
 
         if not self.isPlayingVideo():
             return False
-        # Get the currently playing file
-        filePlaying = self.getPlayingFile()
 
-        i = 0
-        while i < self.playlistSize:
-            if self.playListItems[i].getfilename() == filePlaying:
-                return True
+        try:
+            # Get the currently playing file
+            filePlaying = self.getPlayingFile()
+
+            i = 0
+            while i < self.playlistSize:
+                if self.playListItems[i].getfilename() == filePlaying:
+                    return True
+        except:
+            log("Player: Exception when checking if theme is playing")
         return False
 
 
