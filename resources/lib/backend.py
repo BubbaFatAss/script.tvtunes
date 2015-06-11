@@ -70,7 +70,11 @@ class TvTunesPlayer(xbmc.Player):
 
     def restoreSettings(self):
         log("Player: Restoring player settings")
-        while self.isPlaying():
+        # We could be doing a video background rather than audio, but
+        # if that is the case, we have no choice but to start resetting
+        # as we will not know the difference between the video theme stopping
+        # and the video movie/tv show starting
+        while self.isPlayingAudio():
             xbmc.sleep(1)
         # Restore repeat state
         if self.hasChangedRepeat:
