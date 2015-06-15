@@ -266,6 +266,16 @@ class Settings():
     AUTO_DOWNLOAD_PRIORITY_1_OR_2 = 2
 
     @staticmethod
+    def reloadSettings():
+        # Force the reload of the settings to pick up any new values
+        global __addon__
+        __addon__ = xbmcaddon.Addon(id='script.tvtunes')
+
+    @staticmethod
+    def isThemePlayingEnabled():
+        return __addon__.getSetting("enableThemePlaying") == 'true'
+
+    @staticmethod
     def isCustomPathEnabled():
         return __addon__.getSetting("custom_path_enable") == 'true'
 

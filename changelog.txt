@@ -1,3 +1,6 @@
+v5.0.0
+- Make TvTunes run as a service
+
 v4.7.4
 - Fix issue with non ascii characters for screensaver path
 - Fix theme search with soundcloud

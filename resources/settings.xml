@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <settings>
 	<category label="32991">
+		<setting id="enableThemePlaying" type="bool" label="32084" default="true"/>
 		<setting id="loop" type="bool" label="32001" default="false"/>
 		<setting id="downvolume" label="32002" type="slider" default="0" range="0,1,60" option="int" />
 		<setting id="delayStart" label="32024" type="slider" default="0" range="0,1,60" option="int" />

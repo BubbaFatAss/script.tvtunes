@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-import threading
 import time
-import traceback
 import xbmc
 import xbmcgui
 import sys
@@ -21,46 +19,6 @@ from settings import WindowShowing
 
 from themeFinder import ThemeFiles
 from themePlayer import ThemePlayer
-
-
-###############################################################
-# Class to make it easier to see the current state of TV Tunes
-###############################################################
-class TvTunesStatus():
-    @staticmethod
-    def isAlive():
-        return xbmcgui.Window(10025).getProperty("TvTunesIsAlive") == "true"
-
-    @staticmethod
-    def setAliveState(state):
-        if state:
-            xbmcgui.Window(10025).setProperty("TvTunesIsAlive", "true")
-        else:
-            xbmcgui.Window(10025).clearProperty('TvTunesIsAlive')
-
-    @staticmethod
-    def clearRunningState():
-        xbmcgui.Window(10025).clearProperty('TvTunesIsRunning')
-
-    # Check if the is a different version running
-    @staticmethod
-    def isOkToRun():
-        # Get the current thread ID
-        curThreadId = threading.currentThread().ident
-        log("TvTunesStatus: Thread ID = %d" % curThreadId)
-
-        # Check if the "running state" is set
-        existingvalue = xbmcgui.Window(10025).getProperty("TvTunesIsRunning")
-        if existingvalue == "":
-            log("TvTunesStatus: Current running state is empty, setting to %d" % curThreadId)
-            xbmcgui.Window(10025).setProperty("TvTunesIsRunning", str(curThreadId))
-        else:
-            # If it is check if it is set to this thread value
-            if existingvalue != str(curThreadId):
-                log("TvTunesStatus: Running ID already set to %s" % existingvalue)
-                return False
-        # Default return True unless we have a good reason not to run
-        return True
 
 
 #########################################################
@@ -123,112 +81,110 @@ class DelayedStartTheme():
 
 
 ###########################################
-# Thread to run the program back-end in
+# Class to run the program back-end in
 ###########################################
 class TunesBackend():
     def __init__(self):
         self.themePlayer = ThemePlayer()
-        self._stop = False
         log("### starting TvTunes Backend ###")
         self.newThemeFiles = ThemeFiles("")
         self.oldThemeFiles = ThemeFiles("")
         self.prevThemeFiles = ThemeFiles("")
         self.delayedStart = DelayedStartTheme()
 
+        self.isAlive = False
+
         # Only used for logging filtering
         self.lastLoggedThemePath = ""
 
-    def run(self):
-        try:
-            # Before we actually start playing something, make sure it is OK
-            # to run, need to ensure there are not multiple copies running
-            if not TvTunesStatus.isOkToRun():
-                return
+    def runAsAService(self):
+        while (not xbmc.abortRequested):
+            # Wait a little before starting the check each time
+            xbmc.sleep(200)
 
-            while (not self._stop):
-                # Check the forced TV Tunes status at the start of the loop, if this is True
-                # then we don't want to stop themes until the next iteration, this stops the case
-                # where some checks are done and the value changes part was through a single
-                # loop iteration
-                isForcedTvTunesContinue = WindowShowing.isTvTunesOverrideContinuePlaying()
+            # Check the forced TV Tunes status at the start of the loop, if this is True
+            # then we don't want to stop themes until the next iteration, this stops the case
+            # where some checks are done and the value changes part was through a single
+            # loop iteration
+            isForcedTvTunesContinue = WindowShowing.isTvTunesOverrideContinuePlaying()
 
-                # If shutdown is in progress, stop quickly (no fade out)
-                if WindowShowing.isShutdownMenu() or xbmc.abortRequested:
-                    self.stop()
-                    break
+            # Stop the theme if the shutdown menu appears - it normally means
+            # we are about to shut the system down, so get ahead of the game
+            if WindowShowing.isShutdownMenu():
+                self.stop(fastFade=True)
+                continue
 
-                # We only stop looping and exit this script if we leave the Video library
-                # We get called when we enter the library, and the only times we will end
-                # will be if:
-                # 1) A Video is selected to play
-                # 2) We exit to the main menu away from the video view
-                # NOTE: The screensaver kicking in will only be picked up if the option
-                # "Use Visualization if Playing Audio" is disabled
-                screensaverStarted = WindowShowing.isScreensaver()
-                if (not WindowShowing.isVideoLibrary()) or screensaverStarted:
-                    log("TunesBackend: Video Library no longer visible")
-                    # End playing cleanly (including any fade out) and then stop everything
-                    if TvTunesStatus.isAlive():
-                        self.themePlayer.endPlaying(fastFade=screensaverStarted)
-                    self.stop()
+            # NOTE: The screensaver kicking in will only be picked up if the option
+            # "Use Visualization if Playing Audio" is disabled
+            if WindowShowing.isScreensaver():
+                log("TunesBackend: Screensaver active")
+                if self.isAlive:
+                    self.stop(fastFade=True)
 
                     # It may be possible that we stopped for the screen-saver about to kick in
                     # If we are using Gotham or higher, it is possible for us to re-kick off the
                     # screen-saver, otherwise the action of us stopping the theme will reset the
                     # timeout and the user will have to wait longer
-                    if screensaverStarted:
-                        log("TunesBackend: Restarting screensaver that TvTunes stopped")
-                        xbmc.executebuiltin("xbmc.ActivateScreensaver", True)
-                    break
+                    log("TunesBackend: Restarting screensaver that TvTunes stopped")
+                    xbmc.executebuiltin("xbmc.ActivateScreensaver", True)
+                    continue
 
-                # There is a valid page selected and there is currently nothing playing
-                if self.isPlayingZone() and not WindowShowing.isTvTunesOverrideContinuePrevious():
-                    newThemes = self.getThemes()
-                    if self.newThemeFiles != newThemes:
-                        self.newThemeFiles = newThemes
+            # Check if TvTunes is blocked from playing any themes
+            if xbmcgui.Window(10025).getProperty('TvTunesBlocked') not in [None, ""]:
+                self.stop(fastFade=True)
+                continue
 
-                # Check if the file path has changed, if so there is a new file to play
-                if self.newThemeFiles != self.oldThemeFiles and self.newThemeFiles.hasThemes():
-                    log("TunesBackend: old path: %s" % self.oldThemeFiles.getPath())
-                    log("TunesBackend: new path: %s" % self.newThemeFiles.getPath())
-                    if self.start_playing():
-                        self.oldThemeFiles = self.newThemeFiles
+            if not WindowShowing.isVideoLibrary():
+                log("TunesBackend: Video Library no longer visible")
+                # End playing cleanly (including any fade out) and then stop everything
+                self.stop()
+                continue
 
-                # There is no theme at this location, so make sure we are stopped
-                if not self.newThemeFiles.hasThemes() and self.themePlayer.isPlayingTheme() and TvTunesStatus.isAlive():
-                    self.themePlayer.endPlaying()
-                    self.oldThemeFiles.clear()
-                    self.prevThemeFiles.clear()
-                    self.delayedStart.clear()
-                    TvTunesStatus.setAliveState(False)
+            # There is a valid page selected and there is currently nothing playing
+            if self.isPlayingZone() and not WindowShowing.isTvTunesOverrideContinuePrevious():
+                newThemes = self.getThemes()
+                if self.newThemeFiles != newThemes:
+                    self.newThemeFiles = newThemes
 
-                # This will occur when a theme has stopped playing, maybe is is not set to loop
-                if TvTunesStatus.isAlive() and not self.themePlayer.isPlayingTheme():
-                    log("TunesBackend: playing ends")
-                    self.themePlayer.restoreSettings()
-                    TvTunesStatus.setAliveState(False)
+            # Check if the file path has changed, if so there is a new file to play
+            if self.newThemeFiles != self.oldThemeFiles and self.newThemeFiles.hasThemes():
+                log("TunesBackend: old path: %s" % self.oldThemeFiles.getPath())
+                log("TunesBackend: new path: %s" % self.newThemeFiles.getPath())
+                if self.start_playing():
+                    # Now that playing has started, update the current themes that are being used
+                    self.oldThemeFiles = self.newThemeFiles
 
-                # This is the case where the user has moved from within an area where the themes
-                # to an area where the theme is no longer played, so it will trigger a stop and
-                # reset everything to highlight that nothing is playing
-                # Note: TvTunes is still running in this case, just not playing a theme
-                if (not self.isPlayingZone()) and (not isForcedTvTunesContinue):
-                    self.newThemeFiles.clear()
-                    self.oldThemeFiles.clear()
-                    self.prevThemeFiles.clear()
-                    self.delayedStart.clear()
-                    if self.themePlayer.isPlaying() and TvTunesStatus.isAlive():
-                        log("TunesBackend: end playing")
+            # Check the operations where wee are currently running and we need to stop
+            # playing the current theme
+            if self.isAlive:
+                if self.themePlayer.isPlayingTheme():
+                    # There is no theme at this location, so make sure we are stopped
+                    if not self.newThemeFiles.hasThemes():
+                        log("TunesBackend: No themes to play for current item")
                         self.themePlayer.endPlaying()
-                    TvTunesStatus.setAliveState(False)
+                        self.oldThemeFiles.clear()
+                        self.prevThemeFiles.clear()
+                        self.delayedStart.clear()
+                        self.isAlive = False
+                else:
+                    # This will occur when a theme has stopped playing, maybe is is not set to loop
+                    log("TunesBackend: playing ended, restoring settings")
+                    self.themePlayer.restoreSettings()
+                    self.isAlive = False
 
-                self.themePlayer.checkEnding()
+            # This is the case where the user has moved from within an area where the themes
+            # to an area where the theme is no longer played, so it will trigger a stop and
+            # reset everything to highlight that nothing is playing
+            if (not self.isPlayingZone()) and (not isForcedTvTunesContinue):
+                self.stop()
 
-                # Wait a little before starting the check again
-                xbmc.sleep(200)
-        except:
-            log("TunesBackend: %s" % traceback.format_exc(), True, xbmc.LOGERROR)
-            self.stop()
+            # Check to see if the setting to restrict the theme duration is enabled
+            # and if it is we need to stop the current theme playing
+            self.themePlayer.checkEnding()
+
+        # We have finished running, just make one last check to ensure
+        # we do not need to stop any audio
+        self.stop(True)
 
     # Works out if the currently displayed area on the screen is something
     # that is deemed a zone where themes should be played
@@ -369,57 +325,35 @@ class TunesBackend():
 
             # Store the new theme that is being played
             self.prevThemeFiles = self.newThemeFiles
-            TvTunesStatus.setAliveState(True)
+            self.isAlive = True
             log("TunesBackend: start playing %s" % self.newThemeFiles.getPath())
             self.themePlayer.play(playlist, fastFade=fastFadeNeeded)
         else:
             log("TunesBackend: no themes found for %s" % self.newThemeFiles.getPath())
         return True
 
-    def stop(self):
-        log("TunesBackend: ### Stopping TvTunes Backend ###")
-        if TvTunesStatus.isAlive():
+    def stop(self, immediate=False, fastFade=False):
+        if self.isAlive:
             # If video is playing, check to see if it is a theme video
             if self.themePlayer.isPlayingTheme():
-                log("TunesBackend: stop playing")
-                self.themePlayer.stop()
-                while self.themePlayer.isPlaying():
-                    xbmc.sleep(50)
-        TvTunesStatus.setAliveState(False)
+                if immediate:
+                    log("TunesBackend: Stop playing")
+                    self.themePlayer.stop()
+                    while self.themePlayer.isPlaying():
+                        xbmc.sleep(50)
+                else:
+                    log("TunesBackend: Ending playing")
+                    self.themePlayer.endPlaying(fastFade)
 
-        # If currently playing a video file, then we have been overridden,
-        # and we need to restore all the settings, the player callbacks
-        # will not be called, so just force it on stop
-        self.themePlayer.restoreSettings()
+            self.isAlive = False
 
-        # Now that everything has been reset, we can record TvTunes as Stopped
-        TvTunesStatus.clearRunningState()
+            # If currently playing a video file, then we have been overridden,
+            # and we need to restore all the settings, the player callbacks
+            # will not be called, so just force it on stop
+            self.themePlayer.restoreSettings()
 
-        log("TunesBackend: ### Stopped TvTunes Backend ###")
-        self._stop = True
-
-
-#########################
-# Main
-#########################
-def runBackend():
-    # Make sure that we are not already running on another thread
-    # we do not want two running at the same time
-    if TvTunesStatus.isOkToRun():
-        # Check if the video info button should be hidden, we do this here as this will be
-        # called when the video info screen is loaded, it can then be read by the skin
-        # when it comes to draw the button
-        if Settings.hideVideoInfoButton():
-            xbmcgui.Window(12003).setProperty("TvTunes_HideVideoInfoButton", "true")
-        else:
-            xbmcgui.Window(12003).clearProperty("TvTunes_HideVideoInfoButton")
-
-        # Create the main class to control the theme playing
-        main = TunesBackend()
-
-        # Start the themes running
-        main.run()
-
-        del main
-    else:
-        log("TvTunes Already Running")
+        # Clear all the values stored
+        self.newThemeFiles.clear()
+        self.oldThemeFiles.clear()
+        self.prevThemeFiles.clear()
+        self.delayedStart.clear()
