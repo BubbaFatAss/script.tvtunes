@@ -328,6 +328,8 @@ class TunesBackend():
             self.isAlive = True
             log("TunesBackend: start playing %s" % self.newThemeFiles.getPath())
             self.themePlayer.play(playlist, fastFade=fastFadeNeeded)
+            # Set the option so other add-ons can work out if TvTunes is playing a theme
+            xbmcgui.Window(10025).setProperty("TvTunesIsRunning", "true")
         else:
             log("TunesBackend: no themes found for %s" % self.newThemeFiles.getPath())
         return True
@@ -357,3 +359,5 @@ class TunesBackend():
         self.oldThemeFiles.clear()
         self.prevThemeFiles.clear()
         self.delayedStart.clear()
+        # Clear the option used by other add-ons to work out if TvTunes is playing a theme
+        xbmcgui.Window(10025).clearProperty("TvTunesIsRunning")
