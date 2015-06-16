@@ -38,7 +38,7 @@ if __name__ == '__main__':
         log("TvTunesService: No Volume Change Required")
     else:
         log("TvTunesService: Setting volume to %s" % startupVol)
-        xbmc.executebuiltin('XBMC.SetVolume(%d)' % startupVol, True)
+        xbmc.executebuiltin('SetVolume(%d)' % startupVol, True)
 
     # Check if the video info button should be hidden, we do this here as this will be
     # called when the system is loaded, it can then be read by the skin

@@ -118,7 +118,7 @@ class VolumeDrop(object):
     def _setVolume(self, newvolume):
         # Can't use the RPC version as that will display the volume dialog
         # '{"jsonrpc": "2.0", "method": "Application.SetVolume", "params": { "volume": %d }, "id": 1}'
-        xbmc.executebuiltin('XBMC.SetVolume(%d)' % newvolume, True)
+        xbmc.executebuiltin('SetVolume(%d)' % newvolume, True)
 
     def lowerVolume(self):
         try:
