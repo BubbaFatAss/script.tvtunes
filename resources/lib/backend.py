@@ -127,7 +127,7 @@ class TunesBackend():
                     # timeout and the user will have to wait longer
                     log("TunesBackend: Restarting screensaver that TvTunes stopped")
                     xbmc.executebuiltin("ActivateScreensaver", True)
-                    continue
+                continue
 
             # Check if TvTunes is blocked from playing any themes
             if xbmcgui.Window(10025).getProperty('TvTunesBlocked') not in [None, ""]:
