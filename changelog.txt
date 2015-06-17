@@ -1,3 +1,6 @@
+v5.0.1
+- Fix bug where screensaver keeps restarting
+
 v5.0.0
 - Make TvTunes run as a service
 
