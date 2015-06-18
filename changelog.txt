@@ -1,6 +1,7 @@
 v5.0.1
 - Fix bug where screensaver keeps restarting
 - Fix issue when multiple themes exist
+- Hide evidence of theme playing from screen
 
 v5.0.0
 - Make TvTunes run as a service

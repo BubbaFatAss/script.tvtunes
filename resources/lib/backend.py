@@ -323,6 +323,10 @@ class TunesBackend():
             if not self.delayedStart.shouldStartPlaying(self.newThemeFiles):
                 return False
 
+            # Before we start playing the theme, highlight that TvTunes is active by
+            # Setting the property that confluence reads
+            xbmcgui.Window(10025).setProperty("TvTunesIsAlive", "true")
+
             # Store the new theme that is being played
             self.prevThemeFiles = self.newThemeFiles
             self.isAlive = True
@@ -361,3 +365,7 @@ class TunesBackend():
         self.delayedStart.clear()
         # Clear the option used by other add-ons to work out if TvTunes is playing a theme
         xbmcgui.Window(10025).clearProperty("TvTunesIsRunning")
+        # TODO: The following value is added for the Confluence skin to not show what is
+        # currently playing, maybe change this name when we submit the pull request to
+        # Confluence - new name: PlayingBackgroundMedia
+        xbmcgui.Window(10025).clearProperty("TvTunesIsAlive")
