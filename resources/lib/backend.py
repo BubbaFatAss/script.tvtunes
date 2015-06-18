@@ -314,7 +314,7 @@ class TunesBackend():
             # Check if a theme is already playing, if there is we will need
             # to stop it before playing the new theme
             # Stop any audio playing
-            if self.themePlayer.isPlayingTheme():  # and self.prevThemeFiles.hasThemes()
+            if self.themePlayer.isPlayingTheme():
                 fastFadeNeeded = True
                 log("TunesBackend: Stopping previous theme: %s" % self.prevThemeFiles.getPath())
                 self.themePlayer.endPlaying(fastFade=fastFadeNeeded)
@@ -365,7 +365,7 @@ class TunesBackend():
         self.delayedStart.clear()
         # Clear the option used by other add-ons to work out if TvTunes is playing a theme
         xbmcgui.Window(10025).clearProperty("TvTunesIsRunning")
-        # TODO: The following value is added for the Confluence skin to not show what is
+        # The following value is added for the Confluence skin to not show what is
         # currently playing, maybe change this name when we submit the pull request to
         # Confluence - new name: PlayingBackgroundMedia
         xbmcgui.Window(10025).clearProperty("TvTunesIsAlive")
