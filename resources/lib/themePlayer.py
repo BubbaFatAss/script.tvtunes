@@ -122,7 +122,9 @@ class ThemePlayer(xbmc.Player):
                 xbmc.Player.play(self, item=item, listitem=listitem, windowed=windowed)
 
                 # Wait until playing has started
-                while not self.isPlaying():
+                maxLoop = 100
+                while (not self.isPlaying()) and (not xbmc.abortRequested) and (maxLoop > 0):
+                    maxLoop = maxLoop - 1
                     xbmc.sleep(30)
 
                 for step in range(0, (numSteps - 1)):

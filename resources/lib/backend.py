@@ -98,7 +98,7 @@ class TunesBackend():
         self.lastLoggedThemePath = ""
 
     def runAsAService(self):
-        while (not xbmc.abortRequested):
+        while not xbmc.abortRequested:
             # Wait a little before starting the check each time
             xbmc.sleep(200)
 
