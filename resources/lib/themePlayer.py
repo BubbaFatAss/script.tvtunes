@@ -45,11 +45,11 @@ class ThemePlayer(xbmc.Player):
 
         # Save off the current repeat state before we started playing anything
         if xbmc.getCondVisibility('Playlist.IsRepeat'):
-            self.repeat = "all"
+            self.repeat = "RepeatAll"
         elif xbmc.getCondVisibility('Playlist.IsRepeatOne'):
-            self.repeat = "one"
+            self.repeat = "RepeatOne"
         else:
-            self.repeat = "off"
+            self.repeat = "RepeatOff"
 
         xbmc.Player.__init__(self, *args)
 
@@ -73,7 +73,9 @@ class ThemePlayer(xbmc.Player):
             xbmc.sleep(1)
         # Restore repeat state
         if self.hasChangedRepeat:
-            xbmc.executeJSONRPC('{ "jsonrpc": "2.0", "method": "Player.SetRepeat", "params": {"playerid": 0, "repeat": "%s" }, "id": 1 }' % self.repeat)
+            xbmc.executebuiltin("PlayerControl(%s)" % self.repeat)
+            # We no longer use the JSON method to repeat as it does not work with videos
+            # xbmc.executeJSONRPC('{ "jsonrpc": "2.0", "method": "Player.SetRepeat", "params": {"playerid": 0, "repeat": "%s" }, "id": 1 }' % self.repeat)
             self.hasChangedRepeat = False
         # Force the volume to the starting volume, but only if we have changed it
         if self.hasChangedVolume:
@@ -144,14 +146,19 @@ class ThemePlayer(xbmc.Player):
                 xbmc.Player.play(self, item=item, listitem=listitem, windowed=windowed)
 
             if Settings.isLoop():
-                xbmc.executeJSONRPC('{ "jsonrpc": "2.0", "method": "Player.SetRepeat", "params": {"playerid": 0, "repeat": "all" }, "id": 1 }')
+                xbmc.executebuiltin("PlayerControl(RepeatAll)")
+                # We no longer use the JSON method to repeat as it does not work with videos
+                # xbmc.executeJSONRPC('{ "jsonrpc": "2.0", "method": "Player.SetRepeat", "params": {"playerid": 0, "repeat": "all" }, "id": 1 }')
+
                 # If we had a random start and we are looping then we need to make sure
                 # when it comes to play the theme for a second time it starts at the beginning
                 # and not from the same mid-point
                 if Settings.isRandomStart():
                     item[0].setProperty('StartOffset', "0")
             else:
-                xbmc.executeJSONRPC('{ "jsonrpc": "2.0", "method": "Player.SetRepeat", "params": {"playerid": 0, "repeat": "off" }, "id": 1 }')
+                xbmc.executebuiltin("PlayerControl(RepeatOff)")
+                # We no longer use the JSON method to repeat as it does not work with videos
+                # xbmc.executeJSONRPC('{ "jsonrpc": "2.0", "method": "Player.SetRepeat", "params": {"playerid": 0, "repeat": "off" }, "id": 1 }')
 
             self.hasChangedRepeat = True
 

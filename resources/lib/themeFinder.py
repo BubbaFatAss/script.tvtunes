@@ -272,6 +272,7 @@ class ThemeFiles():
     def getThemePlaylist(self):
         # Take the list of files and create a playlist from them
         # Needs to be a Music playlist otherwise repeat will not work
+        # via the JSON interface
         playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
         playlist.clear()
         for aFile in self.themeFiles:
