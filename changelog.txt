@@ -1,3 +1,6 @@
+v5.0.2
+- Exclude invalid characters from custom path names
+
 v5.0.1
 - Fix bug where screensaver keeps restarting
 - Fix issue when multiple themes exist
