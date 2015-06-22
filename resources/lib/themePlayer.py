@@ -41,7 +41,7 @@ class ThemePlayer(xbmc.Player):
         # (Only used if skipping through tracks)
         self.remainingTracks = -1
 
-        self.playListItems = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
+        self.playListItems = []
 
         # Save off the current repeat state before we started playing anything
         if xbmc.getCondVisibility('Playlist.IsRepeat'):
@@ -65,12 +65,12 @@ class ThemePlayer(xbmc.Player):
 
     def restoreSettings(self):
         log("ThemePlayer: Restoring player settings")
-        # We could be doing a video background rather than audio, but
-        # if that is the case, we have no choice but to start resetting
-        # as we will not know the difference between the video theme stopping
-        # and the video movie/tv show starting
-        while self.isPlayingAudio():
+        # Give the theme a chance to finish if it is still playing
+        maxLoop = 3000
+        while self.isPlayingTheme() and (maxLoop > 0):
+            maxLoop = maxLoop - 1
             xbmc.sleep(1)
+
         # Restore repeat state
         if self.hasChangedRepeat:
             xbmc.executebuiltin("PlayerControl(%s)" % self.repeat)
@@ -101,7 +101,6 @@ class ThemePlayer(xbmc.Player):
         # if something is already playing, then we do not want
         # to replace it with the theme
         if not self.isPlaying():
-            self.playListItems = item
             # Perform and lowering of the sound for theme playing
             self._lowerVolume()
 
@@ -165,10 +164,23 @@ class ThemePlayer(xbmc.Player):
             # Record the time that playing was started
             self.startTime = int(time.time())
 
+            # Clear the current playlist, as we will re-populate it
+            self.playListItems = []
+
             # Save off the number of items in the playlist
             if item is not None:
                 self.playlistSize = item.size()
                 log("ThemePlayer: Playlist size = %d" % self.playlistSize)
+
+                # Store a list of all the tracks in the playlist
+                try:
+                    i = 0
+                    while i < self.playlistSize:
+                        self.playListItems.append(item[i].getfilename())
+                        i = i + 1
+                except:
+                    log("ThemePlayer: Failed to save off playlist")
+
                 # Check if we are limiting each track in the list
                 if not Settings.isLoop():
                     # Already started playing the first, so the remaining number of
@@ -293,15 +305,9 @@ class ThemePlayer(xbmc.Player):
         if not self.isPlayingVideo():
             return False
 
-        try:
-            # Get the currently playing file
-            filePlaying = self.getPlayingFile()
+        # Get the currently playing file
+        filePlaying = self.getPlayingFile()
 
-            i = 0
-            while i < self.playlistSize:
-                if self.playListItems[i].getfilename() == filePlaying:
-                    return True
-                i = i + 1
-        except:
-            log("ThemePlayer: Exception when checking if theme is playing")
+        if filePlaying in self.playListItems:
+            return True
         return False
