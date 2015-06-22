@@ -447,6 +447,20 @@ class Settings():
             return int(float(__addon__.getSetting("resetStartupVolumeValue")))
         return -1
 
+    @staticmethod
+    def isVideoThemesOnlyIfOneExists():
+        index = int(__addon__.getSetting("playVideoThemeRules"))
+        if index == 2:
+            return True
+        return False
+
+    @staticmethod
+    def isVideoThemesFirst():
+        index = int(__addon__.getSetting("playVideoThemeRules"))
+        if index == 1:
+            return True
+        return False
+
 
 # Class to handle all the screen saver settings
 class ScreensaverSettings():
