@@ -305,8 +305,12 @@ class ThemePlayer(xbmc.Player):
         if not self.isPlayingVideo():
             return False
 
-        # Get the currently playing file
-        filePlaying = self.getPlayingFile()
+        filePlaying = ""
+        try:
+            # Get the currently playing file
+            filePlaying = self.getPlayingFile()
+        except:
+            log("ThemePlayer: Exception when checking if theme is playing")
 
         if filePlaying in self.playListItems:
             return True
