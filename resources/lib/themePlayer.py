@@ -290,11 +290,19 @@ class ThemePlayer(xbmc.Player):
             self.trackEndTime = -1
             return
         self.trackEndTime = currentTime + trackLimit
-        trackLength = int(self.getTotalTime())
-        log("ThemePlayer: track length = %d" % trackLength)
-        if trackLimit > trackLength and (Settings.isLoop() or self.remainingTracks > 0):
-            self.remainingTracks = self.remainingTracks - 1
-            self.trackEndTime = self.trackEndTime + trackLength
+
+        # Allow for the case where the track has just been stopped, in which
+        # case the call to get the total time will fail as there is no track
+        # to get the length of
+        try:
+            trackLength = int(self.getTotalTime())
+            log("ThemePlayer: track length = %d" % trackLength)
+            if trackLimit > trackLength and (Settings.isLoop() or self.remainingTracks > 0):
+                self.remainingTracks = self.remainingTracks - 1
+                self.trackEndTime = self.trackEndTime + trackLength
+        except:
+            log("ThemePlayer: Failed to get track total time as not playing")
+            self.trackEndTime = -1
 
     # Check if tTvTunes is playing a video theme
     def isPlayingTheme(self):

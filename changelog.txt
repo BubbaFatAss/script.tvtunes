@@ -1,3 +1,6 @@
+v5.0.3
+- Fix possible script error if track duration limit is applied during theme stop
+
 v5.0.2
 - Exclude invalid characters from custom path names
 - Fix issue where themes never loop
