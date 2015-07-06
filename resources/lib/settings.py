@@ -461,6 +461,10 @@ class Settings():
             return True
         return False
 
+    @staticmethod
+    def onlyPlaySingleTheme():
+        return __addon__.getSetting("singleThemeOnly") == 'true'
+
 
 # Class to handle all the screen saver settings
 class ScreensaverSettings():

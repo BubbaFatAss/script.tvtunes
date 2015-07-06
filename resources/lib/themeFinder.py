@@ -296,8 +296,17 @@ class ThemeFiles():
             # Add the theme file to a playlist
             playlist.add(url=aFile)
 
-        if (not self.doNotShuffle) and (Settings.isShuffleThemes() or self.forceShuffle) and (playlist.size() > 1):
-            playlist.shuffle()
+        # Check if we have more than one item in the playlist
+        if playlist.size() > 1:
+            # Check if we need to perform a shuffle of the available themes
+            if (not self.doNotShuffle) and (Settings.isShuffleThemes() or self.forceShuffle):
+                playlist.shuffle()
+            # Check if we are only supposed to play one theme when there are multiple
+            # available
+            if Settings.onlyPlaySingleTheme():
+                firstTheme = playlist[0].getfilename()
+                playlist.clear()
+                playlist.add(url=firstTheme)
 
         # Now we have the playlist, and it has been shuffled if needed
         # Check if we need to have a random start time for the first track
