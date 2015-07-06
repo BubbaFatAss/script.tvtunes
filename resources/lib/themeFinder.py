@@ -263,18 +263,6 @@ class ThemeFiles():
             return result
         return not result
 
-    # Checks if the given file is names as a video file
-    def _isVideoFile(self, filename):
-        if filename.endswith('.mp4'):
-            return True
-        if filename.endswith('.mkv'):
-            return True
-        if filename.endswith('.avi'):
-            return True
-        if filename.endswith('.mov'):
-            return True
-        return False
-
     def hasThemes(self):
         return (len(self.themeFiles) > 0)
 
@@ -498,7 +486,7 @@ class ThemeFiles():
         # video formats that we support
         containsVideoFile = False
         for aThemeFile in self.themeFiles:
-            if self._isVideoFile(aThemeFile):
+            if Settings.isVideoFile(aThemeFile):
                 containsVideoFile = True
                 break
 
@@ -510,7 +498,7 @@ class ThemeFiles():
         videoThemes = []
         audioThemes = []
         for aThemeFile in self.themeFiles:
-            if self._isVideoFile(aThemeFile):
+            if Settings.isVideoFile(aThemeFile):
                 videoThemes.append(aThemeFile)
             else:
                 audioThemes.append(aThemeFile)

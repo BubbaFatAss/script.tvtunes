@@ -276,6 +276,19 @@ class Settings():
         global __addon__
         __addon__ = xbmcaddon.Addon(id='script.tvtunes')
 
+    # Checks if the given file is names as a video file
+    @staticmethod
+    def isVideoFile(filename):
+        if filename.endswith('.mp4'):
+            return True
+        if filename.endswith('.mkv'):
+            return True
+        if filename.endswith('.avi'):
+            return True
+        if filename.endswith('.mov'):
+            return True
+        return False
+
     @staticmethod
     def isThemePlayingEnabled():
         return __addon__.getSetting("enableThemePlaying") == 'true'
@@ -464,6 +477,13 @@ class Settings():
     @staticmethod
     def onlyPlaySingleTheme():
         return __addon__.getSetting("singleThemeOnly") == 'true'
+
+    @staticmethod
+    def isRepeatSingleAudioAfterVideo():
+        if __addon__.getSetting("repeatSingleAudioAfterVideo") == 'true':
+            if Settings.isVideoThemesFirst():
+                return True
+        return False
 
 
 # Class to handle all the screen saver settings
