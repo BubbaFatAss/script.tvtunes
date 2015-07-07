@@ -254,6 +254,13 @@ class WindowShowing():
         folderPathId = "videodb://movies/sets/"
         return xbmc.getCondVisibility("!IsEmpty(ListItem.DBID) + SubString(ListItem.Path," + folderPathId + ",left)")
 
+    @staticmethod
+    def updateHideVideoInfoButton():
+        if Settings.hideVideoInfoButton():
+            xbmcgui.Window(12003).setProperty("TvTunes_HideVideoInfoButton", "true")
+        else:
+            xbmcgui.Window(12003).clearProperty("TvTunes_HideVideoInfoButton")
+
 
 ##############################
 # Stores Various Settings
@@ -275,6 +282,9 @@ class Settings():
         # Force the reload of the settings to pick up any new values
         global __addon__
         __addon__ = xbmcaddon.Addon(id='script.tvtunes')
+        # The user may have change the display settings to show or hide the info button
+        # so make sure we update it
+        WindowShowing.updateHideVideoInfoButton()
 
     # Checks if the given file is names as a video file
     @staticmethod

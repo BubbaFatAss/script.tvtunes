@@ -3,7 +3,6 @@ import sys
 import os
 import xbmc
 import xbmcaddon
-import xbmcgui
 
 
 __addon__ = xbmcaddon.Addon(id='script.tvtunes')
@@ -16,6 +15,7 @@ sys.path.append(__lib__)
 # Import the common settings
 from settings import log
 from settings import Settings
+from settings import WindowShowing
 
 from backend import TunesBackend
 
@@ -43,10 +43,7 @@ if __name__ == '__main__':
     # Check if the video info button should be hidden, we do this here as this will be
     # called when the system is loaded, it can then be read by the skin
     # when it comes to draw the button
-    if Settings.hideVideoInfoButton():
-        xbmcgui.Window(12003).setProperty("TvTunes_HideVideoInfoButton", "true")
-    else:
-        xbmcgui.Window(12003).clearProperty("TvTunes_HideVideoInfoButton")
+    WindowShowing.updateHideVideoInfoButton()
 
     # Make sure the user wants to play themes
     if Settings.isThemePlayingEnabled():

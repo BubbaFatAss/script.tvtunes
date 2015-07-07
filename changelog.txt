@@ -3,6 +3,7 @@ v5.0.3
 - Add option to only play one theme when there are multiple
 - Fix issue where volume can increase after first item in theme list
 - Add option to loop the audio track after a video background is played
+- Prevent the need to restart after setting the hide or show TvTunes button
 
 v5.0.2
 - Exclude invalid characters from custom path names
