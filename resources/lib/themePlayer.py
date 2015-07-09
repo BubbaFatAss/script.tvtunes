@@ -25,7 +25,7 @@ class ThemePlayer(xbmc.Player):
         self.hasChangedVolume = False
         self.hasChangedRepeat = False
         # Save the volume from before any alterations
-        self.original_volume = self._getVolume()
+        self.original_volume = -1
 
         # Record the time that playing was started
         # 0 is not playing
@@ -82,7 +82,8 @@ class ThemePlayer(xbmc.Player):
             # stopped playing the audio, however they have not quite finished, to accommodate
             # this we add an extra sleep in here
             xbmc.sleep(350)
-            self._setVolume(self.original_volume)
+            if self.original_volume > -1:
+                self._setVolume(self.original_volume)
             # Record that the volume has been restored
             self.hasChangedVolume = False
             log("ThemePlayer: Restored volume to %d" % self.original_volume)
