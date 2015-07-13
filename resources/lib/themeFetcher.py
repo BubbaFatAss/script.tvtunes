@@ -1021,7 +1021,7 @@ class GoearListing(DefaultListing):
         if requestFailed:
             # pop up a notification, and then return than none were found
             if not is404error:
-                xbmc.executebuiltin('Notification(%s, %s, %d, %s)' % (__language__(32105).encode('utf-8'), __language__(32994).encode('utf-8'), 5, __icon__))
+                xbmc.executebuiltin('Notification(%s, %s, %d, %s)' % (__language__(32105).encode('utf-8'), __language__(32994).encode('utf-8'), 3000, __icon__))
             return None
 
         # Load the output of the search request into Soup
