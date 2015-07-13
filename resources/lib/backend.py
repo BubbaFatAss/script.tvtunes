@@ -119,8 +119,8 @@ class TunesBackend():
             # NOTE: The screensaver kicking in will only be picked up if the option
             # "Use Visualization if Playing Audio" is disabled
             if WindowShowing.isScreensaver():
-                log("TunesBackend: Screensaver active")
                 if self.isAlive:
+                    log("TunesBackend: Screensaver active")
                     self.stop(fastFade=True)
 
                     # It may be possible that we stopped for the screen-saver about to kick in
