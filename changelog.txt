@@ -4,6 +4,8 @@ v5.0.3
 - Fix issue where volume can increase after first item in theme list
 - Add option to loop the audio track after a video background is played
 - Prevent the need to restart after setting the hide or show TvTunes button
+- Update televisiontunes.com support after website change
+- Speed up listing on goear.com
 
 v5.0.2
 - Exclude invalid characters from custom path names
