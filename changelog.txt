@@ -1,3 +1,6 @@
+v5.0.5
+- Add tvtunes.nfo option to check if the files exist before adding to playlist
+
 v5.0.4
 - Add details about advancedsettings.xml
 - Fix issue with not always restoring volume
