@@ -157,7 +157,7 @@ class NfoReader():
                 if xbmcvfs.exists(nfoThemeFile):
                     existingThemeFiles.append(nfoThemeFile)
                 else:
-                    log("NfoReader: File does not exists, removing %s" % nfoThemeFile)
+                    log("NfoReader: File does not exists, removing %s" % nfoThemeFile, self.debug_logging_enabled)
             self.themeFiles = existingThemeFiles
 
             # Check the theme directories to make sure they all exist
@@ -166,7 +166,7 @@ class NfoReader():
                 if dir_exists(nfoThemeDir):
                     existingThemeDir.append(nfoThemeDir)
                 else:
-                    log("NfoReader: Directory does not exists, removing %s" % nfoThemeDir)
+                    log("NfoReader: Directory does not exists, removing %s" % nfoThemeDir, self.debug_logging_enabled)
             self.themeDirs = existingThemeDir
 
         return returnValue
@@ -244,6 +244,7 @@ class ThemeFiles():
     def __init__(self, rawPath, pathList=None, debug_logging_enabled=True, audioOnly=False):
         self.debug_logging_enabled = debug_logging_enabled
         self.forceShuffle = False
+        self.doNotShuffle = False
         self.audioOnly = audioOnly
         self.rawPath = rawPath
         if rawPath == "":
