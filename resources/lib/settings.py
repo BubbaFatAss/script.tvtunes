@@ -261,6 +261,13 @@ class WindowShowing():
         else:
             xbmcgui.Window(12003).clearProperty("TvTunes_HideVideoInfoButton")
 
+    @staticmethod
+    def updateShowOnContextMenu():
+        if Settings.showOnContextMenu():
+            xbmcgui.Window(10000).setProperty("TvTunes_ShowContextMenu", "true")
+        else:
+            xbmcgui.Window(10000).clearProperty("TvTunes_ShowContextMenu")
+
 
 ##############################
 # Stores Various Settings
@@ -285,6 +292,7 @@ class Settings():
         # The user may have change the display settings to show or hide the info button
         # so make sure we update it
         WindowShowing.updateHideVideoInfoButton()
+        WindowShowing.updateShowOnContextMenu()
 
     # Checks if the given file is names as a video file
     @staticmethod
@@ -502,6 +510,10 @@ class Settings():
             if Settings.isVideoThemesFirst():
                 return True
         return False
+
+    @staticmethod
+    def showOnContextMenu():
+        return __addon__.getSetting("showOnContextMenu") == "true"
 
 
 # Class to handle all the screen saver settings

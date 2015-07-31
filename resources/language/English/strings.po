@@ -17,15 +17,11 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 msgctxt "Addon Summary"
-msgid "Retrieve and play your soundtrack themes whilst browsing your library"
+msgid "Retrieve and play your soundtrack or video themes whilst browsing your library"
 msgstr ""
 
 msgctxt "Addon Description"
-msgid "TvTunes is equipped with powerful features that enable the fetching, organising and playing of themes whilst browsing your Kodi library, when used in conjunction with a compatible skin. (Special thanks to Ppic,Frost and ronie for their early work in developing TvTunes)"
-msgstr ""
-
-msgctxt "Addon Disclaimer"
-msgid "Skinners, please see the wiki to know how to integrate it in your skin: http://wiki.kodi.tv/index.php?title=Add-on:TvTunes"
+msgid "TvTunes is equipped with powerful features that enable the fetching, organising and playing of themes whilst browsing your Kodi library."
 msgstr ""
 
 msgctxt "#32001"
@@ -406,7 +402,11 @@ msgctxt "#32095"
 msgid "advancedsettings.xml update complete"
 msgstr ""
 
-#empty strings from id 32096 to 32099
+msgctxt "#32096"
+msgid "Show TvTunes On Context Menu"
+msgstr ""
+
+#empty strings from id 32097 to 32099
 
 msgctxt "#32100"
 msgid "Show Selection Dialog If Auto Match Fails"

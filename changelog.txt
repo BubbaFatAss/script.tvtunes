@@ -1,3 +1,6 @@
+v6.0.0
+- Add context menu for Kodi v15 (Isengard)
+
 v5.0.5
 - Add tvtunes.nfo option to check if the files exist before adding to playlist
 - Fix possible script error with screensaver

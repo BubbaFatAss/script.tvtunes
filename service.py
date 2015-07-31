@@ -46,6 +46,7 @@ if __name__ == '__main__':
     # called when the system is loaded, it can then be read by the skin
     # when it comes to draw the button
     WindowShowing.updateHideVideoInfoButton()
+    WindowShowing.updateShowOnContextMenu()
 
     # Make sure the user wants to play themes
     if Settings.isThemePlayingEnabled():
