@@ -71,6 +71,7 @@ class ThemePlayer(xbmc.Player):
 
     def restoreSettings(self):
         log("ThemePlayer: Restoring player settings")
+        self.tvtunesPlayerStarted = False
 
         # Restore repeat state
         log("ThemePlayer: Restoring setting repeat to RepeatOff")
