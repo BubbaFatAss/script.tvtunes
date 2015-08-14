@@ -152,7 +152,9 @@ msgctxt "#32032"
 msgid "soundcloud.com"
 msgstr ""
 
-#empty string with id 32033
+msgctxt "#32033"
+msgid "Block Refresh Rate Change"
+msgstr ""
 
 msgctxt "#32034"
 msgid "goear.com"
@@ -472,11 +474,7 @@ msgctxt "#32115"
 msgid "Search results will be incomplete"
 msgstr ""
 
-msgctxt "#32116"
-msgid "You can help to get more theme on:"
-msgstr ""
-
-#empty string with id 32117
+#empty strings from id 32116 to 32117
 
 msgctxt "#32118"
 msgid "Manual Search..."

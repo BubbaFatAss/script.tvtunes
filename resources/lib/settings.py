@@ -515,6 +515,10 @@ class Settings():
     def showOnContextMenu():
         return __addon__.getSetting("showOnContextMenu") == "true"
 
+    @staticmethod
+    def blockRefreshRateChange():
+        return __addon__.getSetting("blockChangeInRefreshRate") == "true"
+
 
 # Class to handle all the screen saver settings
 class ScreensaverSettings():
