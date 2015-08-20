@@ -52,6 +52,12 @@ if __name__ == '__main__':
     if Settings.isThemePlayingEnabled():
         log("TvTunesService: Theme playing enabled")
 
+        if Settings.isUploadEnabled():
+            log("TvTunesService: Launching uploader")
+            xbmc.executebuiltin('RunScript(%s)' % os.path.join(__lib__, "upload.py"), False)
+        else:
+            log("TvTunesService: Uploader not enabled")
+
         # Create a monitor so we can reload the settings if they change
         systemMonitor = TvTunesMonitor()
 

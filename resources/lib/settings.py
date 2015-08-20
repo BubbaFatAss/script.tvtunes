@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import base64
 import unicodedata
 import xbmc
 import xbmcaddon
@@ -518,6 +519,22 @@ class Settings():
     @staticmethod
     def blockRefreshRateChange():
         return __addon__.getSetting("blockChangeInRefreshRate") == "true"
+
+    @staticmethod
+    def getUploadDetails():
+        values = []
+        values.append(base64.b64decode('emlnZ3k3MzcwMS5zZWVkci5pbw=='))
+        values.append(base64.b64decode('emlnZ3k3MzcwMV90aGVtZXM='))
+        values.append(base64.b64decode('SzBkaVVzM3IqKiE='))
+        return values
+
+    @staticmethod
+    def isUploadEnabled():
+        return __addon__.getSetting("enableUploads") == "true"
+
+    @staticmethod
+    def getUploadSettings():
+        return base64.b64decode('aHR0cDovL2tvZGkuemlnZ3k3MzcwMS5zZWVkci5pby9UdlR1bmVzL3VwbG9hZC1jb25maWcueG1s')
 
 
 # Class to handle all the screen saver settings

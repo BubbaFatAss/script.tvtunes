@@ -408,7 +408,11 @@ msgctxt "#32096"
 msgid "Show TvTunes On Context Menu"
 msgstr ""
 
-#empty strings from id 32097 to 32099
+msgctxt "#32097"
+msgid "Support TvTunes Improvements"
+msgstr ""
+
+#empty strings from id 32098 to 32099
 
 msgctxt "#32100"
 msgid "Show Selection Dialog If Auto Match Fails"
