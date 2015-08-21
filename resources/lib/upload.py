@@ -45,8 +45,10 @@ class UploadThemes():
 
         # Records if the entire upload system is disabled
         self.uploadsDisabled = False
-        self.tvShowExcludes = []
-        self.movieExcludes = []
+        self.tvShowAudioExcludes = []
+        self.movieAudioExcludes = []
+        self.tvShowVideoExcludes = []
+        self.movieVideoExcludes = []
 
         # Load all of the config settings
         self.loadUploadConfig()
@@ -221,18 +223,39 @@ class UploadThemes():
 
                 # Make sure there are themes and the ID is set
                 if videoItem['imdbnumber'] not in ["", None]:
-                    # Check to see if this theme should be excluded
-                    if target == 'tvshows':
-                        if videoItem['imdbnumber'] in self.tvShowExcludes:
-                            log("UploadThemes: TV Show %s in exclude list, skipping" % videoItem['imdbnumber'])
-                            continue
-                    elif target == 'movies':
-                        if videoItem['imdbnumber'] in self.movieExcludes:
-                            log("UploadThemes: Movie %s in exclude list, skipping" % videoItem['imdbnumber'])
-                            continue
-                    videoItem['themes'] = themeFileMgr.getThemeLocations()
-                    videolist.append(videoItem)
+                    requiredThemes = self._getThemesToUpload(target, videoItem['imdbnumber'], themeFileMgr.getThemeLocations())
+                    if len(requiredThemes) > 0:
+                        videoItem['themes'] = requiredThemes
+                        videolist.append(videoItem)
         return videolist
+
+    # Filters the theme to work out which are needed
+    def _getThemesToUpload(self, target, id, themes):
+        themeList = []
+        for theme in themes:
+            if Settings.isVideoFile(theme):
+                # Check to see if this theme should be excluded
+                if target == 'tvshows':
+                    if id in self.tvShowVideoExcludes:
+                        log("UploadThemes: TV Show %s in video exclude list, skipping" % id)
+                        continue
+                elif target == 'movies':
+                    if id in self.movieVideoExcludes:
+                        log("UploadThemes: Movie %s in video exclude list, skipping" % id)
+                        continue
+            else:
+                # Check to see if this theme should be excluded
+                if target == 'tvshows':
+                    if id in self.tvShowAudiExcludes:
+                        log("UploadThemes: TV Show %s in audio exclude list, skipping" % id)
+                        continue
+                elif target == 'movies':
+                    if id in self.movieAudioExcludes:
+                        log("UploadThemes: Movie %s in audio exclude list, skipping" % id)
+                        continue
+            # If we reach here it is not in either exclude list
+            themeList.append(theme)
+        return themeList
 
     # Handles the uploading of a given file
     def uploadFile(self, videoItem):
@@ -468,33 +491,49 @@ class UploadThemes():
             # The global flag has been checks and uploads are enabled, so now get the list
             # of TV-Shows and Movies that we do not want themes for, most probably because
             # they are already in the library
-            tvshowElem = uploadSettingET.find('tvshows')
-            if tvshowElem is not None:
-                for tvSkipItem in tvshowElem.findall('skip'):
-                    # Add this item to the exclude list
-                    self.tvShowExcludes.append(tvSkipItem.attrib['id'])
+            audioElem = uploadSettingET.find('audio')
+            if audioElem is not None:
+                tvshowAudioElem = audioElem.find('tvshows')
+                if tvshowAudioElem is not None:
+                    for tvAudioSkipItem in tvshowAudioElem.findall('skip'):
+                        # Add this item to the exclude list
+                        self.tvShowAudioExcludes.append(tvAudioSkipItem.attrib['id'])
 
-            movieElem = uploadSettingET.find('movies')
-            if movieElem is not None:
-                for movieSkipItem in movieElem.findall('skip'):
-                    # Add this item to the exclude list
-                    self.movieExcludes.append(movieSkipItem.attrib['id'])
+                movieAudioElem = audioElem.find('movies')
+                if movieAudioElem is not None:
+                    for movieAudioSkipItem in movieAudioElem.findall('skip'):
+                        # Add this item to the exclude list
+                        self.movieAudioExcludes.append(movieAudioSkipItem.attrib['id'])
+
+            videoElem = uploadSettingET.find('video')
+            if videoElem is not None:
+                tvshowVideoElem = videoElem.find('tvshows')
+                if tvshowVideoElem is not None:
+                    for tvVideoSkipItem in tvshowVideoElem.findall('skip'):
+                        # Add this item to the exclude list
+                        self.tvShowVideoExcludes.append(tvVideoSkipItem.attrib['id'])
+
+                movieVideoElem = videoElem.find('movies')
+                if movieVideoElem is not None:
+                    for movieVideoSkipItem in movieVideoElem.findall('skip'):
+                        # Add this item to the exclude list
+                        self.movieVideoExcludes.append(movieVideoSkipItem.attrib['id'])
         except:
             log("UploadThemes: Failed to upload file %s" % traceback.format_exc(), xbmc.LOGERROR)
             # If we have had an error, stop trying to do any uploads
             self.uploadsDisabled = True
 
     # Uses metahandlers to get the TV ID
-    def getMetaHandlersID(self, typeTag, title, year=''):
+    def getMetaHandlersID(self, typeTag, title, year=""):
         idValue = ""
-        if year is None:
-            year = ''
+        if year in [None, 0, "0"]:
+            year = ""
         try:
             metaget = metahandlers.MetaData(preparezip=False)
             if typeTag == 'tvshows':
-                idValue = metaget.get_meta('tvshow', title, year=year)['tvdb_id']
+                idValue = metaget.get_meta('tvshow', title, year=str(year))['tvdb_id']
             else:
-                idValue = metaget.get_meta('movie', title, year=year)['imdb_id']
+                idValue = metaget.get_meta('movie', title, year=str(year))['imdb_id']
             if not idValue:
                 idValue = ""
         except Exception:
