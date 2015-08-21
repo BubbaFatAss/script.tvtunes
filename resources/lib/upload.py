@@ -141,32 +141,70 @@ class UploadThemes():
 
     # Check if a theme has already been uploaded
     def isThemeAlreadyUploaded(self, videoItem):
+        alreadyUploaded = False
         # Check for the correct type
         typeElm = self.uploadRecord.find(videoItem['type'])
         if typeElm is not None:
             for elemItem in typeElm.findall(videoItem['type'][:-1]):
                 if elemItem.attrib['id'] == videoItem['imdbnumber']:
-                    return True
-        return False
+                    # Check each theme to ensure they have all been uploaded
+                    themesToUpload = []
+                    for localTheme in videoItem['themes']:
+                        themeMatched = False
+                        # Check if this theme is in the local record
+                        for themeRec in elemItem.findall('theme'):
+                            if themeRec.text == localTheme:
+                                themeMatched = True
+                                break
+                        if not themeMatched:
+                            themesToUpload.append(localTheme)
+                    # Check if we have any themes to upload
+                    if len(themesToUpload) > 0:
+                        videoItem['themes'] = themesToUpload
+                    else:
+                        alreadyUploaded = True
+                    # Found the item we were looking for so stop looking
+                    break
+        return alreadyUploaded
 
     # Saves the themes that have been uploaded
     def recordUploadedFile(self, videoItem):
         log("UploadThemes: Uploaded (%s) id:%s, title:%s, themePath:%s, themes:%s" % (videoItem['type'], videoItem['imdbnumber'], videoItem['title'], videoItem['file'], len(videoItem['themes'])))
 
         record = self.uploadRecord.find(videoItem['type'])
-        elem = ET.Element(videoItem['type'][:-1])
-        elem.attrib['id'] = videoItem['imdbnumber']
 
-        # Check if this file is using emby
-        if videoItem['emby']:
-            elem.attrib['emby'] = 'true'
+        # Check to see if this video item is already there
+        videoElem = None
+        for existingVidElem in record.findall(videoItem['type'][:-1]):
+            if existingVidElem is not None:
+                existingId = existingVidElem.attrib['id']
+                if existingId == videoItem['imdbnumber']:
+                    videoElem = existingVidElem
+                    break
 
-        title = ET.SubElement(elem, 'title')
-        title.text = videoItem['title']
+        # Check the case where the item does not already exist
+        if videoElem is None:
+            videoElem = ET.Element(videoItem['type'][:-1])
+            videoElem.attrib['id'] = videoItem['imdbnumber']
+
+            # Check if this file is using emby
+            if videoItem['emby']:
+                videoElem.attrib['emby'] = 'true'
+
+            title = ET.SubElement(videoElem, 'title')
+            title.text = videoItem['title']
+            record.append(videoElem)
+
         for themeName in videoItem['themes']:
-            themeFile = ET.SubElement(elem, 'theme')
-            themeFile.text = themeName
-        record.append(elem)
+            alreadyRecorded = False
+            # Check if the theme already exists
+            for themeRec in videoElem.findall('theme'):
+                if themeRec.text == themeName:
+                    alreadyRecorded = True
+                    break
+            if not alreadyRecorded:
+                themeFile = ET.SubElement(videoElem, 'theme')
+                themeFile.text = themeName
 
         fileContent = ET.tostring(self.uploadRecord.getroot(), encoding="UTF-8")
 
@@ -217,7 +255,7 @@ class UploadThemes():
                 # Not sure why there would be a video in the library without an ID, but check just in case
                 if videoItem['imdbnumber'] in ["", None]:
                     videoItem['imdbnumber'] = checkedId
-                elif videoItem['imdbnumber'] != checkedId:
+                elif (checkedId not in [None, ""]) and (videoItem['imdbnumber'] != checkedId):
                     log("UploadThemes: ID comparison, Original = %s, checked = %s ... Skipping" % (videoItem['imdbnumber'], checkedId))
                     continue
 
@@ -246,7 +284,7 @@ class UploadThemes():
             else:
                 # Check to see if this theme should be excluded
                 if target == 'tvshows':
-                    if id in self.tvShowAudiExcludes:
+                    if id in self.tvShowAudioExcludes:
                         log("UploadThemes: TV Show %s in audio exclude list, skipping" % id)
                         continue
                 elif target == 'movies':
@@ -534,6 +572,14 @@ class UploadThemes():
                 idValue = metaget.get_meta('tvshow', title, year=str(year))['tvdb_id']
             else:
                 idValue = metaget.get_meta('movie', title, year=str(year))['imdb_id']
+
+            # Check if we have no id returned, and we added in a year
+            if (idValue in [None, ""]) and (year not in [None, ""]):
+                if typeTag == 'tvshows':
+                    idValue = metaget.get_meta('tvshow', title)['tvdb_id']
+                else:
+                    idValue = metaget.get_meta('movie', title)['imdb_id']
+
             if not idValue:
                 idValue = ""
         except Exception:
