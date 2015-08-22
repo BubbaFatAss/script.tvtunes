@@ -1,16 +1,14 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
+import base64
 import xml.etree.ElementTree as ET
 import traceback
-import urllib
+import urllib2
+import ftplib
 import xbmc
 import xbmcaddon
 import xbmcvfs
-
-# Needed to work out the unique machine ID
-import uuid
-import ftplib
 
 if sys.version_info < (2, 7):
     import simplejson
@@ -45,6 +43,9 @@ class UploadThemes():
 
         # Records if the entire upload system is disabled
         self.uploadsDisabled = False
+        self.ftpArg = None
+        self.userArg = None
+        self.passArg = None
         self.tvShowAudioExcludes = []
         self.movieAudioExcludes = []
         self.tvShowVideoExcludes = []
@@ -72,7 +73,7 @@ class UploadThemes():
             # </tvtunesUpload>
             try:
                 root = ET.Element('tvtunesUpload')
-                root.attrib['machineid'] = str(self.getMachineId())
+                root.attrib['machineid'] = Settings.getTvTunesId()
                 tvshows = ET.Element('tvshows')
                 movies = ET.Element('movies')
                 root.extend((tvshows, movies))
@@ -132,12 +133,6 @@ class UploadThemes():
             self.uploadRecordFile()
 
         return result
-
-    # Get the ID of this machine
-    def getMachineId(self):
-        machineId = uuid.getnode()
-        log("UploadThemes: Unique machine ID is %d" % machineId)
-        return machineId
 
     # Check if a theme has already been uploaded
     def isThemeAlreadyUploaded(self, videoItem):
@@ -309,8 +304,7 @@ class UploadThemes():
         ftp = None
         try:
             # Connect to the ftp server
-            ftpValues = Settings.getUploadDetails()
-            ftp = ftplib.FTP(ftpValues[0], ftpValues[1], ftpValues[2])
+            ftp = ftplib.FTP(self.ftpArg, self.userArg, self.passArg)
 
             if xbmc.abortRequested:
                 ftp.quit()
@@ -400,7 +394,7 @@ class UploadThemes():
                     log("UploadThemes: Uploading new file of size %d" % currentFileSize)
 
                     # Name the file using the machine it comes from
-                    fileToCreate = str(self.getMachineId())
+                    fileToCreate = Settings.getTvTunesId()
                     if themeNum > 0:
                         fileToCreate = fileToCreate + "-" + str(themeNum)
                     # Now add the extension to it
@@ -439,8 +433,7 @@ class UploadThemes():
         ftp = None
         try:
             # Connect to the ftp server
-            ftpValues = Settings.getUploadDetails()
-            ftp = ftplib.FTP(ftpValues[0], ftpValues[1], ftpValues[2])
+            ftp = ftplib.FTP(self.ftpArg, self.userArg, self.passArg)
 
             if xbmc.abortRequested:
                 ftp.quit()
@@ -470,7 +463,7 @@ class UploadThemes():
                 return False
 
             # Name the file using the machine it comes from
-            fileToCreate = str(self.getMachineId())
+            fileToCreate = Settings.getTvTunesId()
             # Now add the extension to it
             fileToCreate = fileToCreate + ".xml"
 
@@ -513,49 +506,77 @@ class UploadThemes():
             #        <skip id="tt0112442">Bad Boys</skip>
             #    </movies>
             # </tvtunesUploadConfig>
-            uploadSetting = urllib.urlopen(Settings.getUploadSettings()).read()
-            log("UploadThemes: Upload settings details: %s" % uploadSetting)
+            remoteSettings = urllib2.urlopen(Settings.getUploadSettings())
+            uploadSetting = remoteSettings.read()
+            # Closes the connection after we have read the remote settings
+            try:
+                remoteSettings.close()
+            except:
+                log("UploadThemes: Failed to close connection for upload settings", xbmc.LOGERROR)
 
             # Check all of the settings
-            uploadSettingET = ET.ElementTree(ET.fromstring(uploadSetting))
+            uploadSettingET = ET.ElementTree(ET.fromstring(base64.b64decode(uploadSetting)))
 
             # First check to see if uploads are actually enabled
             isEnabled = uploadSettingET.find('enabled')
-            if isEnabled.text != 'true':
-                log("UploadThemes: Uploads disabled vie online settings")
+            if (isEnabled is None) or (isEnabled.text != 'true'):
+                log("UploadThemes: Uploads disabled via online settings")
                 self.uploadsDisabled = True
                 return
+
+            # Get the details for where themes are uploaded to
+            ftpArgElem = uploadSettingET.find('ftp')
+            userArgElem = uploadSettingET.find('username')
+            passArgElem = uploadSettingET.find('password')
+            storeArgElem = uploadSettingET.find('storecontent')
+            if (ftpArgElem in ["", None]) or (userArgElem in ["", None]) or (passArgElem in ["", None]) or (storeArgElem in ["", None]):
+                log("UploadThemes: Online settings not correct")
+                self.uploadsDisabled = True
+                return
+
+            self.ftpArg = ftpArgElem.text
+            self.userArg = userArgElem.text
+            self.passArg = passArgElem.text
+
+            # Get the store contents
+            remoteStore = urllib2.urlopen(storeArgElem.text)
+            storeContentStr = remoteStore.read()
+            # Closes the connection after we have read the remote settings
+            try:
+                remoteStore.close()
+            except:
+                log("UploadThemes: Failed to close connection for remote store", xbmc.LOGERROR)
+
+            storeET = ET.ElementTree(ET.fromstring(storeContentStr))
 
             # The global flag has been checks and uploads are enabled, so now get the list
             # of TV-Shows and Movies that we do not want themes for, most probably because
             # they are already in the library
-            audioElem = uploadSettingET.find('audio')
-            if audioElem is not None:
-                tvshowAudioElem = audioElem.find('tvshows')
-                if tvshowAudioElem is not None:
-                    for tvAudioSkipItem in tvshowAudioElem.findall('skip'):
-                        # Add this item to the exclude list
-                        self.tvShowAudioExcludes.append(tvAudioSkipItem.attrib['id'])
+            tvshowsElem = storeET.find('tvshows')
+            if tvshowsElem is not None:
+                # Check all of the TV Shows in the store
+                for tvshowElem in tvshowsElem.findall('tvshow'):
+                    if tvshowElem is not None:
+                        # Check if there is an audio theme in the store
+                        if tvshowElem.find('audiotheme') is not None:
+                            self.tvShowAudioExcludes.append(tvshowElem.attrib['id'])
+                            log("UploadThemes: Excluding TV Audio %s" % tvshowElem.attrib['id'])
+                        if tvshowElem.find('videotheme') is not None:
+                            self.tvShowVideoExcludes.append(tvshowElem.attrib['id'])
+                            log("UploadThemes: Excluding TV Video %s" % tvshowElem.attrib['id'])
 
-                movieAudioElem = audioElem.find('movies')
-                if movieAudioElem is not None:
-                    for movieAudioSkipItem in movieAudioElem.findall('skip'):
-                        # Add this item to the exclude list
-                        self.movieAudioExcludes.append(movieAudioSkipItem.attrib['id'])
-
-            videoElem = uploadSettingET.find('video')
-            if videoElem is not None:
-                tvshowVideoElem = videoElem.find('tvshows')
-                if tvshowVideoElem is not None:
-                    for tvVideoSkipItem in tvshowVideoElem.findall('skip'):
-                        # Add this item to the exclude list
-                        self.tvShowVideoExcludes.append(tvVideoSkipItem.attrib['id'])
-
-                movieVideoElem = videoElem.find('movies')
-                if movieVideoElem is not None:
-                    for movieVideoSkipItem in movieVideoElem.findall('skip'):
-                        # Add this item to the exclude list
-                        self.movieVideoExcludes.append(movieVideoSkipItem.attrib['id'])
+            moviesElem = storeET.find('movies')
+            if moviesElem is not None:
+                # Check all of the TV Shows in the store
+                for movieElem in moviesElem.findall('movie'):
+                    if movieElem is not None:
+                        # Check if there is an audio theme in the store
+                        if movieElem.find('audiotheme') is not None:
+                            self.movieAudioExcludes.append(movieElem.attrib['id'])
+                            log("UploadThemes: Excluding TV Audio %s" % movieElem.attrib['id'])
+                        if movieElem.find('videotheme') is not None:
+                            self.movieVideoExcludes.append(movieElem.attrib['id'])
+                            log("UploadThemes: Excluding TV Video %s" % movieElem.attrib['id'])
         except:
             log("UploadThemes: Failed to upload file %s" % traceback.format_exc(), xbmc.LOGERROR)
             # If we have had an error, stop trying to do any uploads

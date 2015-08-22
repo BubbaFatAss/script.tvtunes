@@ -33,6 +33,9 @@ class TvTunesMonitor(xbmc.Monitor):
 if __name__ == '__main__':
     log("Starting TvTunes Service %s" % __addon__.getAddonInfo('version'))
 
+    # Make sure we have recorded this machines Id
+    Settings.setTvTunesId()
+
     # Check if the settings mean we want to reset the volume on startup
     startupVol = Settings.getStartupVolume()
 

@@ -412,7 +412,13 @@ msgctxt "#32097"
 msgid "Support TvTunes Improvements"
 msgstr ""
 
-#empty strings from id 32098 to 32099
+msgctxt "#32098"
+msgid "TvTunes ID:"
+msgstr ""
+
+msgctxt "#32099"
+msgid "Enable TvTunes Store"
+msgstr ""
 
 msgctxt "#32100"
 msgid "Show Selection Dialog If Auto Match Fails"
@@ -447,7 +453,7 @@ msgid "Searching for"
 msgstr ""
 
 msgctxt "#32108"
-msgid "CANCELED"
+msgid "CANCELLED"
 msgstr ""
 
 msgctxt "#32109"
@@ -478,7 +484,13 @@ msgctxt "#32115"
 msgid "Search results will be incomplete"
 msgstr ""
 
-#empty strings from id 32116 to 32117
+msgctxt "#32116"
+msgid "Load Registration File"
+msgstr ""
+
+msgctxt "#32117"
+msgid "Failed to load registration file"
+msgstr ""
 
 msgctxt "#32118"
 msgid "Manual Search..."

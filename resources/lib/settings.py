@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
+import os
 import base64
 import unicodedata
+import uuid
 import xbmc
 import xbmcaddon
-import os
 import xbmcvfs
 import xbmcgui
 
@@ -521,20 +522,21 @@ class Settings():
         return __addon__.getSetting("blockChangeInRefreshRate") == "true"
 
     @staticmethod
-    def getUploadDetails():
-        values = []
-        values.append(base64.b64decode('emlnZ3k3MzcwMS5zZWVkci5pbw=='))
-        values.append(base64.b64decode('emlnZ3k3MzcwMV90aGVtZXM='))
-        values.append(base64.b64decode('SzBkaVVzM3IqKiE='))
-        return values
-
-    @staticmethod
     def isUploadEnabled():
         return __addon__.getSetting("enableUploads") == "true"
 
     @staticmethod
     def getUploadSettings():
-        return base64.b64decode('aHR0cDovL2tvZGkuemlnZ3k3MzcwMS5zZWVkci5pby9UdlR1bmVzL3VwbG9hZC1jb25maWcueG1s')
+        return base64.b64decode('aHR0cHM6Ly9zaXRlcy5nb29nbGUuY29tL3NpdGUvcm9id2Vic2V0L3R2dHVuZXMtdXBsb2FkLWNvbmZpZy54bWw=')
+
+    @staticmethod
+    def getTvTunesId():
+        # The ID that will be used to identify this installation
+        return str(uuid.getnode())
+
+    @staticmethod
+    def setTvTunesId():
+        __addon__.setSetting("tvtunesId", Settings.getTvTunesId())
 
 
 # Class to handle all the screen saver settings
