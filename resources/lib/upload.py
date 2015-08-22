@@ -573,10 +573,10 @@ class UploadThemes():
                         # Check if there is an audio theme in the store
                         if movieElem.find('audiotheme') is not None:
                             self.movieAudioExcludes.append(movieElem.attrib['id'])
-                            log("UploadThemes: Excluding TV Audio %s" % movieElem.attrib['id'])
+                            log("UploadThemes: Excluding Movie Audio %s" % movieElem.attrib['id'])
                         if movieElem.find('videotheme') is not None:
                             self.movieVideoExcludes.append(movieElem.attrib['id'])
-                            log("UploadThemes: Excluding TV Video %s" % movieElem.attrib['id'])
+                            log("UploadThemes: Excluding Movie Video %s" % movieElem.attrib['id'])
         except:
             log("UploadThemes: Failed to upload file %s" % traceback.format_exc(), xbmc.LOGERROR)
             # If we have had an error, stop trying to do any uploads
