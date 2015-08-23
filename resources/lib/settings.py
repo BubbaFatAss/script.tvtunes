@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import os
-import base64
 import unicodedata
 import uuid
 import xbmc
@@ -527,7 +526,7 @@ class Settings():
 
     @staticmethod
     def getUploadSettings():
-        return base64.b64decode('aHR0cHM6Ly9zaXRlcy5nb29nbGUuY29tL3NpdGUvcm9id2Vic2V0L3R2dHVuZXMtdXBsb2FkLWNvbmZpZy54bWw=')
+        return 'aHR0cHM6Ly9zaXRlcy5nb29nbGUuY29tL3NpdGUvcm9id2Vic2V0L3R2dHVuZXMtdXBsb2FkLWNvbmZpZy54bWw='
 
     @staticmethod
     def getTvTunesId():

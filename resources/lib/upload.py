@@ -506,7 +506,7 @@ class UploadThemes():
             #        <skip id="tt0112442">Bad Boys</skip>
             #    </movies>
             # </tvtunesUploadConfig>
-            remoteSettings = urllib2.urlopen(Settings.getUploadSettings())
+            remoteSettings = urllib2.urlopen(base64.b64decode(Settings.getUploadSettings()))
             uploadSetting = remoteSettings.read()
             # Closes the connection after we have read the remote settings
             try:
