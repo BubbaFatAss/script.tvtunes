@@ -321,8 +321,8 @@ class Settings():
         return __addon__.getSetting("custom_path").decode("utf-8")
 
     @staticmethod
-    def getDownVolume():
-        return int(float(__addon__.getSetting("downvolume")))
+    def getThemeVolume():
+        return int(float(__addon__.getSetting("volume")))
 
     @staticmethod
     def isLoop():

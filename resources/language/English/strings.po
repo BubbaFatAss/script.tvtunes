@@ -29,7 +29,7 @@ msgid "Play theme in loop"
 msgstr ""
 
 msgctxt "#32002"
-msgid "Lower sound value"
+msgid "Theme volume"
 msgstr ""
 
 msgctxt "#32003"

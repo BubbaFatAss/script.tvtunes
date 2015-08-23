@@ -247,15 +247,12 @@ class ThemePlayer(xbmc.Player):
 
     def _lowerVolume(self):
         try:
-            if Settings.getDownVolume() != 0:
+            reducedVolume = Settings.getThemeVolume()
+            if reducedVolume > 0:
                 # Save the volume from before any alterations
                 self.original_volume = self._getVolume()
-                vol = self.original_volume - Settings.getDownVolume()
-                # Make sure the volume still has a value
-                if vol < 1:
-                    vol = 1
-                log("ThemePlayer: volume goal: %d%% " % vol)
-                self._setVolume(vol)
+                log("ThemePlayer: volume goal: %d%% " % reducedVolume)
+                self._setVolume(reducedVolume)
             else:
                 log("ThemePlayer: No reduced volume option set")
         except:
