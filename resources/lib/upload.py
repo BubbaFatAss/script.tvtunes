@@ -266,6 +266,7 @@ class UploadThemes():
     def _getThemesToUpload(self, target, id, themes):
         themeList = []
         for theme in themes:
+            maxFileSize = 104857600
             if Settings.isVideoFile(theme):
                 # Check to see if this theme should be excluded
                 if target == 'tvshows':
@@ -277,6 +278,7 @@ class UploadThemes():
                         log("UploadThemes: Movie %s in video exclude list, skipping" % id)
                         continue
             else:
+                maxFileSize = 20971520
                 # Check to see if this theme should be excluded
                 if target == 'tvshows':
                     if id in self.tvShowAudioExcludes:
@@ -291,7 +293,7 @@ class UploadThemes():
             # is too large for a theme
             stat = xbmcvfs.Stat(theme)
             themeFileSize = stat.st_size()
-            if themeFileSize > 104857600:
+            if themeFileSize > maxFileSize:
                 log("UploadThemes: Theme %s too large %s" % (theme, themeFileSize))
                 continue
 
