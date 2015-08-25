@@ -286,6 +286,15 @@ class UploadThemes():
                     if id in self.movieAudioExcludes:
                         log("UploadThemes: Movie %s in audio exclude list, skipping" % id)
                         continue
+
+            # Check to make sure the theme file is not too large, anything over 100 meg
+            # is too large for a theme
+            stat = xbmcvfs.Stat(theme)
+            themeFileSize = stat.st_size()
+            if themeFileSize > 104857600:
+                log("UploadThemes: Theme %s too large %s" % (theme, themeFileSize))
+                continue
+
             # If we reach here it is not in either exclude list
             themeList.append(theme)
         return themeList
