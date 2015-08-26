@@ -43,6 +43,12 @@ class UploadThemes():
 
         # Records if the entire upload system is disabled
         self.uploadsDisabled = False
+        self.isEmbyEnabled = True
+        self.isVideoEnabled = True
+        self.isAudioEnabled = True
+        self.isTvShowsEnabled = True
+        self.isMoviesEnabled = True
+
         self.ftpArg = None
         self.userArg = None
         self.passArg = None
@@ -85,6 +91,14 @@ class UploadThemes():
     def processVideoThemes(self, jsonGet, target):
         # Only process anything if it is enabled
         if self.uploadsDisabled:
+            return
+
+        # Check if we need to upload the TV Shows
+        if (target == 'tvshows') and not self.isTvShowsEnabled:
+            return
+
+        # Check if we need to upload the movies
+        if (target == 'movies') and not self.isMoviesEnabled:
             return
 
         # Get the videos that are in the library
@@ -236,10 +250,12 @@ class UploadThemes():
 
                 videoItem['emby'] = False
                 if "plugin.video.emby" in item['file']:
+                    if not self.isEmbyEnabled:
+                        continue
                     videoItem['emby'] = True
 
                 # Get the themes if they exist
-                themeFileMgr = ThemeFiles(videoItem['file'])
+                themeFileMgr = ThemeFiles(videoItem['file'], videotitle=item['title'])
 
                 # Make sure there are themes
                 if not themeFileMgr.hasThemes():
@@ -268,6 +284,10 @@ class UploadThemes():
         for theme in themes:
             maxFileSize = 104857600
             if Settings.isVideoFile(theme):
+                # Check if all videos are disabled
+                if not self.isVideoEnabled:
+                    continue
+
                 # Check to see if this theme should be excluded
                 if target == 'tvshows':
                     if id in self.tvShowVideoExcludes:
@@ -278,6 +298,11 @@ class UploadThemes():
                         log("UploadThemes: Movie %s in video exclude list, skipping" % id)
                         continue
             else:
+                # Check if all videos are disabled
+                if not self.isVideoEnabled:
+                    continue
+
+                # Audio files have a smaller limit
                 maxFileSize = 20971520
                 # Check to see if this theme should be excluded
                 if target == 'tvshows':
@@ -534,6 +559,36 @@ class UploadThemes():
                 log("UploadThemes: Uploads disabled via online settings")
                 self.uploadsDisabled = True
                 return
+
+            # Check to see if Emby uploads are enabled
+            isEmbyEnabledElem = uploadSettingET.find('embyenabled')
+            if (isEmbyEnabledElem is None) or (isEmbyEnabledElem.text != 'true'):
+                log("UploadThemes: Uploads disabled for emby via online settings")
+                self.isEmbyEnabled = False
+
+            # Check if audio uploads are enabled
+            isAudioElem = uploadSettingET.find('audio')
+            if (isAudioElem is None) or (isAudioElem.text != 'true'):
+                log("UploadThemes: Uploads disabled for audio via online settings")
+                self.isAudioEnabled = False
+
+            # Check if video uploads are enabled
+            isVideoElem = uploadSettingET.find('video')
+            if (isVideoElem is None) or (isVideoElem.text != 'true'):
+                log("UploadThemes: Uploads disabled for videos via online settings")
+                self.isVideoEnabled = False
+
+            # Check if tv show uploads are enabled
+            isTvShowsElem = uploadSettingET.find('tvshows')
+            if (isTvShowsElem is None) or (isTvShowsElem.text != 'true'):
+                log("UploadThemes: Uploads disabled for tvshows via online settings")
+                self.isTvShowsEnabled = False
+
+            # Check if movie uploads are enabled
+            isMoviesElem = uploadSettingET.find('movies')
+            if (isMoviesElem is None) or (isMoviesElem.text != 'true'):
+                log("UploadThemes: Uploads disabled for movies via online settings")
+                self.isMoviesEnabled = False
 
             # Get the details for where themes are uploaded to
             ftpArgElem = uploadSettingET.find('ftp')
