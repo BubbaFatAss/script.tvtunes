@@ -653,6 +653,9 @@ class UploadThemes():
         idValue = ""
         if year in [None, 0, "0"]:
             year = ""
+        # Does not seem to work correctly with the year at the moment
+        year = ""
+        metaget = None
         try:
             metaget = metahandlers.MetaData(preparezip=False)
             if typeTag == 'tvshows':
@@ -672,6 +675,10 @@ class UploadThemes():
         except Exception:
             idValue = ""
             log("UploadThemes: Failed to get Metahandlers ID %s" % traceback.format_exc())
+
+        if metaget is not None:
+            del metaget
+
         return idValue
 
 
