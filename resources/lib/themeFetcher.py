@@ -62,14 +62,11 @@ class TvTunesFetcher():
             multiVideoProgressDialog = xbmcgui.DialogProgress()
             multiVideoProgressDialog.create(__language__(32105), __language__(32106))
 
-            # For the show
-            # show[0] = Title
-            # show[1] = Path where the theme is to be stored
-            # show[2] = Original Title (If set)
             count = 0
             for show in videoList:
                 count = count + 1
-                multiVideoProgressDialog.update((count * 100) / total, ("%s %s" % (__language__(32107), show[0].decode("utf-8"))), ' ')
+                title = show.get('title', "")
+                multiVideoProgressDialog.update((count * 100) / total, ("%s %s" % (__language__(32107), title.decode("utf-8"))), ' ')
                 if multiVideoProgressDialog.iscanceled():
                     multiVideoProgressDialog.close()
                     xbmcgui.Dialog().ok(__language__(32108), __language__(32109))
@@ -90,11 +87,13 @@ class TvTunesFetcher():
 
     # Search for a single theme
     def scanSingleItem(self, show, showProgressDialog=True):
-        # For the show
-        # show[0] = Title
-        # show[1] = Path where the theme is to be stored
-        # show[2] = Original Title (If set)
-        theme_list = self.searchThemeList(show[0], show[2], manual=False, showProgressDialog=showProgressDialog)
+        title = show.get('title', None)
+        originalTitle = show.get('originalTitle', None)
+        isTvShow = show.get('isTvShow', None)
+        year = show.get('year', None)
+        imdb = show.get('imdb', None)
+
+        theme_list = self.searchThemeList(title, originalTitle, isTvShow, year, imdb, manual=False, showProgressDialog=showProgressDialog)
         selectedTheme = None
 
         # Check the case where we have an automatic download enabled
@@ -113,12 +112,13 @@ class TvTunesFetcher():
         # If there is still no theme selected, prompt the user
         if (selectedTheme is None) and Settings.isAutoDownloadPromptUser():
             # Prompt the user to select which theme they want
-            selectedTheme = self.getUserChoice(theme_list, show[0], show[2])
+            selectedTheme = self.getUserChoice(theme_list, title, originalTitle, isTvShow, year, imdb)
 
         retVal = False
         if selectedTheme:
             retVal = True
-            self.download(selectedTheme, show[1])
+            savePath = show.get('path', None)
+            self.download(selectedTheme, savePath)
 
         return retVal
 
@@ -179,7 +179,7 @@ class TvTunesFetcher():
         downloadProgressDialog.close()
 
     # Retrieve the theme that the user has selected
-    def getUserChoice(self, theme_list, showname, alternativeTitle=None):
+    def getUserChoice(self, theme_list, showname, alternativeTitle=None, isTvShow=None, year=None, imdb=None):
         searchname = showname
         selectedTheme = None
         while selectedTheme is None:
@@ -215,10 +215,10 @@ class TvTunesFetcher():
                             log("getUserChoice: No text entered by user")
                             return None
                         # Set what was searched for
-                        theme_list = self.searchThemeList(result, manual=True)
+                        theme_list = self.searchThemeList(result, None, isTvShow, year, imdb, manual=True)
                         searchname = result
                     else:
-                        theme_list = self.searchThemeList(searchname, alternativeTitle)
+                        theme_list = self.searchThemeList(searchname, alternativeTitle, isTvShow, year, imdb)
                 else:
                     # Not the first entry selected, so change the select option
                     # so the index value matches the theme list
@@ -230,7 +230,7 @@ class TvTunesFetcher():
         return selectedTheme
 
     # Perform the actual search on the configured web site
-    def searchThemeList(self, showname, alternativeTitle=None, manual=False, showProgressDialog=True):
+    def searchThemeList(self, showname, alternativeTitle=None, isTvShow=None, year=None, imdb=None, manual=False, showProgressDialog=True):
         if (alternativeTitle is None) or (alternativeTitle == ""):
             log("searchThemeList: Search for %s" % showname)
         else:
@@ -289,14 +289,14 @@ class TvTunesFetcher():
         displayList = []
         displayList.insert(0, Settings.TELEVISION_TUNES)
         displayList.insert(1, Settings.SOUNDCLOUD)
-        displayList.insert(3, Settings.GOEAR)
+        displayList.insert(2, Settings.GOEAR)
 
-        displayList.insert(4, "** %s **" % __language__(32121))
+        displayList.insert(3, "** %s **" % __language__(32121))
 
         if showManualOptions:
-            displayList.insert(5, "%s %s" % (Settings.TELEVISION_TUNES, __language__(32118)))
-            displayList.insert(6, "%s %s" % (Settings.SOUNDCLOUD, __language__(32118)))
-            displayList.insert(8, "%s %s" % (Settings.GOEAR, __language__(32118)))
+            displayList.insert(4, "%s %s" % (Settings.TELEVISION_TUNES, __language__(32118)))
+            displayList.insert(5, "%s %s" % (Settings.SOUNDCLOUD, __language__(32118)))
+            displayList.insert(6, "%s %s" % (Settings.GOEAR, __language__(32118)))
 
         isManualSearch = False
 
@@ -306,17 +306,17 @@ class TvTunesFetcher():
             log("promptForSearchEngine: Cancelled by user")
             return False, None
         else:
-            if (select == 0) or (select == 5):
+            if (select == 0) or (select == 4):
                 self.searchEngine = Settings.TELEVISION_TUNES
-            elif (select == 1) or (select == 6):
+            elif (select == 1) or (select == 5):
                 self.searchEngine = Settings.SOUNDCLOUD
-            elif (select == 2) or (select == 7):
+            elif (select == 2) or (select == 6):
                 self.searchEngine = Settings.GOEAR
             elif (select == 3):
                 self.searchEngine = Settings.ALL_ENGINES
 
             # Record if this is a manual search
-            if select > 4:
+            if select > 3:
                 isManualSearch = True
 
         log("promptForSearchEngine: New search engine is %s" % self.searchEngine)
