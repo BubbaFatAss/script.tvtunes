@@ -23,6 +23,7 @@ __addonid__ = __addon__.getAddonInfo('id')
 from settings import Settings
 from settings import log
 from settings import dir_exists
+from settings import os_path_join
 
 from themeFinder import ThemeFiles
 
@@ -682,11 +683,40 @@ class UploadThemes():
         return idValue
 
 
+def cleanMetaHandlerDb():
+    log("UploadThemes: Cleaning Metahandler DB")
+    try:
+        metaAddon = xbmcaddon.Addon(id='script.module.metahandler')
+        metaFolder = metaAddon.getSetting('meta_folder_location')
+        metaFolder = xbmc.translatePath(metaFolder)
+        if not metaFolder:
+            metaFolder = xbmc.translatePath("special://profile/addon_data/script.module.metahandler/")
+        metaFolder = os_path_join(metaFolder, 'meta_cache')
+
+        dbLocation = os_path_join(metaFolder, 'video_cache.db')
+
+        try:
+            if xbmcvfs.exists(dbLocation):
+                log("UploadThemes: Removing %s" % dbLocation)
+                xbmcvfs.delete(dbLocation)
+        except:
+            log("UploadThemes: Failed to remove metadata DB using xbmcvfs")
+            if os.path.exists(dbLocation):
+                os.remove(dbLocation)
+    except:
+        log("UploadThemes: Failed to remove metadata DB")
+
+
 #########################
 # Main
 #########################
 if __name__ == '__main__':
     log("UploadThemes: Upload themes called")
+
+    # Clear the metahandler DB - if we do not, then we do not seem to find most
+    # of the items we request IDs for
+    cleanMetaHandlerDb()
+    xbmc.sleep(1000)
 
     # We want to avoid and errors appearing on the screen, not the end of the world
     # if it fails to upload the themes
@@ -695,7 +725,8 @@ if __name__ == '__main__':
 
         # We want to process all the Videos (TV and Movies) but no need to get them all at
         # once, so start with TV and then move onto Movies later
-        uploadMgr.processVideoThemes('GetTVShows', 'tvshows')
+        if not xbmc.abortRequested:
+            uploadMgr.processVideoThemes('GetTVShows', 'tvshows')
 
         # If the system is not being shut down, move onto the movies
         if not xbmc.abortRequested:
