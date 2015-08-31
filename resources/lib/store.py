@@ -146,7 +146,10 @@ class ThemeStore():
                     # Now get the file name for the theme
                     themeElem = elemItem.find('audiotheme')
                     if themeElem is not None:
-                        self.storeTvShowAudioContents[tvShowId] = themeElem.text
+                        # Check if there is a size attribute
+                        fileSize = themeElem.attrib['size']
+                        details = {'file': themeElem.text, 'size': fileSize}
+                        self.storeTvShowAudioContents[tvShowId] = details
 
             # Get the movies that are in the store
             movieElm = storeContentsET.find('movies')
@@ -156,7 +159,10 @@ class ThemeStore():
                     # Now get the file name for the theme
                     themeElem = elemItem.find('audiotheme')
                     if themeElem is not None:
-                        self.storeMovieAudioContents[movieId] = themeElem.text
+                        # Check if there is a size attribute
+                        fileSize = themeElem.attrib['size']
+                        details = {'file': themeElem.text, 'size': fileSize}
+                        self.storeMovieAudioContents[movieId] = details
 
             # TODO: Add video theme content
         except:
@@ -182,39 +188,39 @@ class ThemeStore():
 
         log("ThemesStore: Searching for theme with id: %s" % checkedId)
 
-        themeUrls = []
+        themeUrls = {}
         if checkedId not in ["", None]:
-            themeUrl = self._getThemeUrl(checkedId, isTvShow)
+            (themeUrl, size) = self._getThemeUrl(checkedId, isTvShow)
             if themeUrl not in ["", None]:
-                themeUrls.append(themeUrl)
+                themeUrls[themeUrl] = size
 
         if imdb not in [None, ""]:
             if checkedId != imdb:
                 log("ThemesStore: ID comparison, Original = %s, checked = %s" % (imdb, checkedId))
                 # Also get the theme for database ID
-                themeUrl = self._getThemeUrl(imdb, isTvShow)
+                (themeUrl, size) = self._getThemeUrl(imdb, isTvShow)
                 if themeUrl not in ["", None]:
-                    themeUrls.append(themeUrl)
+                    themeUrls[themeUrl] = size
 
         return themeUrls
 
     def _getThemeUrl(self, itemId, isTvShow):
         themeUrl = None
-        filename = None
+        details = None
         subDir = 'movies'
         # Check if it is in the store
         if isTvShow:
             subDir = 'tvshows'
             log("ThemesStore: Getting TV Show theme for %s" % itemId)
-            filename = self.storeTvShowAudioContents.get(itemId, None)
+            details = self.storeTvShowAudioContents.get(itemId, None)
         else:
             log("ThemesStore: Getting Movie theme for %s" % itemId)
-            filename = self.storeMovieAudioContents.get(itemId, None)
+            details = self.storeMovieAudioContents.get(itemId, None)
 
         # Check if this theme exists
-        if filename not in [None, ""]:
-            themeUrl = "%s%s/%s/%s" % (self.baseurl, subDir, itemId, filename)
-        return themeUrl
+        if details not in [None, ""]:
+            themeUrl = "%s%s/%s/%s" % (self.baseurl, subDir, itemId, details['file'])
+        return (themeUrl, details['size'])
 
     # Uses metahandlers to get the TV ID
     def _getMetaHandlersID(self, isTvShow, title, year=""):

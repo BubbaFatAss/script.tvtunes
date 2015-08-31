@@ -1270,11 +1270,15 @@ class ThemeStoreListing(DefaultListing):
         themeDetailsList = []
         themeNum = 0
         if themeUrls is not None:
-            for themeUrl in themeUrls:
+            for themeUrl in themeUrls.keys():
                 themeNum = themeNum + 1
                 # TODO: Add file size to displayed themes
                 title = "%s %d" % (__language__(32124), themeNum)
-                theme = ThemeItemDetails(title, themeUrl)
+
+                # Get the size of the track
+                sizeStr = self.getSizeString(themeUrls[themeUrl])
+
+                theme = ThemeItemDetails(title, themeUrl, sizeStr)
                 theme.setPriority(1)
                 themeDetailsList.append(theme)
                 progressDialog.updateProgress(75)
@@ -1292,3 +1296,14 @@ class ThemeStoreListing(DefaultListing):
     # We don't add any appendices for Television Tunes search
     def getSearchAppendices(self):
         return []
+
+    def getSizeString(self, sizeBytes):
+        displayStr = ""
+        try:
+            if sizeBytes not in [None, "", "0", 0]:
+                sizeStr = "{0:.2f}".format(float(sizeBytes) / 1048576.0)
+                displayStr = "  [%sMB]" % sizeStr
+        except:
+            log("ThemeStoreListing: Failed to convert size")
+
+        return displayStr
