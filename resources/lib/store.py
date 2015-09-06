@@ -34,6 +34,8 @@ class ThemeStore():
         self.storeContentsFile = None
         self.storeTvShowAudioContents = {}
         self.storeMovieAudioContents = {}
+        self.storeTvShowVideoContents = {}
+        self.storeMovieVideoContents = {}
 
         # Check if the file exists, if it does read it in
         if xbmcvfs.exists(tvtunesRegFileName):
@@ -151,6 +153,14 @@ class ThemeStore():
                         details = {'file': themeElem.text, 'size': fileSize}
                         self.storeTvShowAudioContents[tvShowId] = details
 
+                    # Now get the file name for the video theme
+                    vidThemeElem = elemItem.find('videotheme')
+                    if vidThemeElem is not None:
+                        # Check if there is a size attribute
+                        fileSize = vidThemeElem.attrib['size']
+                        details = {'file': vidThemeElem.text, 'size': fileSize}
+                        self.storeTvShowVideoContents[tvShowId] = details
+
             # Get the movies that are in the store
             movieElm = storeContentsET.find('movies')
             if movieElm is not None:
@@ -164,14 +174,21 @@ class ThemeStore():
                         details = {'file': themeElem.text, 'size': fileSize}
                         self.storeMovieAudioContents[movieId] = details
 
-            # TODO: Add video theme content
+                    # Now get the file name for the video theme
+                    vidThemeElem = elemItem.find('videotheme')
+                    if vidThemeElem is not None:
+                        # Check if there is a size attribute
+                        fileSize = vidThemeElem.attrib['size']
+                        details = {'file': vidThemeElem.text, 'size': fileSize}
+                        self.storeMovieVideoContents[movieId] = details
+
         except:
             log("ThemesStore: Failed to read in store contents: %s" % traceback.format_exc(), xbmc.LOGERROR)
             return False
 
         return True
 
-    def getThemeUrls(self, title, isTvShow, year, imdb):
+    def getThemes(self, title, isTvShow, year, imdb):
         # First check that the user has access and load the store content
         if not self.checkAccess():
             # Display an error as this user is not registered
@@ -190,37 +207,65 @@ class ThemeStore():
 
         themeUrls = {}
         if checkedId not in ["", None]:
-            (themeUrl, size) = self._getThemeUrl(checkedId, isTvShow)
+            (themeUrl, size) = self._getAudioTheme(checkedId, isTvShow)
             if themeUrl not in ["", None]:
                 themeUrls[themeUrl] = size
+            (vidThemeUrl, vidSize) = self._getVideoTheme(checkedId, isTvShow)
+            if vidThemeUrl not in ["", None]:
+                themeUrls[vidThemeUrl] = vidSize
 
         if imdb not in [None, ""]:
             if checkedId != imdb:
                 log("ThemesStore: ID comparison, Original = %s, checked = %s" % (imdb, checkedId))
                 # Also get the theme for database ID
-                (themeUrl, size) = self._getThemeUrl(imdb, isTvShow)
+                (themeUrl, size) = self._getAudioTheme(imdb, isTvShow)
                 if themeUrl not in ["", None]:
                     themeUrls[themeUrl] = size
+                (vidThemeUrl, vidSize) = self._getVideoTheme(imdb, isTvShow)
+                if vidThemeUrl not in ["", None]:
+                    themeUrls[vidThemeUrl] = vidSize
 
         return themeUrls
 
-    def _getThemeUrl(self, itemId, isTvShow):
+    def _getAudioTheme(self, itemId, isTvShow):
         themeUrl = None
         details = None
+        fileSize = None
         subDir = 'movies'
         # Check if it is in the store
         if isTvShow:
             subDir = 'tvshows'
-            log("ThemesStore: Getting TV Show theme for %s" % itemId)
+            log("ThemesStore: Getting TV Show audio theme for %s" % itemId)
             details = self.storeTvShowAudioContents.get(itemId, None)
         else:
-            log("ThemesStore: Getting Movie theme for %s" % itemId)
+            log("ThemesStore: Getting Movie audio theme for %s" % itemId)
             details = self.storeMovieAudioContents.get(itemId, None)
 
         # Check if this theme exists
         if details not in [None, ""]:
             themeUrl = "%s%s/%s/%s" % (self.baseurl, subDir, itemId, details['file'])
-        return (themeUrl, details['size'])
+            fileSize = details['size']
+        return (themeUrl, fileSize)
+
+    def _getVideoTheme(self, itemId, isTvShow):
+        themeUrl = None
+        details = None
+        fileSize = None
+        subDir = 'movies'
+        # Check if it is in the store
+        if isTvShow:
+            subDir = 'tvshows'
+            log("ThemesStore: Getting TV Show video theme for %s" % itemId)
+            details = self.storeTvShowVideoContents.get(itemId, None)
+        else:
+            log("ThemesStore: Getting Movie video theme for %s" % itemId)
+            details = self.storeMovieVideoContents.get(itemId, None)
+
+        # Check if this theme exists
+        if details not in [None, ""]:
+            themeUrl = "%s%s/%s/%s" % (self.baseurl, subDir, itemId, details['file'])
+            fileSize = details['size']
+        return (themeUrl, fileSize)
 
     # Uses metahandlers to get the TV ID
     def _getMetaHandlersID(self, isTvShow, title, year=""):

@@ -1262,21 +1262,26 @@ class ThemeStoreListing(DefaultListing):
         themeStore = ThemeStore()
         progressDialog.updateProgress(25)
 
-        themeUrls = themeStore.getThemeUrls(name, isTvShow, year, imdb)
+        themeDetails = themeStore.getThemes(name, isTvShow, year, imdb)
         del themeStore
 
         progressDialog.updateProgress(50)
 
         themeDetailsList = []
-        themeNum = 0
-        if themeUrls is not None:
-            for themeUrl in themeUrls.keys():
-                themeNum = themeNum + 1
-                # TODO: Add file size to displayed themes
-                title = "%s %d" % (__language__(32124), themeNum)
+        audioThemeNum = 0
+        videoThemeNum = 0
+        if themeDetails is not None:
+            for themeUrl in themeDetails.keys():
+                title = ""
+                if Settings.isVideoFile(themeUrl):
+                    videoThemeNum = videoThemeNum + 1
+                    title = "%s %d" % (__language__(32126), videoThemeNum)
+                else:
+                    audioThemeNum = audioThemeNum + 1
+                    title = "%s %d" % (__language__(32124), audioThemeNum)
 
                 # Get the size of the track
-                sizeStr = self.getSizeString(themeUrls[themeUrl])
+                sizeStr = self.getSizeString(themeDetails[themeUrl])
 
                 theme = ThemeItemDetails(title, themeUrl, sizeStr)
                 theme.setPriority(1)
