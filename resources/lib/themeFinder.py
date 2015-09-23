@@ -496,16 +496,21 @@ class ThemeFiles():
         del nfoRead
         log("ThemeFiles: Searching %s for %s" % (directory, Settings.getThemeFileRegEx(directory, extensionOnly, self.audioOnly)), self.debug_logging_enabled)
 
-        # check if the directory exists before searching
-        if dir_exists(directory):
-            dirs, files = list_dir(directory)
-            for aFile in files:
-                m = re.search(Settings.getThemeFileRegEx(directory, extensionOnly, self.audioOnly), aFile, re.IGNORECASE)
-                if m:
-                    path = os_path_join(directory, aFile)
-                    log("ThemeFiles: Found match: %s" % path, self.debug_logging_enabled)
-                    # Add the theme file to the list
-                    themeFiles.append(path)
+        # Make sure that the path does not point to a plugin, as we are checking the
+        # file-system for themes, not plugins. This can be the case with Emby
+        if "plugin://" in directory:
+            log("ThemeFiles: Plugin paths do not support theme files: %s" % directory, self.debug_logging_enabled)
+        else:
+            # check if the directory exists before searching
+            if dir_exists(directory):
+                dirs, files = list_dir(directory)
+                for aFile in files:
+                    m = re.search(Settings.getThemeFileRegEx(directory, extensionOnly, self.audioOnly), aFile, re.IGNORECASE)
+                    if m:
+                        path = os_path_join(directory, aFile)
+                        log("ThemeFiles: Found match: %s" % path, self.debug_logging_enabled)
+                        # Add the theme file to the list
+                        themeFiles.append(path)
 
         return themeFiles
 
