@@ -27,7 +27,7 @@ from settings import os_path_join
 from settings import os_path_split
 from settings import dir_exists
 
-from store import ThemeStore
+from library import ThemeLibrary
 import soundcloud
 
 
@@ -250,9 +250,9 @@ class TvTunesFetcher():
         elif self.searchEngine == Settings.TELEVISION_TUNES:
             # Default to Television Tunes
             searchListing = TelevisionTunesListing()
-        elif self.searchEngine == Settings.THEMESTORE:
+        elif self.searchEngine == Settings.THEMELIBRARY:
             # Default to Television Tunes
-            searchListing = ThemeStoreListing()
+            searchListing = ThemeLibraryListing()
 
         # Check the special case where we use all the engines
         if self.searchEngine == Settings.ALL_ENGINES:
@@ -296,8 +296,8 @@ class TvTunesFetcher():
         displayList.insert(2, Settings.GOEAR)
 
         manualSearchOffset = 3
-        # Check if we should make the Theme Store available
-        if Settings.isThemeStoreEnabled():
+        # Check if we should make the Theme Library available
+        if Settings.isThemeLibraryEnabled():
             manualSearchOffset = manualSearchOffset + 1
             displayList.insert(3, __language__(32125))
 
@@ -1250,20 +1250,20 @@ class SoundcloudListing(DefaultListing):
 
 
 #################################################
-# Searches Theme Store for themes
+# Searches Theme Library for themes
 #################################################
-class ThemeStoreListing(DefaultListing):
+class ThemeLibraryListing(DefaultListing):
     def themeSearch(self, name, alternativeTitle=None, isTvShow=None, year=None, imdb=None, showProgressDialog=True):
         progressDialog = DummyProgressDialog(name)
         if showProgressDialog:
             progressDialog = ProgressDialog(name)
 
-        # Get the details from the theme store
-        themeStore = ThemeStore()
+        # Get the details from the theme library
+        themeLibrary = ThemeLibrary()
         progressDialog.updateProgress(25)
 
-        themeDetails = themeStore.getThemes(name, isTvShow, year, imdb)
-        del themeStore
+        themeDetails = themeLibrary.getThemes(name, isTvShow, year, imdb)
+        del themeLibrary
 
         progressDialog.updateProgress(50)
 
@@ -1309,6 +1309,6 @@ class ThemeStoreListing(DefaultListing):
                 sizeStr = "{0:.2f}".format(float(sizeBytes) / 1048576.0)
                 displayStr = "  [%sMB]" % sizeStr
         except:
-            log("ThemeStoreListing: Failed to convert size")
+            log("ThemeLibraryListing: Failed to convert size")
 
         return displayStr

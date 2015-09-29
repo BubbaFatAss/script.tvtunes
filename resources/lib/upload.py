@@ -605,26 +605,26 @@ class UploadThemes():
             self.userArg = userArgElem.text
             self.passArg = passArgElem.text
 
-            # Get the store contents
-            remoteStore = urllib2.urlopen(storeArgElem.text)
-            storeContentStr = remoteStore.read()
+            # Get the library contents
+            remoteLibrary = urllib2.urlopen(storeArgElem.text)
+            libraryContentStr = remoteLibrary.read()
             # Closes the connection after we have read the remote settings
             try:
-                remoteStore.close()
+                remoteLibrary.close()
             except:
-                log("UploadThemes: Failed to close connection for remote store", xbmc.LOGERROR)
+                log("UploadThemes: Failed to close connection for remote library", xbmc.LOGERROR)
 
-            storeET = ET.ElementTree(ET.fromstring(storeContentStr))
+            libraryET = ET.ElementTree(ET.fromstring(libraryContentStr))
 
             # The global flag has been checks and uploads are enabled, so now get the list
             # of TV-Shows and Movies that we do not want themes for, most probably because
             # they are already in the library
-            tvshowsElem = storeET.find('tvshows')
+            tvshowsElem = libraryET.find('tvshows')
             if tvshowsElem is not None:
-                # Check all of the TV Shows in the store
+                # Check all of the TV Shows in the library
                 for tvshowElem in tvshowsElem.findall('tvshow'):
                     if tvshowElem is not None:
-                        # Check if there is an audio theme in the store
+                        # Check if there is an audio theme in the library
                         if tvshowElem.find('audiotheme') is not None:
                             self.tvShowAudioExcludes.append(tvshowElem.attrib['id'])
                             log("UploadThemes: Excluding TV Audio %s" % tvshowElem.attrib['id'])
@@ -632,12 +632,12 @@ class UploadThemes():
                             self.tvShowVideoExcludes.append(tvshowElem.attrib['id'])
                             log("UploadThemes: Excluding TV Video %s" % tvshowElem.attrib['id'])
 
-            moviesElem = storeET.find('movies')
+            moviesElem = libraryET.find('movies')
             if moviesElem is not None:
-                # Check all of the TV Shows in the store
+                # Check all of the TV Shows in the library
                 for movieElem in moviesElem.findall('movie'):
                     if movieElem is not None:
-                        # Check if there is an audio theme in the store
+                        # Check if there is an audio theme in the library
                         if movieElem.find('audiotheme') is not None:
                             self.movieAudioExcludes.append(movieElem.attrib['id'])
                             log("UploadThemes: Excluding Movie Audio %s" % movieElem.attrib['id'])

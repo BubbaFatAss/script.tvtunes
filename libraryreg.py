@@ -25,13 +25,13 @@ from settings import dir_exists
 # Main of the TvTunes Service
 ##################################
 if __name__ == '__main__':
-    log("StoreReg: Starting TvTunes Store Registration %s" % __addon__.getAddonInfo('version'))
+    log("LibraryReg: Starting TvTunes Library Registration %s" % __addon__.getAddonInfo('version'))
 
     # Prompt the user for the location of the registration file
     fileLocation = xbmcgui.Dialog().browseSingle(1, __addon__.getLocalizedString(32116), 'files')
 
     if fileLocation not in ["", None]:
-        log("StoreReg: Registration file selected: %s" % fileLocation)
+        log("LibraryReg: Registration file selected: %s" % fileLocation)
 
         # Make sure the target directory exists
         if not dir_exists(xbmc.translatePath('special://profile/addon_data/%s' % __addonid__).decode("utf-8")):
@@ -40,14 +40,14 @@ if __name__ == '__main__':
         # Get the location the file is to be copied to
         tvtunesStoreFileName = xbmc.translatePath('special://profile/addon_data/%s/tvtunes-store-reg.xml' % __addonid__).decode("utf-8")
 
-        log("StoreReg: Target location of registration file: %s" % tvtunesStoreFileName)
+        log("LibraryReg: Target location of registration file: %s" % tvtunesStoreFileName)
 
         # Copy the file into the target location
         copy = xbmcvfs.copy(fileLocation, tvtunesStoreFileName)
         if copy:
-            log("StoreReg: Registration file copy successful")
+            log("LibraryReg: Registration file copy successful")
         else:
-            log("StoreReg: Registration file copy failed")
+            log("LibraryReg: Registration file copy failed")
             xbmcgui.Dialog().ok(__addon__.getLocalizedString(32116), __addon__.getLocalizedString(32117))
     else:
-        log("StoreReg: No registration file selected")
+        log("LibraryReg: No registration file selected")

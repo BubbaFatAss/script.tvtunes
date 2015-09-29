@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <settings>
-	<category label="32991">
+	<category label="32105">
 		<setting id="enableThemePlaying" type="bool" label="32084" default="true"/>
+		<setting id="movielist" type="bool" label="32016" default="false"/>
+		<setting id="tvlist" type="bool" label="32017" default="false"/>
+		<setting id="musicvideolist" type="bool" label="32029" default="false"/>
+	</category>
+	<category label="32991">
 		<setting id="loop" type="bool" label="32001" default="false"/>
 		<setting id="volume" label="32002" type="slider" default="0" range="0,1,100" option="int" />
 		<setting id="delayStart" label="32024" type="slider" default="0" range="0,1,60" option="int" />
 		<setting id="endafter" label="32021" type="slider" default="0" range="0,1,60" option="int" />
-		<setting id="movielist" type="bool" label="32016" default="false"/>
-		<setting id="tvlist" type="bool" label="32017" default="false"/>
-		<setting id="musicvideolist" type="bool" label="32029" default="false"/>
 		<setting id="fadeOut" type="bool" label="32008" default="true"/>
 		<setting id="fadeIn" type="bool" label="32013" default="false"/>
 		<setting id="shuffle" type="bool" label="32010" default="true"/>
@@ -19,7 +21,7 @@
 	<category label="32992">
 		<setting id="tvtunesId" enable="false" type="text" label="32098 " default="" />
 		<setting id="enableTvTunesStore" type="bool" label="32099" default="false"/>
-		<setting label="32116" visible="eq(-1,true)" type="action" subsetting="true" option="close" action="RunScript($CWD/storereg.py)"/>
+		<setting label="32116" visible="eq(-1,true)" type="action" subsetting="true" option="close" action="RunScript($CWD/libraryreg.py)"/>
 		<setting id="auto_download" type="enum" label="32009" lvalues="32036|32037|32038|32039" default="0"/>
 		<setting id="auto_prompt_user_if_required" type="bool" label="32100" visible="!eq(-1,0)" subsetting="true" default="true"/>
 		<setting id="multiThemeDownload" type="bool" label="32014" default="false"/>
