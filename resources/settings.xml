@@ -5,6 +5,9 @@
 		<setting id="movielist" type="bool" label="32016" default="false"/>
 		<setting id="tvlist" type="bool" label="32017" default="false"/>
 		<setting id="musicvideolist" type="bool" label="32029" default="false"/>
+		<setting id="videoInformation" type="bool" label="32127" default="true"/>
+		<setting id="tvShowSeasons" type="bool" label="32128" default="true"/>
+		<setting id="tvShowEpisodes" type="bool" label="32129" default="true"/>
 	</category>
 	<category label="32991">
 		<setting id="loop" type="bool" label="32001" default="false"/>

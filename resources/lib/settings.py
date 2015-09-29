@@ -418,6 +418,18 @@ class Settings():
         return __addon__.getSetting("musicvideolist") == 'true'
 
     @staticmethod
+    def isPlayVideoInformation():
+        return __addon__.getSetting("videoInformation") == 'true'
+
+    @staticmethod
+    def isPlayTvShowSeasons():
+        return __addon__.getSetting("tvShowSeasons") == 'true'
+
+    @staticmethod
+    def isPlayTvShowEpisodes():
+        return __addon__.getSetting("tvShowEpisodes") == 'true'
+
+    @staticmethod
     def getPlayDurationLimit():
         return int(float(__addon__.getSetting("endafter")))
 

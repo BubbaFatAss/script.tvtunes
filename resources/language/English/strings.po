@@ -532,7 +532,19 @@ msgctxt "#32126"
 msgid "Theme Library Video"
 msgstr ""
 
-#empty strings from id 32127 to 32200
+msgctxt "#32127"
+msgid "Play themes when viewing Video Information"
+msgstr ""
+
+msgctxt "#32128"
+msgid "Play themes when browsing TV Show Seasons"
+msgstr ""
+
+msgctxt "#32129"
+msgid "Play themes when browsing TV Show Episodes"
+msgstr ""
+
+#empty strings from id 32130 to 32200
 
 msgctxt "#32201"
 msgid "Movies"

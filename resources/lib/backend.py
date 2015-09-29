@@ -213,11 +213,11 @@ class TunesBackend():
             return False
         if WindowShowing.isPluginPath():
             return False
-        if WindowShowing.isMovieInformation():
+        if WindowShowing.isMovieInformation() and Settings.isPlayVideoInformation():
             return True
-        if WindowShowing.isSeasons():
+        if WindowShowing.isSeasons() and Settings.isPlayTvShowSeasons():
             return True
-        if WindowShowing.isEpisodes():
+        if WindowShowing.isEpisodes() and Settings.isPlayTvShowEpisodes():
             return True
         # Only valid if wanting theme on movie list
         if WindowShowing.isMovies() and Settings.isPlayMovieList():
