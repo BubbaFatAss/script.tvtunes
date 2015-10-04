@@ -544,7 +544,11 @@ msgctxt "#32129"
 msgid "Play themes when browsing TV Show Episodes"
 msgstr ""
 
-#empty strings from id 32130 to 32200
+msgctxt "#32130"
+msgid "Play themes when browsing Music Library"
+msgstr ""
+
+#empty strings from id 32131 to 32200
 
 msgctxt "#32201"
 msgid "Movies"

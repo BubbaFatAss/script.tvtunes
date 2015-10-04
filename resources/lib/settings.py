@@ -172,6 +172,17 @@ class WindowShowing():
         return xbmc.getCondVisibility("Window.IsVisible(shutdownmenu)")
 
     @staticmethod
+    def isMusicSection():
+        inMusicSection = False
+        # Only record being in the music section if we have it enabled in the settings
+        if Settings.isPlayMusicList():
+            if xbmc.getCondVisibility("Container.Content(albums)"):
+                inMusicSection = True
+            elif xbmc.getCondVisibility("Container.Content(artists)"):
+                inMusicSection = True
+        return inMusicSection
+
+    @staticmethod
     def isTvTunesOverrideTvShows():
         win = xbmcgui.Window(xbmcgui.getCurrentWindowId())
         return win.getProperty("TvTunesSupported").lower() == "tvshows"
@@ -428,6 +439,10 @@ class Settings():
     @staticmethod
     def isPlayTvShowEpisodes():
         return __addon__.getSetting("tvShowEpisodes") == 'true'
+
+    @staticmethod
+    def isPlayMusicList():
+        return __addon__.getSetting("musiclist") == 'true'
 
     @staticmethod
     def getPlayDurationLimit():
