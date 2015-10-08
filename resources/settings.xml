@@ -43,7 +43,7 @@
 		<setting id="smb_login" enable="eq(-1,true)" visible="eq(-1,true)" subsetting="true" type="text" label="32004" default="" />
 		<setting id="smb_psw" enable="eq(-2,true)" visible="eq(-2,true)" subsetting="true" type="text" option="hidden" label="32005" default="" />
 		<setting id="custom_path_enable" type="bool" label="32006" default="false"/>
-		<setting id="custom_path" enable="eq(-1,true)" visible="eq(-1,true)" subsetting="true" type="folder" source="files" label="32007" default="" />
+		<setting id="custom_path" enable="eq(-1,true)" visible="eq(-1,true)" subsetting="true" type="folder" label="32007" default="" />
 		<setting id="searchSubDir" type="bool" enable="eq(-2,false)" label="32025" default="false"/>
 		<setting id="subDirName" enable="eq(-1,true) + eq(-3,false)" visible="eq(-1,true) + eq(-3,false)" subsetting="true" type="text" label="32026" default="Themes" />
 		<setting id="configure_filetypes" type="bool" label="32012" default="false"/>
