@@ -310,13 +310,15 @@ class Settings():
     # Checks if the given file is names as a video file
     @staticmethod
     def isVideoFile(filename):
-        if filename.endswith('.mp4'):
+        if filename.lower().endswith('.mp4'):
             return True
-        if filename.endswith('.mkv'):
+        if filename.lower().endswith('.mkv'):
             return True
-        if filename.endswith('.avi'):
+        if filename.lower().endswith('.avi'):
             return True
-        if filename.endswith('.mov'):
+        if filename.lower().endswith('.mov'):
+            return True
+        if filename.lower().endswith('.m2ts'):
             return True
         return False
 
@@ -406,6 +408,8 @@ class Settings():
             fileTypes.append("avi")
         if(__addon__.getSetting("mov") == 'true'):
             fileTypes.append("mov")
+        if(__addon__.getSetting("m2ts") == 'true'):
+            fileTypes.append("m2ts")
         return '|'.join(fileTypes)
 
     @staticmethod
