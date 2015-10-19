@@ -5,7 +5,6 @@ import traceback
 import urllib2
 import xbmc
 import xbmcaddon
-import xbmcvfs
 import xbmcgui
 
 
@@ -13,7 +12,6 @@ __addon__ = xbmcaddon.Addon(id='script.tvtunes')
 __addonid__ = __addon__.getAddonInfo('id')
 
 
-from settings import Settings
 from settings import log
 
 try:
@@ -25,10 +23,6 @@ except Exception:
 # Class to handle the uploading of themes
 class ThemeLibrary():
     def __init__(self):
-        # Get the library settings file, this will be copied into this location my
-        # the user so that the URLs are not public
-        tvtunesRegFileName = xbmc.translatePath('special://profile/addon_data/%s/tvtunes-store-reg.xml' % __addonid__).decode("utf-8")
-
         self.baseurl = None
         self.userlistFile = None
         self.libraryContentsFile = None
@@ -37,82 +31,39 @@ class ThemeLibrary():
         self.libraryTvShowVideoContents = {}
         self.libraryMovieVideoContents = {}
 
-        # Check if the file exists, if it does read it in
-        if xbmcvfs.exists(tvtunesRegFileName):
-            log("ThemeLibrary: Loading registration file %s" % tvtunesRegFileName)
-            # Read the registration file for the library details
-            try:
-                tvtunesRegFile = xbmcvfs.File(tvtunesRegFileName, 'r')
-                tvtunesRegStr = tvtunesRegFile.read()
-                tvtunesRegFile.close()
-
-                # Get the library configuration from the registration file
-                tvtunesRegET = ET.ElementTree(ET.fromstring(base64.b64decode(tvtunesRegStr)))
-
-                configElem = tvtunesRegET.find('config')
-                if configElem is not None:
-                    configLocation = configElem.text
-                    if configLocation not in [None, ""]:
-                        # Read in all the configuration details
-                        tvtunesLibraryConfig = urllib2.urlopen(configLocation)
-                        tvtunesLibraryConfigStr = tvtunesLibraryConfig.read()
-                        # Closes the connection after we have read the configuration
-                        try:
-                            tvtunesLibraryConfig.close()
-                        except:
-                            log("ThemeLibrary: Failed to close connection for library config", xbmc.LOGERROR)
-
-                        tvtunesLibraryET = ET.ElementTree(ET.fromstring(base64.b64decode(tvtunesLibraryConfigStr)))
-
-                        baseUrlElem = tvtunesLibraryET.find('baseurl')
-                        if baseUrlElem is not None:
-                            self.baseurl = baseUrlElem.text
-                        userlistElem = tvtunesLibraryET.find('userlist')
-                        if userlistElem is not None:
-                            self.userlistFile = userlistElem.text
-                        storeContentsElem = tvtunesLibraryET.find('storecontent')
-                        if storeContentsElem is not None:
-                            self.libraryContentsFile = storeContentsElem.text
-            except:
-                log("ThemeLibrary: Failed to read in file %s" % tvtunesRegFileName, xbmc.LOGERROR)
-                log("ThemeLibrary: %s" % traceback.format_exc(), xbmc.LOGERROR)
-
-    # Make sure this user has access to the library
-    def checkAccess(self):
-        log("ThemeLibrary: Checking access")
-
-        if self.baseurl is None or self.userlistFile is None:
-            log("ThemeLibrary: Theme Library details not loaded correctly")
-            return False
-
-        # Get the machine we need to check
-        machineId = Settings.getTvTunesId()
-        log("ThemeLibrary: Unique machine ID is %s" % machineId)
-
-        validUser = False
+        # Read the registration file for the library details
         try:
-            # Get the user list
-            remoteUserList = urllib2.urlopen(self.userlistFile)
-            userListDetails = remoteUserList.read()
-            # Closes the connection after we have read the remote user list
-            try:
-                remoteUserList.close()
-            except:
-                log("ThemeLibrary: Failed to close connection for remote user list", xbmc.LOGERROR)
+            tvtunesRegStr = "PHR2dHVuZXNTdG9yZVJlZz4gICAgPGNvbmZpZz5odHRwOi8vd3d3LmRlYWRseWR1Y2suY29tL3R2dHVuZXMtc3RvcmUtY29uZmlnLnhtbDwvY29uZmlnPjwvdHZ0dW5lc1N0b3JlUmVnPg=="
 
-            # Check all of the settings
-            userListDetailsET = ET.ElementTree(ET.fromstring(base64.b64decode(userListDetails)))
-            for useridElem in userListDetailsET.findall('userid'):
-                if useridElem is not None:
-                    useridStr = useridElem.text
-                    if useridStr == machineId:
-                        log("ThemeLibrary: Detected valid user")
-                        validUser = True
+            # Get the library configuration from the registration file
+            tvtunesRegET = ET.ElementTree(ET.fromstring(base64.b64decode(tvtunesRegStr)))
+
+            configElem = tvtunesRegET.find('config')
+            if configElem is not None:
+                configLocation = configElem.text
+                if configLocation not in [None, ""]:
+                    # Read in all the configuration details
+                    tvtunesLibraryConfig = urllib2.urlopen(configLocation)
+                    tvtunesLibraryConfigStr = tvtunesLibraryConfig.read()
+                    # Closes the connection after we have read the configuration
+                    try:
+                        tvtunesLibraryConfig.close()
+                    except:
+                        log("ThemeLibrary: Failed to close connection for library config", xbmc.LOGERROR)
+
+                    tvtunesLibraryET = ET.ElementTree(ET.fromstring(base64.b64decode(tvtunesLibraryConfigStr)))
+
+                    baseUrlElem = tvtunesLibraryET.find('baseurl')
+                    if baseUrlElem is not None:
+                        self.baseurl = baseUrlElem.text
+                    userlistElem = tvtunesLibraryET.find('userlist')
+                    if userlistElem is not None:
+                        self.userlistFile = userlistElem.text
+                    storeContentsElem = tvtunesLibraryET.find('storecontent')
+                    if storeContentsElem is not None:
+                        self.libraryContentsFile = storeContentsElem.text
         except:
-            log("ThemeLibrary: Failed to read in user list: %s" % traceback.format_exc(), xbmc.LOGERROR)
-            return False
-
-        return validUser
+            log("ThemeLibrary: %s" % traceback.format_exc(), xbmc.LOGERROR)
 
     # Get the items that are in the theme library
     def loadLibraryContents(self):
@@ -189,12 +140,6 @@ class ThemeLibrary():
         return True
 
     def getThemes(self, title, isTvShow, year, imdb):
-        # First check that the user has access and load the library content
-        if not self.checkAccess():
-            # Display an error as this user is not registered
-            xbmcgui.Dialog().ok(__addon__.getLocalizedString(32101), __addon__.getLocalizedString(32122))
-            return None
-
         if not self.loadLibraryContents():
             # Failed to load the library content
             xbmcgui.Dialog().ok(__addon__.getLocalizedString(32101), __addon__.getLocalizedString(32123))

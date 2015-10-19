@@ -510,10 +510,6 @@ class Settings():
         elif index == 3:
             return Settings.GOEAR
         elif index == 4:
-            # If the user has selected the theme library but it is not enabled
-            # then prompt them for the correct search engine
-            if not Settings.isThemeLibraryEnabled():
-                return Settings.PROMPT_ENGINE
             return Settings.THEMELIBRARY
 
         # Default is to prompt the user
@@ -575,10 +571,6 @@ class Settings():
     @staticmethod
     def setTvTunesId():
         __addon__.setSetting("tvtunesId", Settings.getTvTunesId())
-
-    @staticmethod
-    def isThemeLibraryEnabled():
-        return __addon__.getSetting("enableTvTunesStore") == "true"
 
 
 # Class to handle all the screen saver settings

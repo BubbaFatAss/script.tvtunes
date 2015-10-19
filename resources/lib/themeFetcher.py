@@ -248,10 +248,10 @@ class TvTunesFetcher():
             # Soundcloud is selected
             searchListing = SoundcloudListing()
         elif self.searchEngine == Settings.TELEVISION_TUNES:
-            # Default to Television Tunes
+            # Television Tunes
             searchListing = TelevisionTunesListing()
         elif self.searchEngine == Settings.THEMELIBRARY:
-            # Default to Television Tunes
+            # Theme Library Selected
             searchListing = ThemeLibraryListing()
 
         # Check the special case where we use all the engines
@@ -260,12 +260,13 @@ class TvTunesFetcher():
             # We do not want them doing this search all the time!
             self.searchEngine = Settings.getSearchEngine()
 
+            themeLibraryList = ThemeLibraryListing().themeSearch(showname, alternativeTitle, isTvShow=isTvShow, year=year, imdb=imdb, showProgressDialog=showProgressDialog)
             tvtunesList = TelevisionTunesListing().themeSearch(showname, alternativeTitle, showProgressDialog=showProgressDialog)
             goearList = GoearListing().themeSearch(showname, alternativeTitle, showProgressDialog=showProgressDialog)
             soundcloudList = SoundcloudListing().themeSearch(showname, alternativeTitle, showProgressDialog=showProgressDialog)
 
             # Join all the entries into one list
-            theme_list = tvtunesList + goearList + soundcloudList
+            theme_list = themeLibraryList + tvtunesList + goearList + soundcloudList
             # Now sort the list
             theme_list.sort()
         else:
@@ -291,15 +292,13 @@ class TvTunesFetcher():
     # Prompt the user to select a different search option
     def promptForSearchEngine(self, showManualOptions=True):
         displayList = []
-        displayList.insert(0, Settings.TELEVISION_TUNES)
-        displayList.insert(1, Settings.SOUNDCLOUD)
-        displayList.insert(2, Settings.GOEAR)
+        # Add the theme library first
+        displayList.insert(0, __language__(32125))
+        displayList.insert(1, Settings.TELEVISION_TUNES)
+        displayList.insert(2, Settings.SOUNDCLOUD)
+        displayList.insert(3, Settings.GOEAR)
 
-        manualSearchOffset = 3
-        # Check if we should make the Theme Library available
-        if Settings.isThemeLibraryEnabled():
-            manualSearchOffset = manualSearchOffset + 1
-            displayList.insert(3, __language__(32125))
+        manualSearchOffset = 4
 
         displayList.insert(manualSearchOffset, "** %s **" % __language__(32121))
 
@@ -316,13 +315,15 @@ class TvTunesFetcher():
             log("promptForSearchEngine: Cancelled by user")
             return False, None
         else:
-            if (select == 0) or (select == (manualSearchOffset + 1)):
+            if select == 0:
+                self.searchEngine = Settings.THEMELIBRARY
+            if (select == 1) or (select == (manualSearchOffset + 1)):
                 self.searchEngine = Settings.TELEVISION_TUNES
-            elif (select == 1) or (select == (manualSearchOffset + 2)):
+            elif (select == 2) or (select == (manualSearchOffset + 2)):
                 self.searchEngine = Settings.SOUNDCLOUD
-            elif (select == 2) or (select == (manualSearchOffset + 3)):
+            elif (select == 3) or (select == (manualSearchOffset + 3)):
                 self.searchEngine = Settings.GOEAR
-            elif (select == 3):
+            elif (select == 4):
                 self.searchEngine = Settings.ALL_ENGINES
 
             # Record if this is a manual search

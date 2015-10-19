@@ -24,8 +24,6 @@
 		<setting id="trackLengthLimit" label="32027" type="slider" default="0" range="0,10,180" option="int" />
 	</category>
 	<category label="32992">
-		<setting id="enableTvTunesStore" type="bool" label="32099" default="false"/>
-		<setting label="32116" visible="eq(-1,true)" type="action" subsetting="true" option="close" action="RunScript($CWD/libraryreg.py)"/>
 		<setting id="auto_download" type="enum" label="32009" lvalues="32036|32037|32038|32039" default="0"/>
 		<setting id="auto_prompt_user_if_required" type="bool" label="32100" visible="!eq(-1,0)" subsetting="true" default="true"/>
 		<setting id="multiThemeDownload" type="bool" label="32014" default="false"/>
