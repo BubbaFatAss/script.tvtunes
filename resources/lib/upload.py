@@ -311,6 +311,9 @@ class UploadThemes():
             if themeFileSize > maxFileSize:
                 log("UploadThemes: Theme %s too large %s" % (theme, themeFileSize))
                 continue
+            if themeFileSize < 19460:
+                log("UploadThemes: Theme %s too small %s" % (theme, themeFileSize))
+                continue
 
             # If we reach here it is not in either exclude list
             themeList.append(theme)
