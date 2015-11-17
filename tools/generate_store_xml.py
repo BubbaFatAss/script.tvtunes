@@ -127,9 +127,15 @@ if __name__ == '__main__':
             themeElem = None
             # Add the theme to the list
             if isVideoFile(theme):
+                if fileSize > 104857600:
+                    print "Themes file %s/%s is very large" % (themesDir, theme)
+                    continue
                 print "Video Theme for %s is %s" % (themesDir, theme)
                 themeElem = ET.SubElement(movieElem, 'videotheme')
             else:
+                if fileSize > 20971520:
+                    print "Themes file %s/%s is very large" % (themesDir, theme)
+                    continue
                 numThemes = numThemes + 1
                 if not theme.endswith('.mp3'):
                     print "Audio theme %s is not mp3: %s" % (themesDir, theme)
