@@ -1,3 +1,6 @@
+v6.1.1
+- Add Plex Library Support
+
 v6.1.0
 - Fix Soundcloud support
 

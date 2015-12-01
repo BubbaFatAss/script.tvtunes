@@ -290,6 +290,7 @@ class Settings():
     SOUNDCLOUD = 'soundcloud.com'
     GOEAR = 'goear.com'
     THEMELIBRARY = 'themelibrary'
+    PLEXLIBRARY = 'plexlibrary'
     PROMPT_ENGINE = 'Prompt User'
 
     # Settings for Automatically Downloading
@@ -507,6 +508,8 @@ class Settings():
             return Settings.GOEAR
         elif index == 4:
             return Settings.THEMELIBRARY
+        elif index == 5:
+            return Settings.PLEXLIBRARY
 
         # Default is to prompt the user
         return Settings.PROMPT_ENGINE
