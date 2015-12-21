@@ -40,7 +40,10 @@ except Exception:
 # Core TvTunes Scraper class
 #################################
 class TvTunesFetcher():
-    def __init__(self, videoList):
+    def __init__(self, videoList, incAudioThemes=True, incVideoThemes=True):
+        self.includeAudio = incAudioThemes
+        self.includeVideo = incVideoThemes
+
         # Set up the addon directories if they do not already exist
         if not dir_exists(xbmc.translatePath('special://profile/addon_data/%s' % __addonid__).decode("utf-8")):
             xbmcvfs.mkdir(xbmc.translatePath('special://profile/addon_data/%s' % __addonid__).decode("utf-8"))
@@ -133,6 +136,15 @@ class TvTunesFetcher():
         theme_url = themeDetails.getMediaURL()
         log("download: %s" % theme_url)
 
+        fileType = ".mp3"
+        # For video files check what type they are
+        if Settings.isVideoFile(theme_url):
+            fileExt = os.path.splitext(theme_url)[1]
+            # If this is a file, then get it's parent directory
+            # Also limit file extensions to a maximum of 4 characters
+            if fileExt is not None and fileExt != "" and len(fileExt) < 5:
+                fileType = fileExt
+
         # Check for custom theme directory
         if Settings.isThemeDirEnabled():
             themeDir = os_path_join(path, Settings.getThemeDirectory())
@@ -152,7 +164,7 @@ class TvTunesFetcher():
 
         log("target directory: %s" % path)
 
-        theme_file = self.getNextThemeFileName(path)
+        theme_file = self.getNextThemeFileName(path, fileType)
         tmpdestination = xbmc.translatePath('special://profile/addon_data/%s/temp/%s' % (__addonid__, theme_file)).decode("utf-8")
         destination = os_path_join(path, theme_file)
 
@@ -248,19 +260,19 @@ class TvTunesFetcher():
         # Check if the search engine being used is GoEar
         if self.searchEngine == Settings.GOEAR:
             # Goeear is selected
-            searchListing = GoearListing()
+            searchListing = GoearListing(self.includeAudio, self.includeVideo)
         elif self.searchEngine == Settings.SOUNDCLOUD:
             # Soundcloud is selected
-            searchListing = SoundcloudListing()
+            searchListing = SoundcloudListing(self.includeAudio, self.includeVideo)
         elif self.searchEngine == Settings.TELEVISION_TUNES:
             # Television Tunes
-            searchListing = TelevisionTunesListing()
+            searchListing = TelevisionTunesListing(self.includeAudio, self.includeVideo)
         elif self.searchEngine == Settings.THEMELIBRARY:
             # Theme Library Selected
-            searchListing = ThemeLibraryListing()
+            searchListing = ThemeLibraryListing(self.includeAudio, self.includeVideo)
         elif self.searchEngine == Settings.PLEXLIBRARY:
             # Plex Library Selected
-            searchListing = PlexLibraryListing()
+            searchListing = PlexLibraryListing(self.includeAudio, self.includeVideo)
 
         # Check the special case where we use all the engines
         if self.searchEngine == Settings.ALL_ENGINES:
@@ -268,11 +280,11 @@ class TvTunesFetcher():
             # We do not want them doing this search all the time!
             self.searchEngine = Settings.getSearchEngine()
 
-            themeLibraryList = ThemeLibraryListing().themeSearch(showname, alternativeTitle, isTvShow=isTvShow, year=year, imdb=imdb, showProgressDialog=showProgressDialog)
-            plexLibraryList = PlexLibraryListing().themeSearch(showname, alternativeTitle, isTvShow=isTvShow, year=year, imdb=imdb, showProgressDialog=showProgressDialog)
-            tvtunesList = TelevisionTunesListing().themeSearch(showname, alternativeTitle, showProgressDialog=showProgressDialog)
-            goearList = GoearListing().themeSearch(showname, alternativeTitle, showProgressDialog=showProgressDialog)
-            soundcloudList = SoundcloudListing().themeSearch(showname, alternativeTitle, showProgressDialog=showProgressDialog)
+            themeLibraryList = ThemeLibraryListing(self.includeAudio, self.includeVideo).themeSearch(showname, alternativeTitle, isTvShow=isTvShow, year=year, imdb=imdb, showProgressDialog=showProgressDialog)
+            plexLibraryList = PlexLibraryListing(self.includeAudio, self.includeVideo).themeSearch(showname, alternativeTitle, isTvShow=isTvShow, year=year, imdb=imdb, showProgressDialog=showProgressDialog)
+            tvtunesList = TelevisionTunesListing(self.includeAudio, self.includeVideo).themeSearch(showname, alternativeTitle, showProgressDialog=showProgressDialog)
+            goearList = GoearListing(self.includeAudio, self.includeVideo).themeSearch(showname, alternativeTitle, showProgressDialog=showProgressDialog)
+            soundcloudList = SoundcloudListing(self.includeAudio, self.includeVideo).themeSearch(showname, alternativeTitle, showProgressDialog=showProgressDialog)
 
             # Join all the entries into one list
             theme_list = themeLibraryList + plexLibraryList + tvtunesList + goearList + soundcloudList
@@ -288,13 +300,13 @@ class TvTunesFetcher():
         return theme_list
 
     # Calculates the next filename to use when downloading multiple themes
-    def getNextThemeFileName(self, path):
-        themeFileName = "theme.mp3"
-        if Settings.isMultiThemesSupported() and xbmcvfs.exists(os_path_join(path, "theme.mp3")):
+    def getNextThemeFileName(self, path, fileType=".mp3"):
+        themeFileName = "theme" + fileType
+        if Settings.isMultiThemesSupported() and xbmcvfs.exists(os_path_join(path, "theme" + fileType)):
             idVal = 1
-            while xbmcvfs.exists(os_path_join(path, "theme" + str(idVal) + ".mp3")):
+            while xbmcvfs.exists(os_path_join(path, "theme" + str(idVal) + fileType)):
                 idVal = idVal + 1
-            themeFileName = "theme" + str(idVal) + ".mp3"
+            themeFileName = "theme" + str(idVal) + fileType
         log("Next Theme Filename = " + themeFileName)
         return themeFileName
 
@@ -507,6 +519,10 @@ class ProgressDialog(DummyProgressDialog):
 # Class to define the interface for listings from websites
 ###########################################################
 class DefaultListing():
+    def __init__(self, incAudioThemes=True, incVideoThemes=True):
+        self.includeAudio = incAudioThemes
+        self.includeVideo = incVideoThemes
+
     # Perform the search for the theme (Manual search)
     def search(self, showname, showProgressDialog=True):
         progressDialog = DummyProgressDialog(showname)
@@ -844,6 +860,10 @@ class TelevisionTunesListing(DefaultListing):
 
     # Perform the search for the theme
     def _search(self, showname, progressDialog):
+        # Only Audio is supported by this scraper
+        if not self.includeAudio:
+            return []
+
         search_url = "http://www.televisiontunes.com/search.php?q=%s"
 
         log("TelevisionTunesListing: Search for %s" % showname)
@@ -944,6 +964,10 @@ class TelevisionTunesItemDetails(ThemeItemDetails):
 class GoearListing(DefaultListing):
     # Perform the search for the theme
     def _search(self, name, progressDialog):
+        # Only Audio is supported by this scraper
+        if not self.includeAudio:
+            return []
+
         baseUrl = "http://www.goear.com/search/"
         # User - instead of spaces
         searchName = name.replace(" ", "-")
@@ -1172,6 +1196,10 @@ class SoundcloudListing(DefaultListing):
     def _search(self, showname, progressDialog):
         log("SoundcloudListing: Search for %s" % showname)
 
+        # Only Audio is supported by this scraper
+        if not self.includeAudio:
+            return []
+
         theme_list = []
 
         numTracksInBatch = 200   # set it to a value to start the loop for the first time
@@ -1275,7 +1303,7 @@ class ThemeLibraryListing(DefaultListing):
         themeLibrary = ThemeLibrary()
         progressDialog.updateProgress(25)
 
-        themeDetails = themeLibrary.getThemes(name, isTvShow, year, imdb)
+        themeDetails = themeLibrary.getThemes(name, isTvShow, year, imdb, self.includeAudio, self.includeVideo)
         del themeLibrary
 
         progressDialog.updateProgress(50)
