@@ -557,7 +557,7 @@ msgid "Plex Library"
 msgstr ""
 
 msgctxt "#32133"
-msgid "Delayed Video Theme Start (Seconds)"
+msgid "Delay Video Theme Start (Seconds)"
 msgstr ""
 
 #empty strings from id 32134 to 32200
