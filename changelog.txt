@@ -1,4 +1,4 @@
-v6.1.4
+v6.1.4 (2016-02-21)
 - Add option to delay video themes at different rate than audio themes
 
 v6.1.3 (2016-01-14)
