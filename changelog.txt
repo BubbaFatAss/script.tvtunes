@@ -1,3 +1,6 @@
+v6.1.5
+- Fix error when playing music library themes
+
 v6.1.4 (2016-02-21)
 - Add option to delay video themes at different rate than audio themes
 
