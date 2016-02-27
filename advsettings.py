@@ -61,7 +61,7 @@ class AdvSettings():
             xmlFile.close()
 
             # The file has now been read so we need to see if
-            # there is already a video extras section in it
+            # there is already a tv tunes section in it
             if AdvSettings.HEADER in xmlFileStr:
                 log("Updating existing TvTunes setting")
                 # need to strip out the existing contents and replace it with
@@ -136,7 +136,7 @@ class AdvSettings():
         # Put together the list of file endings
         videoFileTypes = Settings.getVideoThemeFileExtensions()
         if videoFileTypes not in [None, ""]:
-            regexSection += AdvSettings.REGEX_SECTION.format('theme\.(' + videoFileTypes.lower() + '|' + videoFileTypes.upper() + ')$')
+            regexSection += AdvSettings.REGEX_SECTION.format('theme([0-9]*)\.(' + videoFileTypes.lower() + '|' + videoFileTypes.upper() + ')$')
 
         # Now put together the ignore section
         ignoreSection = AdvSettings.IGNORE_SECTION.format(regexSection)

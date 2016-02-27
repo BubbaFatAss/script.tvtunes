@@ -1,3 +1,6 @@
+v6.2.1
+- Support multiple video themes being excluded from scan
+
 v6.2.0 (2016-02-23)
 - Fix error when playing music library themes
 - Add option for TV Tunes button on Video Info
