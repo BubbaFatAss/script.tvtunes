@@ -7,16 +7,12 @@
 		<import addon="script.module.requests" version="2.3.0"/>
 		<import addon="script.module.metahandler" version="2.7.0"/>
 	</requires>
-	<extension point="xbmc.python.script" library="default.py">
-		<provides>executable</provides>
-	</extension>
+	<extension point="xbmc.python.script" library="default.py"/>
 	<extension point="xbmc.python.pluginsource" library="plugin.py">
 		<provides>video</provides>
 	</extension>
 	<extension point="xbmc.ui.screensaver" library="saver.py"/>
-	<extension point="xbmc.service" library="service.py" start="login">
-		<provides>executable</provides>
-	</extension>
+	<extension point="xbmc.service" library="service.py" start="login"/>
 	<extension point="kodi.context.item" library="contextmenu.py">
 		<item>
 			<label>32105</label>
