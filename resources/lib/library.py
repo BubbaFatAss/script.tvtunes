@@ -7,17 +7,11 @@ import xbmc
 import xbmcaddon
 import xbmcgui
 
+from settings import log
+from idLookup import idLookup
 
 __addon__ = xbmcaddon.Addon(id='script.tvtunes')
 __addonid__ = __addon__.getAddonInfo('id')
-
-
-from settings import log
-
-try:
-    from metahandler import metahandlers
-except Exception:
-    log("ThemeLibrary: metahandler Import Failed %s" % traceback.format_exc(), xbmc.LOGERROR)
 
 
 # Class to handle the uploading of themes
@@ -146,25 +140,29 @@ class ThemeLibrary():
             return None
 
         # Check the details that have been passed in for a match against the Database
-        checkedId = self._getMetaHandlersID(isTvShow, title, year)
+        checkedIdDetails = idLookup(title, year, isTvShow)
 
-        log("ThemeLibrary: Searching for theme with id: %s" % checkedId)
+        log("ThemeLibrary: Searching for theme with id: %s" % str(checkedIdDetails))
+
+        videoId = checkedIdDetails['imdb']
+        if isTvShow:
+            videoId = checkedIdDetails['tvdb']
 
         themeUrls = {}
-        if checkedId not in ["", None]:
+        if videoId not in ["", None]:
             if includeAudio:
-                (themeUrl, size) = self._getAudioTheme(checkedId, isTvShow)
+                (themeUrl, size) = self._getAudioTheme(videoId, isTvShow)
                 if themeUrl not in ["", None]:
                     themeUrls[themeUrl] = size
             # Only get the video theme if it is required
             if includeVideo:
-                (vidThemeUrl, vidSize) = self._getVideoTheme(checkedId, isTvShow)
+                (vidThemeUrl, vidSize) = self._getVideoTheme(videoId, isTvShow)
                 if vidThemeUrl not in ["", None]:
                     themeUrls[vidThemeUrl] = vidSize
 
         if imdb not in [None, ""]:
-            if checkedId != imdb:
-                log("ThemeLibrary: ID comparison, Original = %s, checked = %s" % (imdb, checkedId))
+            if videoId != imdb:
+                log("ThemeLibrary: ID comparison, Original = %s, checked = %s" % (imdb, videoId))
                 # Also get the theme for database ID
                 if includeAudio:
                     (themeUrl, size) = self._getAudioTheme(imdb, isTvShow)
@@ -217,36 +215,3 @@ class ThemeLibrary():
             themeUrl = "%s%s/%s/%s" % (self.baseurl, subDir, itemId, details['file'])
             fileSize = details['size']
         return (themeUrl, fileSize)
-
-    # Uses metahandlers to get the TV ID
-    def _getMetaHandlersID(self, isTvShow, title, year=""):
-        idValue = ""
-        if year in [None, 0, "0"]:
-            year = ""
-        # Does not seem to work correctly with the year at the moment
-        year = ""
-        metaget = None
-        try:
-            metaget = metahandlers.MetaData(preparezip=False)
-            if isTvShow:
-                idValue = metaget.get_meta('tvshow', title, year=str(year))['tvdb_id']
-            else:
-                idValue = metaget.get_meta('movie', title, year=str(year))['imdb_id']
-
-            # Check if we have no id returned, and we added in a year
-            if (idValue in [None, ""]) and (year not in [None, ""]):
-                if isTvShow:
-                    idValue = metaget.get_meta('tvshow', title)['tvdb_id']
-                else:
-                    idValue = metaget.get_meta('movie', title)['imdb_id']
-
-            if not idValue:
-                idValue = ""
-        except Exception:
-            idValue = ""
-            log("ThemeLibrary: Failed to get Metahandlers ID %s" % traceback.format_exc())
-
-        if metaget is not None:
-            del metaget
-
-        return idValue

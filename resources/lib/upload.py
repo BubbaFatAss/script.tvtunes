@@ -23,14 +23,9 @@ __addonid__ = __addon__.getAddonInfo('id')
 from settings import Settings
 from settings import log
 from settings import dir_exists
-from settings import os_path_join
 
 from themeFinder import ThemeFiles
-
-try:
-    from metahandler import metahandlers
-except Exception:
-    log("UploadThemes: metahandler Import Failed %s" % traceback.format_exc(), xbmc.LOGERROR)
+from idLookup import idLookup
 
 
 # Class to handle the uploading of themes
@@ -251,7 +246,12 @@ class UploadThemes():
                 if not themeFileMgr.hasThemes():
                     continue
 
-                checkedId = self.getMetaHandlersID(target, videoItem['title'], item['year'])
+                isTvShow = False
+                if target == 'tvshows':
+                    isTvShow = True
+
+                checkedIdDetails = idLookup(videoItem['title'], item['year'], isTvShow)
+                checkedId = checkedIdDetails['imdb']
 
                 # Not sure why there would be a video in the library without an ID, but check just in case
                 if videoItem['imdbnumber'] in ["", None]:
@@ -632,74 +632,12 @@ class UploadThemes():
             # If we have had an error, stop trying to do any uploads
             self.uploadsDisabled = True
 
-    # Uses metahandlers to get the TV ID
-    def getMetaHandlersID(self, typeTag, title, year=""):
-        idValue = ""
-        if year in [None, 0, "0"]:
-            year = ""
-        # Does not seem to work correctly with the year at the moment
-        year = ""
-        metaget = None
-        try:
-            metaget = metahandlers.MetaData(preparezip=False)
-            if typeTag == 'tvshows':
-                idValue = metaget.get_meta('tvshow', title, year=str(year))['tvdb_id']
-            else:
-                idValue = metaget.get_meta('movie', title, year=str(year))['imdb_id']
-
-            # Check if we have no id returned, and we added in a year
-            if (idValue in [None, ""]) and (year not in [None, ""]):
-                if typeTag == 'tvshows':
-                    idValue = metaget.get_meta('tvshow', title)['tvdb_id']
-                else:
-                    idValue = metaget.get_meta('movie', title)['imdb_id']
-
-            if not idValue:
-                idValue = ""
-        except Exception:
-            idValue = ""
-            log("UploadThemes: Failed to get Metahandlers ID %s" % traceback.format_exc())
-
-        if metaget is not None:
-            del metaget
-
-        return idValue
-
-
-def cleanMetaHandlerDb():
-    log("UploadThemes: Cleaning Metahandler DB")
-    try:
-        metaAddon = xbmcaddon.Addon(id='script.module.metahandler')
-        metaFolder = metaAddon.getSetting('meta_folder_location')
-        metaFolder = xbmc.translatePath(metaFolder)
-        if not metaFolder:
-            metaFolder = xbmc.translatePath("special://profile/addon_data/script.module.metahandler/")
-        metaFolder = os_path_join(metaFolder, 'meta_cache')
-
-        dbLocation = os_path_join(metaFolder, 'video_cache.db')
-
-        try:
-            if xbmcvfs.exists(dbLocation):
-                log("UploadThemes: Removing %s" % dbLocation)
-                xbmcvfs.delete(dbLocation)
-        except:
-            log("UploadThemes: Failed to remove metadata DB using xbmcvfs")
-            if os.path.exists(dbLocation):
-                os.remove(dbLocation)
-    except:
-        log("UploadThemes: Failed to remove metadata DB")
-
 
 #########################
 # Main
 #########################
 if __name__ == '__main__':
     log("UploadThemes: Upload themes called")
-
-    # Clear the metahandler DB - if we do not, then we do not seem to find most
-    # of the items we request IDs for
-    cleanMetaHandlerDb()
-    xbmc.sleep(1000)
 
     # We want to avoid and errors appearing on the screen, not the end of the world
     # if it fails to upload the themes

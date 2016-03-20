@@ -29,11 +29,7 @@ from settings import dir_exists
 
 from library import ThemeLibrary
 import soundcloud
-
-try:
-    from metahandler import metahandlers
-except Exception:
-    log("ThemeLibrary: metahandler Import Failed %s" % traceback.format_exc(), xbmc.LOGERROR)
+from idLookup import idLookup
 
 
 #################################
@@ -175,7 +171,7 @@ class TvTunesFetcher():
         try:
             def _report_hook(count, blocksize, totalsize):
                 percent = int(float(count * blocksize * 100) / totalsize)
-                downloadProgressDialog.update(percent, __language__(32110) + ' ' + theme_url, __language__(32111) + ' ' + destination)
+                downloadProgressDialog.update(percent, __language__(32110), destination)
             if not dir_exists(path):
                 try:
                     xbmcvfs.mkdir(path)
@@ -1385,7 +1381,10 @@ class PlexLibraryListing(DefaultListing):
             progressDialog = ProgressDialog(name)
 
         # Check the details that have been passed in for a match against the Database
-        checkedId = self._getMetaHandlersID(isTvShow, name, year)
+        details = idLookup(name, str(year), True)
+        log("PlexLibraryListing: show details %s" % str(details))
+
+        checkedId = details['tvdb']
         progressDialog.updateProgress(25)
 
         # Get the details from the plex library
@@ -1399,6 +1398,7 @@ class PlexLibraryListing(DefaultListing):
         progressDialog.updateProgress(50)
 
         # If the passed in imdb value is not the same as the one we found, try that as well
+        # the passed in imdb is from Kodi and will most likely be the tvdb id
         if imdb not in [None, ""]:
             if checkedId != imdb:
                 log("PlexLibraryListing: ID comparison, Original = %s, checked = %s" % (imdb, checkedId))
@@ -1450,36 +1450,3 @@ class PlexLibraryListing(DefaultListing):
             url = None
 
         return url
-
-    # Uses metahandlers to get the TV ID
-    def _getMetaHandlersID(self, isTvShow, title, year=""):
-        idValue = ""
-        if year in [None, 0, "0"]:
-            year = ""
-        # Does not seem to work correctly with the year at the moment
-        year = ""
-        metaget = None
-        try:
-            metaget = metahandlers.MetaData(preparezip=False)
-            if isTvShow:
-                idValue = metaget.get_meta('tvshow', title, year=str(year))['tvdb_id']
-            else:
-                idValue = metaget.get_meta('movie', title, year=str(year))['imdb_id']
-
-            # Check if we have no id returned, and we added in a year
-            if (idValue in [None, ""]) and (year not in [None, ""]):
-                if isTvShow:
-                    idValue = metaget.get_meta('tvshow', title)['tvdb_id']
-                else:
-                    idValue = metaget.get_meta('movie', title)['imdb_id']
-
-            if not idValue:
-                idValue = ""
-        except Exception:
-            idValue = ""
-            log("PlexLibraryListing: Failed to get Metahandlers ID %s" % traceback.format_exc())
-
-        if metaget is not None:
-            del metaget
-
-        return idValue
