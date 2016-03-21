@@ -1381,27 +1381,28 @@ class PlexLibraryListing(DefaultListing):
             progressDialog = ProgressDialog(name)
 
         # Check the details that have been passed in for a match against the Database
-        details = idLookup(name, str(year), True)
-        log("PlexLibraryListing: show details %s" % str(details))
+        idDetails = idLookup(name, str(year), True)
+        log("PlexLibraryListing: show details %s" % str(idDetails))
 
-        checkedId = details['tvdb']
         progressDialog.updateProgress(25)
 
         # Get the details from the plex library
-        log("PlexLibraryListing: Searching for theme with id: %s" % checkedId)
         themeUrls = []
-        if checkedId not in [None, ""]:
-            validURL = self._getValidUrl(checkedId)
+        if idDetails['tvdb'] not in [None, ""]:
+            log("PlexLibraryListing: Searching for theme with id: %s" % idDetails['tvdb'])
+            validURL = self._getValidUrl(idDetails['tvdb'])
             if validURL not in [None, ""]:
                 themeUrls.append(validURL)
+        else:
+            log("PlexLibraryListing: No ID found for theme %s" % name)
 
         progressDialog.updateProgress(50)
 
         # If the passed in imdb value is not the same as the one we found, try that as well
         # the passed in imdb is from Kodi and will most likely be the tvdb id
         if imdb not in [None, ""]:
-            if checkedId != imdb:
-                log("PlexLibraryListing: ID comparison, Original = %s, checked = %s" % (imdb, checkedId))
+            if idDetails['tvdb'] != imdb:
+                log("PlexLibraryListing: ID comparison, Original = %s, checked = %s" % (imdb, idDetails['tvdb']))
                 validURL = self._getValidUrl(imdb)
                 if validURL not in [None, ""]:
                     themeUrls.append(validURL)
@@ -1415,7 +1416,7 @@ class PlexLibraryListing(DefaultListing):
             themeNum = themeNum + 1
             title = "%s %d" % (__language__(32131), themeNum)
 
-            theme = ThemeItemDetails(title, themeUrl)
+            theme = PlexLibraryItemDetails(title, themeUrl)
             theme.setPriority(1)
             themeDetailsList.append(theme)
 
@@ -1450,3 +1451,34 @@ class PlexLibraryListing(DefaultListing):
             url = None
 
         return url
+
+
+#########################################
+# Custom PlexLibrary Item Details
+#########################################
+class PlexLibraryItemDetails(ThemeItemDetails):
+    # Plays a preview of the given file
+    def playPreview(self):
+        # For Plex we need to download and then play the downloaded theme
+        # passing the URL to the player only plays a small fragment
+        isSelected = False
+        theme_file = 'plex_tmptheme.mp3'
+        tmpdestination = xbmc.translatePath('special://profile/addon_data/%s/temp/%s' % (__addonid__, theme_file)).decode("utf-8")
+
+        try:
+            fp, h = urllib.urlretrieve(self.getMediaURL(), tmpdestination)
+            log(h)
+
+            # Now play the preview
+            isSelected = ThemeItemDetails.playPreview(self, tmpdestination)
+
+            # Make sure there is no longer a theme playing as
+            # we want to delete the temp file
+            while xbmc.Player().isPlayingAudio():
+                xbmc.sleep(5)
+
+            xbmcvfs.delete(tmpdestination)
+        except:
+            log("download: Theme download Failed!!!")
+            log("download: %s" % traceback.format_exc())
+        return isSelected

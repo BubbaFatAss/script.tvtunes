@@ -236,6 +236,37 @@ class TvShowLookup():
 
         return (tvdbId, imdbId)
 
+    # Get the imdb id from the tvdb id
+    def getImdbId_from_tvdbId(self, imdbId):
+        # http://thetvdb.com/api/2B8557E0CBF7D720/series/75565/en.xml
+        url = '%s/%s/series/%s/en.xml' % (self.tvdb_url_prefix, self.api_key, imdbId)
+        resp_details = self._makeCall(url)
+
+        imdbId = None
+        # The response is XML
+        if resp_details not in [None, ""]:
+            try:
+                respData = ET.ElementTree(ET.fromstring(resp_details))
+
+                rootElement = respData.getroot()
+                if rootElement not in [None, ""]:
+                    if rootElement.tag == 'Data':
+                        series = rootElement.findall('Series')
+                        # Only want to process anything if there is just a single series
+                        if (series not in [None, ""]) and (len(series) > 0):
+                            # There should only be one series as we selected by Id
+                            selectedSeries = series[0]
+
+                            if selectedSeries not in [None, ""]:
+                                imdbIdElem = selectedSeries.find('IMDB_ID')
+                                if imdbIdElem not in [None, ""]:
+                                    imdbId = imdbIdElem.text
+                                    log("TvShowLookup: Found IMDB_ID = %s" % imdbId)
+            except:
+                log("TvShowLookup: Failed to process data %s: %s" % (resp_details, traceback.format_exc()))
+
+        return imdbId
+
     # Perform the API call
     def _makeCall(self, url):
         log("TvShowLookup: Making query using %s" % url)
