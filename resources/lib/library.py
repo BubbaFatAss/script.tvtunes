@@ -18,7 +18,6 @@ __addonid__ = __addon__.getAddonInfo('id')
 class ThemeLibrary():
     def __init__(self):
         self.baseurl = None
-        self.userlistFile = None
         self.libraryContentsFile = None
         self.libraryTvShowAudioContents = {}
         self.libraryMovieAudioContents = {}
@@ -50,9 +49,6 @@ class ThemeLibrary():
                     baseUrlElem = tvtunesLibraryET.find('baseurl')
                     if baseUrlElem is not None:
                         self.baseurl = baseUrlElem.text
-                    userlistElem = tvtunesLibraryET.find('userlist')
-                    if userlistElem is not None:
-                        self.userlistFile = userlistElem.text
                     storeContentsElem = tvtunesLibraryET.find('storecontent')
                     if storeContentsElem is not None:
                         self.libraryContentsFile = storeContentsElem.text
