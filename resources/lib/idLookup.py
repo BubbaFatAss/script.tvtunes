@@ -125,6 +125,30 @@ class MovieLookup():
 
         return imdb_id
 
+    # Need to make a different call to get the IMDB, can not go straight from
+    # name to imdb Id
+    def getTMDB_id_from_imdb_id(self, imdb_id):
+        log("MovieLookup: Getting IMDB Id from TMDB Id %s" % imdb_id)
+
+        # Use the same request for tmdb as imdb
+        url = "%s/%s/%s?api_key=%s" % (self.tmdb_url_prefix, 'movie', imdb_id, self.api_key)
+        json_details = self._makeCall(url)
+
+        tmdb_id = None
+        if json_details not in [None, ""]:
+            json_response = json.loads(json_details)
+
+            # The results of the search come back as an array of entries
+            if 'id' in json_response:
+                tmdb_id = json_response.get('id', None)
+                if tmdb_id not in [None, ""]:
+                    tmdb_id = str(tmdb_id)
+                    log("MovieLookup: Found tmdb Id %s from imdb" % str(tmdb_id))
+            else:
+                log("MovieLookup: No results returned for tmdb search for tmdb from imdb id")
+
+        return tmdb_id
+
     # Get the ID from imdb
     def getIMDB_id(self, name, year=''):
         clean_name = urllib2.quote(name)
