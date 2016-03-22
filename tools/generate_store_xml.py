@@ -44,16 +44,27 @@ class InfoXml():
         self.tmdb_url_prefix = 'http://api.themoviedb.org/3'
         self.imdb_url_prefix = 'http://www.omdbapi.com/'
 
+        # HACK, HACK, HACK
+        self.numTvShowsWithNoInfo = 0
+
     def generateTvShowInfo(self, showId, dir):
         infoFilename = os.path.join(dir, 'info.xml')
 
         # Check if the XML file already exists
-        # TODO, read the data out of the file
         if os.path.isfile(infoFilename):
             return self._readInfoXml(infoFilename)
+        else:
+            self.numTvShowsWithNoInfo = self.numTvShowsWithNoInfo + 1
+            # HACK HACK HACK
+            return (None, None, None)
 
         # Get the information for this TV Show
         (tvdbId, imdbId, name) = self.getTVDB_info(showId)
+
+        # Check if we have an imdb id, but not a name
+        if (imdbId not in [None, ""]) and (name in [None, ""]):
+            # Now try searching imdb for the tv show
+            (name, year) = self.getIMDB_name_by_id(imdbId)
 
         # Check to see if a match was found
         if (tvdbId not in [None, ""]) or (imdbId not in [None, ""]) or (name not in [None, ""]):
@@ -310,10 +321,7 @@ class InfoXml():
         if tvdbElm not in [None, ""]:
             tvdb = tvdbElm.text
 
-        if (imdb in [None, ""]) or (name in [None, ""]):
-            print "Incomplete info file %s" % infoFilename
-            sys.exit(2)
-
+        # Make sure the data has wither a tv or movie Id
         if tmdb not in [None, ""]:
             return (tmdb, imdb, name)
         elif tvdb not in [None, ""]:
@@ -362,12 +370,16 @@ if __name__ == '__main__':
             print "No themes in directory: %s" % themesDir
             continue
 
+        # Generate the XML for the given TV Show
+        (tvdbId, imdbId, name) = infoXml.generateTvShowInfo(tvShowId, themesDir)
+
         # Create an element for this tv show
         tvshowElem = ET.SubElement(tvshowsElem, 'tvshow')
         tvshowElem.attrib['id'] = tvShowId
-
-        # Generate the XML for the given TV Show
-        infoXml.generateTvShowInfo(tvShowId, themesDir)
+        if tvdbId not in [None, ""]:
+            tvshowElem.attrib['tvdb'] = tvdbId
+        if imdbId not in [None, ""]:
+            tvshowElem.attrib['imdb'] = imdbId
 
         numThemes = 0
         # Add each theme to the element
@@ -384,7 +396,7 @@ if __name__ == '__main__':
             themeElem = None
             # Add the theme to the list
             if isVideoFile(theme):
-#                print "Video Theme for %s is %s" % (themesDir, theme)
+                # print "Video Theme for %s is %s" % (themesDir, theme)
                 themeElem = ET.SubElement(tvshowElem, 'videotheme')
             else:
                 numThemes = numThemes + 1
@@ -454,7 +466,7 @@ if __name__ == '__main__':
                 if fileSize > 104857600:
                     print "Themes file %s/%s is very large" % (themesDir, theme)
                     continue
-#                print "Video Theme for %s is %s" % (themesDir, theme)
+                # print "Video Theme for %s is %s" % (themesDir, theme)
                 themeElem = ET.SubElement(movieElem, 'videotheme')
             else:
                 if fileSize > 20971520:
@@ -474,6 +486,8 @@ if __name__ == '__main__':
                 os.system(windowsDir)
                 openWindows = openWindows + 1
 
+    # HACK, HACK, HACK
+    print "Number of TV Shows Without Info = %d" % infoXml.numTvShowsWithNoInfo
     del infoXml
 
     # Now create the file for the Store
