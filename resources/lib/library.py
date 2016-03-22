@@ -8,7 +8,7 @@ import xbmcaddon
 import xbmcgui
 
 from settings import log
-from idLookup import idLookup
+from idLookup import IdLookup
 
 __addon__ = xbmcaddon.Addon(id='script.tvtunes')
 __addonid__ = __addon__.getAddonInfo('id')
@@ -136,7 +136,9 @@ class ThemeLibrary():
             return None
 
         # Check the details that have been passed in for a match against the Database
-        checkedIdDetails = idLookup(title, year, isTvShow)
+        idLookup = IdLookup()
+        checkedIdDetails = idLookup.getIds(title, year, isTvShow)
+        del idLookup
 
         log("ThemeLibrary: Searching for theme with id: %s" % str(checkedIdDetails))
 

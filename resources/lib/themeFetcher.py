@@ -29,7 +29,7 @@ from settings import dir_exists
 
 from library import ThemeLibrary
 import soundcloud
-from idLookup import idLookup
+from idLookup import IdLookup
 
 
 #################################
@@ -1381,7 +1381,9 @@ class PlexLibraryListing(DefaultListing):
             progressDialog = ProgressDialog(name)
 
         # Check the details that have been passed in for a match against the Database
-        idDetails = idLookup(name, str(year), True)
+        idLookup = IdLookup()
+        idDetails = idLookup.getIds(name, str(year), True)
+        del idLookup
         log("PlexLibraryListing: show details %s" % str(idDetails))
 
         progressDialog.updateProgress(25)

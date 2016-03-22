@@ -4,13 +4,11 @@
 # 2) Remove all tags etc from the mp3 file
 # 3) Generate Replay Gain for each file
 #
-import sys
 import os
 import re
 import urllib2
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
-
 import json
 
 

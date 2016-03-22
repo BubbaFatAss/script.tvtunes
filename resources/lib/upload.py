@@ -25,7 +25,7 @@ from settings import log
 from settings import dir_exists
 
 from themeFinder import ThemeFiles
-from idLookup import idLookup
+from idLookup import IdLookup
 
 
 # Class to handle the uploading of themes
@@ -250,7 +250,9 @@ class UploadThemes():
                 if target == 'tvshows':
                     isTvShow = True
 
-                checkedIdDetails = idLookup(videoItem['title'], item['year'], isTvShow)
+                idLookup = IdLookup()
+                checkedIdDetails = idLookup.getIds(videoItem['title'], item['year'], isTvShow)
+                del idLookup
                 checkedId = checkedIdDetails['imdb']
 
                 # Not sure why there would be a video in the library without an ID, but check just in case
