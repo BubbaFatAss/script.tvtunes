@@ -19,10 +19,9 @@ class ThemeLibrary():
     def __init__(self):
         self.baseurl = None
         self.libraryContentsFile = None
-        self.libraryTvShowAudioContents = {}
-        self.libraryMovieAudioContents = {}
-        self.libraryTvShowVideoContents = {}
-        self.libraryMovieVideoContents = {}
+
+        self.tvShowList = []
+        self.movieList = []
 
         # Read the registration file for the library details
         try:
@@ -61,6 +60,10 @@ class ThemeLibrary():
         if self.libraryContentsFile in [None, ""]:
             return False
 
+        # Check if the file has already been loaded
+        if (len(self.tvShowList) > 0) or (len(self.movieList) > 0):
+            return True
+
         # Need to get the contents list
         try:
             # Get the contents list from the library
@@ -85,44 +88,53 @@ class ThemeLibrary():
             tvshowsElm = libraryContentsET.find('tvshows')
             if tvshowsElm is not None:
                 for elemItem in tvshowsElm.findall('tvshow'):
-                    tvShowId = elemItem.attrib['id']
+                    themeDetails = {'id': None, 'audio': None, 'video': None, 'tvdb': None, 'imdb': None}
+
+                    themeDetails['id'] = elemItem.attrib.get('id', None)
+                    themeDetails['tvdb'] = elemItem.attrib.get('tvdb', None)
+                    themeDetails['imdb'] = elemItem.attrib.get('imdb', None)
+
                     # Now get the file name for the theme
                     themeElem = elemItem.find('audiotheme')
                     if themeElem is not None:
                         # Check if there is a size attribute
-                        fileSize = themeElem.attrib['size']
-                        details = {'file': themeElem.text, 'size': fileSize}
-                        self.libraryTvShowAudioContents[tvShowId] = details
+                        fileSize = themeElem.attrib.get('size', None)
+                        themeDetails['audio'] = {'file': themeElem.text, 'size': fileSize}
 
                     # Now get the file name for the video theme
                     vidThemeElem = elemItem.find('videotheme')
                     if vidThemeElem is not None:
                         # Check if there is a size attribute
-                        fileSize = vidThemeElem.attrib['size']
-                        details = {'file': vidThemeElem.text, 'size': fileSize}
-                        self.libraryTvShowVideoContents[tvShowId] = details
+                        fileSize = vidThemeElem.get('size', None)
+                        themeDetails['video'] = {'file': vidThemeElem.text, 'size': fileSize}
+
+                    self.tvShowList.append(themeDetails)
 
             # Get the movies that are in the library
             movieElm = libraryContentsET.find('movies')
             if movieElm is not None:
                 for elemItem in movieElm.findall('movie'):
-                    movieId = elemItem.attrib['id']
+                    themeDetails = {'id': None, 'audio': None, 'video': None, 'tmdb': None, 'imdb': None}
+
+                    themeDetails['id'] = elemItem.attrib.get('id', None)
+                    themeDetails['tmdb'] = elemItem.attrib.get('tmdb', None)
+                    themeDetails['imdb'] = elemItem.attrib.get('imdb', None)
+
                     # Now get the file name for the theme
                     themeElem = elemItem.find('audiotheme')
                     if themeElem is not None:
                         # Check if there is a size attribute
-                        fileSize = themeElem.attrib['size']
-                        details = {'file': themeElem.text, 'size': fileSize}
-                        self.libraryMovieAudioContents[movieId] = details
+                        fileSize = themeElem.attrib.get('size', None)
+                        themeDetails['audio'] = {'file': themeElem.text, 'size': fileSize}
 
                     # Now get the file name for the video theme
                     vidThemeElem = elemItem.find('videotheme')
                     if vidThemeElem is not None:
                         # Check if there is a size attribute
-                        fileSize = vidThemeElem.attrib['size']
-                        details = {'file': vidThemeElem.text, 'size': fileSize}
-                        self.libraryMovieVideoContents[movieId] = details
+                        fileSize = vidThemeElem.get('size', None)
+                        themeDetails['video'] = {'file': vidThemeElem.text, 'size': fileSize}
 
+                    self.movieList.append(themeDetails)
         except:
             log("ThemeLibrary: Failed to read in library contents: %s" % traceback.format_exc(), xbmc.LOGERROR)
             return False
@@ -136,80 +148,75 @@ class ThemeLibrary():
             return None
 
         # Check the details that have been passed in for a match against the Database
+        # This will try and match the name
         idLookup = IdLookup()
         checkedIdDetails = idLookup.getIds(title, year, isTvShow)
         del idLookup
 
         log("ThemeLibrary: Searching for theme with id: %s" % str(checkedIdDetails))
 
-        videoId = checkedIdDetails['imdb']
-        if isTvShow:
-            videoId = checkedIdDetails['tvdb']
+        # Get together all the Ids we are going to search for
+        ids = []
+        if imdb not in [None, ""]:
+            ids.append(imdb)
+        if checkedIdDetails['imdb'] not in [None, ""]:
+            ids.append(checkedIdDetails['imdb'])
+        if checkedIdDetails['tmdb'] not in [None, ""]:
+            ids.append(checkedIdDetails['tmdb'])
+        if checkedIdDetails['tvdb'] not in [None, ""]:
+            ids.append(checkedIdDetails['tvdb'])
+        # Make sure the  items are unique
+        ids = list(set(ids))
 
         themeUrls = {}
-        if videoId not in ["", None]:
-            if includeAudio:
-                (themeUrl, size) = self._getAudioTheme(videoId, isTvShow)
-                if themeUrl not in ["", None]:
-                    themeUrls[themeUrl] = size
-            # Only get the video theme if it is required
-            if includeVideo:
-                (vidThemeUrl, vidSize) = self._getVideoTheme(videoId, isTvShow)
-                if vidThemeUrl not in ["", None]:
-                    themeUrls[vidThemeUrl] = vidSize
-
-        if imdb not in [None, ""]:
-            if videoId != imdb:
-                log("ThemeLibrary: ID comparison, Original = %s, checked = %s" % (imdb, videoId))
-                # Also get the theme for database ID
-                if includeAudio:
-                    (themeUrl, size) = self._getAudioTheme(imdb, isTvShow)
-                    if themeUrl not in ["", None]:
-                        themeUrls[themeUrl] = size
-                # Only get the video theme if it is required
-                if includeVideo:
-                    (vidThemeUrl, vidSize) = self._getVideoTheme(imdb, isTvShow)
-                    if vidThemeUrl not in ["", None]:
-                        themeUrls[vidThemeUrl] = vidSize
+        for id in ids:
+            themeDetail = self._getThemes(id, isTvShow)
+            if themeDetail not in [None, ""]:
+                if includeAudio and (themeDetail.get('audio', None) not in [None, ""]):
+                    (themeUrl, fileSize) = self._getThemeLink(themeDetail['id'], themeDetail['audio'], isTvShow)
+                    themeUrls[themeUrl] = fileSize
+                if includeVideo and (themeDetail.get('video', None) not in [None, ""]):
+                    (themeUrl, fileSize) = self._getThemeLink(themeDetail['id'], themeDetail['video'], isTvShow)
+                    themeUrls[themeUrl] = fileSize
 
         return themeUrls
 
-    def _getAudioTheme(self, itemId, isTvShow):
-        themeUrl = None
+    # Red the theme details from the library storage
+    def _getThemes(self, itemId, isTvShow):
+        if itemId in [None, ""]:
+            return None
+
         details = None
+        # Check if it is in the library
+        if isTvShow:
+            log("ThemeLibrary: Getting TV Show theme for %s" % itemId)
+            for tvTheme in self.tvShowList:
+                if (tvTheme['id'] == itemId) or (tvTheme['imdb'] == itemId) or (tvTheme['tvdb'] == itemId):
+                    details = tvTheme
+                    # Only need one entry
+                    break
+        else:
+            log("ThemeLibrary: Getting Movie theme for %s" % itemId)
+            for movieTheme in self.movieList:
+                if (movieTheme['id'] == itemId) or (movieTheme['imdb'] == itemId) or (movieTheme['tmdb'] == itemId):
+                    details = movieTheme
+                    # Only need one entry
+                    break
+
+        return details
+
+    # Get the link and file size for the theme
+    def _getThemeLink(self, itemId, detail, isTvShow):
+        themeUrl = None
         fileSize = None
         subDir = 'movies'
         # Check if it is in the library
         if isTvShow:
             subDir = 'tvshows'
-            log("ThemeLibrary: Getting TV Show audio theme for %s" % itemId)
-            details = self.libraryTvShowAudioContents.get(itemId, None)
-        else:
-            log("ThemeLibrary: Getting Movie audio theme for %s" % itemId)
-            details = self.libraryMovieAudioContents.get(itemId, None)
 
         # Check if this theme exists
-        if details not in [None, ""]:
-            themeUrl = "%s%s/%s/%s" % (self.baseurl, subDir, itemId, details['file'])
-            fileSize = details['size']
-        return (themeUrl, fileSize)
+        if detail not in [None, ""]:
+            themeUrl = "%s%s/%s/%s" % (self.baseurl, subDir, itemId, detail['file'])
+            fileSize = detail['size']
 
-    def _getVideoTheme(self, itemId, isTvShow):
-        themeUrl = None
-        details = None
-        fileSize = None
-        subDir = 'movies'
-        # Check if it is in the library
-        if isTvShow:
-            subDir = 'tvshows'
-            log("ThemeLibrary: Getting TV Show video theme for %s" % itemId)
-            details = self.libraryTvShowVideoContents.get(itemId, None)
-        else:
-            log("ThemeLibrary: Getting Movie video theme for %s" % itemId)
-            details = self.libraryMovieVideoContents.get(itemId, None)
-
-        # Check if this theme exists
-        if details not in [None, ""]:
-            themeUrl = "%s%s/%s/%s" % (self.baseurl, subDir, itemId, details['file'])
-            fileSize = details['size']
         return (themeUrl, fileSize)
