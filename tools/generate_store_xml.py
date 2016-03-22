@@ -4,12 +4,14 @@
 # 2) Remove all tags etc from the mp3 file
 # 3) Generate Replay Gain for each file
 #
+import sys
 import os
 import re
 import urllib2
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 import json
+import traceback
 
 
 def isVideoFile(filename):
@@ -40,6 +42,7 @@ class InfoXml():
         self.lang = 'en'
         self.tmdb_api_key = tmdb_api_key
         self.tmdb_url_prefix = 'http://api.themoviedb.org/3'
+        self.imdb_url_prefix = 'http://www.omdbapi.com/'
 
     def generateTvShowInfo(self, showId, dir):
         infoFilename = os.path.join(dir, 'info.xml')
@@ -47,7 +50,7 @@ class InfoXml():
         # Check if the XML file already exists
         # TODO, read the data out of the file
         if os.path.isfile(infoFilename):
-            return
+            return self._readInfoXml(infoFilename)
 
         # Get the information for this TV Show
         (tvdbId, imdbId, name) = self.getTVDB_info(showId)
@@ -69,9 +72,19 @@ class InfoXml():
             # Now create the file for the Store
             fileContent = prettify(root)
 
-            recordFile = open(infoFilename, 'w')
-            recordFile.write(fileContent)
-            recordFile.close()
+            try:
+                recordFile = open(infoFilename, 'w')
+                recordFile.write(fileContent.encode('utf-8'))
+                recordFile.close()
+            except:
+                print "Error: Failed to write %s" % showId
+                print traceback.format_exc()
+                if os.path.isfile(infoFilename):
+                    os.remove(infoFilename)
+                sys.exit(2)
+
+        else:
+            print "No data found for TV Show %s" % showId
 
         return (tvdbId, imdbId, name)
 
@@ -81,13 +94,23 @@ class InfoXml():
         # Check if the XML file already exists
         # TODO, read the data out of the file
         if os.path.isfile(infoFilename):
-            return
+            return self._readInfoXml(infoFilename)
 
         # Get the information for this TV Show
         (tmdbId, imdbId, name) = self.getTMDB_info(movieId)
 
+        if (tmdbId in [None, ""]) or (imdbId in [None, ""]) or (name in [None, ""]):
+            # Now try searching imdb for the movie
+            (name, year) = self.getIMDB_name_by_id(movieId)
+
+            if name not in [None, ""]:
+                # Found the name, so the imdb number must be OK
+                imdbId = movieId
+                # Now do a lookup using the name back on TMDB
+                tmdbId = self.getTMDB_by_name(name, year)
+
         # Check to see if a match was found
-        if (imdbId not in [None, ""]) or (imdbId not in [None, ""]) or (name not in [None, ""]):
+        if (tmdbId not in [None, ""]) and (imdbId not in [None, ""]) and (name not in [None, ""]):
             # Construct the XML handler
             root = ET.Element('info')
             if tmdbId not in [None, ""]:
@@ -103,9 +126,18 @@ class InfoXml():
             # Now create the file for the Store
             fileContent = prettify(root)
 
-            recordFile = open(infoFilename, 'w')
-            recordFile.write(fileContent)
-            recordFile.close()
+            try:
+                recordFile = open(infoFilename, 'w')
+                recordFile.write(fileContent.encode('utf-8'))
+                recordFile.close()
+            except:
+                print "Error: Failed to write %s" % movieId
+                print traceback.format_exc()
+                if os.path.isfile(infoFilename):
+                    os.remove(infoFilename)
+                sys.exit(2)
+        else:
+            print "No data found for Movie %s" % movieId
 
         return (tmdbId, imdbId, name)
 
@@ -141,8 +173,6 @@ class InfoXml():
                             nameElem = selectedSeries.find('SeriesName')
                             if nameElem not in [None, ""]:
                                 name = nameElem.text
-        else:
-            print "Unable to find %s" % id
 
         return (tvdbId, imdbId, name)
 
@@ -169,10 +199,61 @@ class InfoXml():
 
             if 'title' in json_response:
                 name = json_response.get('title', None)
-                if name not in [None, ""]:
-                    name = str(name)
 
         return (tmdb_id, imdb_id, name)
+
+    # Get the ID from imdb
+    def getIMDB_name_by_id(self, id):
+        url = "%s?i=%s" % (self.imdb_url_prefix, id)
+        json_details = self._makeCall(url)
+
+        name = None
+        year = None
+        if json_details not in [None, ""]:
+            json_response = json.loads(json_details)
+
+            if json_response.get('Response', 'False') == 'True':
+                if 'imdbID' in json_response:
+                    imdb_id = json_response.get('imdbID', None)
+                    if imdb_id not in [None, ""]:
+                        # Make sure we actually got the value we asked for
+                        if str(imdb_id) == id:
+                            if 'Title' in json_response:
+                                name = json_response.get('Title', None)
+                            if 'Year' in json_response:
+                                year = json_response.get('Year', None)
+        return (name, year)
+
+    def getTMDB_by_name(self, name, year=''):
+        clean_name = urllib2.quote(self.__clean_name(name))
+        url = "%s/%s?language=%s&api_key=%s&query=%s" % (self.tmdb_url_prefix, 'search/movie', self.lang, self.tmdb_api_key, clean_name)
+        json_details = self._makeCall(url)
+
+        id = None
+        if json_details not in [None, ""]:
+            json_response = json.loads(json_details)
+
+            # The results of the search come back as an array of entries
+            if 'results' in json_response:
+                no_year_results = []
+                year_match_results = []
+                for result in json_response['results']:
+                    id = result.get('id', None)
+                    if id not in [None, ""]:
+                        id = str(id)
+                        release_date = result.get('release_date', '')
+                        if (year not in [None, '']) and (year in release_date):
+                            year_match_results.append(id)
+                        else:
+                            no_year_results.append(id)
+
+                if len(year_match_results) > 0:
+                    if len(year_match_results) == 1:
+                        id = year_match_results[0]
+                elif len(no_year_results) == 1:
+                    id = no_year_results[0]
+
+        return id
 
     # Perform the API call
     def _makeCall(self, url):
@@ -191,8 +272,55 @@ class InfoXml():
 
         return resp_details
 
+    def __clean_name(self, mystring):
+        newstring = ''
+        for word in mystring.split(' '):
+            if word.isalnum() is False:
+                w = ""
+                for i in range(len(word)):
+                    if(word[i].isalnum()):
+                        w += word[i]
+                word = w
+            newstring += ' ' + word
+        return newstring.strip().encode('utf-8')
+
     def _readInfoXml(self, infoFilename):
-        pass
+        # Create an XML parser
+        infoXmlTree = ET.ElementTree(file=infoFilename)
+        infoXmlRoot = infoXmlTree.getroot()
+
+        tmdb = None
+        imdb = None
+        name = None
+        tvdb = None
+
+        tmdbElm = infoXmlRoot.find('tmdb')
+        if tmdbElm not in [None, ""]:
+            tmdb = tmdbElm.text
+
+        imdbElm = infoXmlRoot.find('imdb')
+        if imdbElm not in [None, ""]:
+            imdb = imdbElm.text
+
+        nameElm = infoXmlRoot.find('name')
+        if nameElm not in [None, ""]:
+            name = nameElm.text
+
+        tvdbElm = infoXmlRoot.find('tvdb')
+        if tvdbElm not in [None, ""]:
+            tvdb = tvdbElm.text
+
+        if (imdb in [None, ""]) or (name in [None, ""]):
+            print "Incomplete info file %s" % infoFilename
+            sys.exit(2)
+
+        if tmdb not in [None, ""]:
+            return (tmdb, imdb, name)
+        elif tvdb not in [None, ""]:
+            return (tvdb, imdb, name)
+        else:
+            print "Incomplete info file %s" % infoFilename
+            sys.exit(2)
 
 
 ##################################
@@ -256,7 +384,7 @@ if __name__ == '__main__':
             themeElem = None
             # Add the theme to the list
             if isVideoFile(theme):
-                print "Video Theme for %s is %s" % (themesDir, theme)
+#                print "Video Theme for %s is %s" % (themesDir, theme)
                 themeElem = ET.SubElement(tvshowElem, 'videotheme')
             else:
                 numThemes = numThemes + 1
@@ -294,12 +422,19 @@ if __name__ == '__main__':
             print "No themes in directory: %s" % themesDir
             continue
 
+        # Generate the XML for the given TV Show
+        (tmdbId, imdbId, name) = infoXml.generateMovieInfo(movieId, themesDir)
+
+        if (tmdbId in [None, ""]) or (imdbId in [None, ""]):
+            print "Skipping %s as no ID information" % themesDir
+            continue
+
         # Create an element for this tv show
         movieElem = ET.SubElement(moviesElem, 'movie')
+        # The id is actually the name of the directory
         movieElem.attrib['id'] = movieId
-
-        # Generate the XML for the given TV Show
-        infoXml.generateMovieInfo(movieId, themesDir)
+        movieElem.attrib['tmdb'] = tmdbId
+        movieElem.attrib['imdb'] = imdbId
 
         numThemes = 0
         # Add each theme to the element
@@ -319,7 +454,7 @@ if __name__ == '__main__':
                 if fileSize > 104857600:
                     print "Themes file %s/%s is very large" % (themesDir, theme)
                     continue
-                print "Video Theme for %s is %s" % (themesDir, theme)
+#                print "Video Theme for %s is %s" % (themesDir, theme)
                 themeElem = ET.SubElement(movieElem, 'videotheme')
             else:
                 if fileSize > 20971520:

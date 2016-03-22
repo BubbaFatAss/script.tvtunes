@@ -40,7 +40,7 @@ def collectItems(rootDir, userlist, cleanLib=False):
                     os.remove(fullThemePath)
                 continue
 
-            # Make sure not too small
+            # Make sure not too large
             if fileSize > 104857600:
                 print "Themes file %s/%s is very large" % (themesDir, theme)
                 if cleanLib:
