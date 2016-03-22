@@ -73,6 +73,8 @@ class InfoXml():
             recordFile.write(fileContent)
             recordFile.close()
 
+        return (tvdbId, imdbId, name)
+
     def generateMovieInfo(self, movieId, dir):
         infoFilename = os.path.join(dir, 'info.xml')
 
@@ -104,6 +106,8 @@ class InfoXml():
             recordFile = open(infoFilename, 'w')
             recordFile.write(fileContent)
             recordFile.close()
+
+        return (tmdbId, imdbId, name)
 
     # Get the imdb id from the tvdb id
     def getTVDB_info(self, id):
@@ -186,6 +190,9 @@ class InfoXml():
             pass
 
         return resp_details
+
+    def _readInfoXml(self, infoFilename):
+        pass
 
 
 ##################################
