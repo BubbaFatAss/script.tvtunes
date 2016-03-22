@@ -15,6 +15,11 @@ def collectItems(rootDir, userlist, cleanLib=False):
         # Get the contents of the directory
         themesDir = "%s/%s" % (rootDir, mediaId)
         themes = os.listdir(themesDir)
+
+        # Remove any info.xml files
+        if 'info.xml' in themes:
+            themes.remove('info.xml')
+
         # Make sure the themes are not empty
         if len(themes) < 1:
             print "No themes in directory: %s" % themesDir

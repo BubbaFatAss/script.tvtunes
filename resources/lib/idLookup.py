@@ -36,16 +36,18 @@ def idLookup(name, year='', isTvShow=None):
         # Check if we have the tmdb id, if we do, then we need to also
         # get the imdb_id
         if idDetails['tmdb'] not in [None, ""]:
-            idDetails['imdb'] = movieLookup.getTMDB_imdb_id(idDetails['tmdb'])
+            (tmdb_id, imdb_id) = movieLookup.getTMDB_ids(idDetails['tmdb'])
+            if imdb_id not in [None, ""]:
+                idDetails['imdb'] = imdb_id
 
         # Check if we already have the imdb_id, if not, do another lookup
         if idDetails['imdb'] in [None, ""]:
-            idDetails['imdb'] = movieLookup.getIMDB_id(name, str(year))
+            idDetails['imdb'] = movieLookup.getIMDB_id_by_name(name, str(year))
 
             # Check to see if a match was found
             if (idDetails['imdb'] in [None, ""]) and (year not in [None, "", "0"]):
                 # No match was found, so try without the year
-                idDetails['imdb'] = movieLookup.getIMDB_id(name)
+                idDetails['imdb'] = movieLookup.getIMDB_id_by_name(name)
 
         del movieLookup
     else:
@@ -104,37 +106,15 @@ class MovieLookup():
 
     # Need to make a different call to get the IMDB, can not go straight from
     # name to imdb Id
-    def getTMDB_imdb_id(self, tmdb_id):
-        log("MovieLookup: Getting IMDB Id from TMDB Id %s" % tmdb_id)
-
-        url = "%s/%s/%s?api_key=%s" % (self.tmdb_url_prefix, 'movie', tmdb_id, self.api_key)
-        json_details = self._makeCall(url)
-
-        imdb_id = None
-        if json_details not in [None, ""]:
-            json_response = json.loads(json_details)
-
-            # The results of the search come back as an array of entries
-            if 'imdb_id' in json_response:
-                imdb_id = json_response.get('imdb_id', None)
-                if imdb_id not in [None, ""]:
-                    imdb_id = str(imdb_id)
-                    log("MovieLookup: Found imdb Id %s from tmdb" % str(imdb_id))
-            else:
-                log("MovieLookup: No results returned for tmdb search for imdb id")
-
-        return imdb_id
-
-    # Need to make a different call to get the IMDB, can not go straight from
-    # name to imdb Id
-    def getTMDB_id_from_imdb_id(self, imdb_id):
-        log("MovieLookup: Getting IMDB Id from TMDB Id %s" % imdb_id)
+    def getTMDB_ids(self, id):
+        log("MovieLookup: Getting Ids from %s" % id)
 
         # Use the same request for tmdb as imdb
-        url = "%s/%s/%s?api_key=%s" % (self.tmdb_url_prefix, 'movie', imdb_id, self.api_key)
+        url = "%s/%s/%s?api_key=%s" % (self.tmdb_url_prefix, 'movie', id, self.api_key)
         json_details = self._makeCall(url)
 
         tmdb_id = None
+        imdb_id = None
         if json_details not in [None, ""]:
             json_response = json.loads(json_details)
 
@@ -143,14 +123,22 @@ class MovieLookup():
                 tmdb_id = json_response.get('id', None)
                 if tmdb_id not in [None, ""]:
                     tmdb_id = str(tmdb_id)
-                    log("MovieLookup: Found tmdb Id %s from imdb" % str(tmdb_id))
+                    log("MovieLookup: Found tmdb Id %s from id" % str(tmdb_id))
             else:
                 log("MovieLookup: No results returned for tmdb search for tmdb from imdb id")
 
-        return tmdb_id
+            if 'imdb_id' in json_response:
+                imdb_id = json_response.get('imdb_id', None)
+                if imdb_id not in [None, ""]:
+                    imdb_id = str(imdb_id)
+                    log("MovieLookup: Found imdb Id %s from id" % str(imdb_id))
+            else:
+                log("MovieLookup: No results returned for tmdb search for imdb id")
+
+        return (tmdb_id, imdb_id)
 
     # Get the ID from imdb
-    def getIMDB_id(self, name, year=''):
+    def getIMDB_id_by_name(self, name, year=''):
         clean_name = urllib2.quote(name)
         query = '?t=%s' % clean_name
 
@@ -200,7 +188,6 @@ class TvShowLookup():
         self.api_key = api_key
         self.tvdb_url_prefix = 'http://thetvdb.com/api'
         self.lang = xbmc.getLanguage(xbmc.ISO_639_1)
-        self.mirror_url = "http://thetvdb.com"
 
     def getShowIds(self, name, year=''):
         searchName = name
@@ -261,9 +248,9 @@ class TvShowLookup():
         return (tvdbId, imdbId)
 
     # Get the imdb id from the tvdb id
-    def getImdbId_from_tvdbId(self, imdbId):
+    def getImdbId_from_tvdbId(self, tvdbId):
         # http://thetvdb.com/api/2B8557E0CBF7D720/series/75565/en.xml
-        url = '%s/%s/series/%s/en.xml' % (self.tvdb_url_prefix, self.api_key, imdbId)
+        url = '%s/%s/series/%s/en.xml' % (self.tvdb_url_prefix, self.api_key, tvdbId)
         resp_details = self._makeCall(url)
 
         imdbId = None
