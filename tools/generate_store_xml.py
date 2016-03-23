@@ -44,19 +44,12 @@ class InfoXml():
         self.tmdb_url_prefix = 'http://api.themoviedb.org/3'
         self.imdb_url_prefix = 'http://www.omdbapi.com/'
 
-        # HACK, HACK, HACK
-        self.numTvShowsWithNoInfo = 0
-
     def generateTvShowInfo(self, showId, dir):
         infoFilename = os.path.join(dir, 'info.xml')
 
         # Check if the XML file already exists
         if os.path.isfile(infoFilename):
             return self._readInfoXml(infoFilename)
-        else:
-            self.numTvShowsWithNoInfo = self.numTvShowsWithNoInfo + 1
-            # HACK HACK HACK
-            return (None, None, None)
 
         # Get the information for this TV Show
         (tvdbId, imdbId, name) = self.getTVDB_info(showId)
@@ -96,6 +89,9 @@ class InfoXml():
 
         else:
             print "No data found for TV Show %s" % showId
+            # for delFile in os.listdir(dir):
+            #     os.remove(os.path.join(dir, delFile))
+            # os.rmdir(dir)
 
         return (tvdbId, imdbId, name)
 
@@ -103,7 +99,6 @@ class InfoXml():
         infoFilename = os.path.join(dir, 'info.xml')
 
         # Check if the XML file already exists
-        # TODO, read the data out of the file
         if os.path.isfile(infoFilename):
             return self._readInfoXml(infoFilename)
 
@@ -379,6 +374,10 @@ if __name__ == '__main__':
         # Generate the XML for the given TV Show
         (tvdbId, imdbId, name) = infoXml.generateTvShowInfo(tvShowId, themesDir)
 
+        if tvdbId in [None, ""]:
+            print "Skipping %s as no ID information" % themesDir
+            continue
+
         # Create an element for this tv show
         tvshowElem = ET.SubElement(tvshowsElem, 'tvshow')
         tvshowElem.attrib['id'] = tvShowId
@@ -492,8 +491,6 @@ if __name__ == '__main__':
                 os.system(windowsDir)
                 openWindows = openWindows + 1
 
-    # HACK, HACK, HACK
-    print "Number of TV Shows Without Info = %d" % infoXml.numTvShowsWithNoInfo
     del infoXml
 
     # Now create the file for the Store
