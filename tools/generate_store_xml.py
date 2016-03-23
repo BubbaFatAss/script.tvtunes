@@ -321,6 +321,12 @@ class InfoXml():
         if tvdbElm not in [None, ""]:
             tvdb = tvdbElm.text
 
+        # Check if we have an imdb value and no name, we should be able
+        # to have a name if we have an imdb value
+        if (imdb not in [None, ""]) and (name in [None, ""]):
+            print "No Name when imdb id present for %s" % infoFilename
+            sys.exit(2)
+
         # Make sure the data has wither a tv or movie Id
         if tmdb not in [None, ""]:
             return (tmdb, imdb, name)
