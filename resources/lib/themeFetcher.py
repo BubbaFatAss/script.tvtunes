@@ -9,16 +9,9 @@ import xbmcgui
 import xbmcvfs
 import traceback
 import math
-
 import urllib2
 from BeautifulSoup import BeautifulSoup
 import HTMLParser
-
-
-__addon__ = xbmcaddon.Addon(id='script.tvtunes')
-__addonid__ = __addon__.getAddonInfo('id')
-__language__ = __addon__.getLocalizedString
-__icon__ = __addon__.getAddonInfo('icon')
 
 # Import the common settings
 from settings import Settings
@@ -26,10 +19,13 @@ from settings import log
 from settings import os_path_join
 from settings import os_path_split
 from settings import dir_exists
-
 from library import ThemeLibrary
 import soundcloud
 from idLookup import IdLookup
+
+ADDON = xbmcaddon.Addon(id='script.tvtunes')
+ADDON_ID = ADDON.getAddonInfo('id')
+ICON = ADDON.getAddonInfo('icon')
 
 
 #################################
@@ -41,10 +37,10 @@ class TvTunesFetcher():
         self.includeVideo = incVideoThemes
 
         # Set up the addon directories if they do not already exist
-        if not dir_exists(xbmc.translatePath('special://profile/addon_data/%s' % __addonid__).decode("utf-8")):
-            xbmcvfs.mkdir(xbmc.translatePath('special://profile/addon_data/%s' % __addonid__).decode("utf-8"))
-        if not dir_exists(xbmc.translatePath('special://profile/addon_data/%s/temp' % __addonid__).decode("utf-8")):
-            xbmcvfs.mkdir(xbmc.translatePath('special://profile/addon_data/%s/temp' % __addonid__).decode("utf-8"))
+        if not dir_exists(xbmc.translatePath('special://profile/addon_data/%s' % ADDON_ID).decode("utf-8")):
+            xbmcvfs.mkdir(xbmc.translatePath('special://profile/addon_data/%s' % ADDON_ID).decode("utf-8"))
+        if not dir_exists(xbmc.translatePath('special://profile/addon_data/%s/temp' % ADDON_ID).decode("utf-8")):
+            xbmcvfs.mkdir(xbmc.translatePath('special://profile/addon_data/%s/temp' % ADDON_ID).decode("utf-8"))
 
         # Get the currently selected search engine
         self.searchEngine = Settings.getSearchEngine()
@@ -65,16 +61,16 @@ class TvTunesFetcher():
 
         if total > 1:
             multiVideoProgressDialog = xbmcgui.DialogProgress()
-            multiVideoProgressDialog.create(__language__(32105), __language__(32106))
+            multiVideoProgressDialog.create(ADDON.getLocalizedString(32105), ADDON.getLocalizedString(32106))
 
             count = 0
             for show in videoList:
                 count = count + 1
                 title = show.get('title', "")
-                multiVideoProgressDialog.update((count * 100) / total, ("%s %s" % (__language__(32107), title.decode("utf-8"))), ' ')
+                multiVideoProgressDialog.update((count * 100) / total, ("%s %s" % (ADDON.getLocalizedString(32107), title.decode("utf-8"))), ' ')
                 if multiVideoProgressDialog.iscanceled():
                     multiVideoProgressDialog.close()
-                    xbmcgui.Dialog().ok(__language__(32108), __language__(32109))
+                    xbmcgui.Dialog().ok(ADDON.getLocalizedString(32108), ADDON.getLocalizedString(32109))
                     break
 
                 if not self.scanSingleItem(show, showProgressDialog=False):
@@ -82,7 +78,7 @@ class TvTunesFetcher():
                     # as they did not select one for this show, but only prompt
                     # if there are more to be processed
                     if (count < total) and Settings.isAutoDownloadPromptUser():
-                        if not xbmcgui.Dialog().yesno(__language__(32105), __language__(32119)):
+                        if not xbmcgui.Dialog().yesno(ADDON.getLocalizedString(32105), ADDON.getLocalizedString(32119)):
                             break
 
             multiVideoProgressDialog.close()
@@ -161,17 +157,17 @@ class TvTunesFetcher():
         log("target directory: %s" % path)
 
         theme_file = self.getNextThemeFileName(path, fileType)
-        tmpdestination = xbmc.translatePath('special://profile/addon_data/%s/temp/%s' % (__addonid__, theme_file)).decode("utf-8")
+        tmpdestination = xbmc.translatePath('special://profile/addon_data/%s/temp/%s' % (ADDON_ID, theme_file)).decode("utf-8")
         destination = os_path_join(path, theme_file)
 
         # Create a progress dialog for the  download
         downloadProgressDialog = xbmcgui.DialogProgress()
-        downloadProgressDialog.create(__language__(32105), __language__(32106))
+        downloadProgressDialog.create(ADDON.getLocalizedString(32105), ADDON.getLocalizedString(32106))
 
         try:
             def _report_hook(count, blocksize, totalsize):
                 percent = int(float(count * blocksize * 100) / totalsize)
-                downloadProgressDialog.update(percent, __language__(32110), destination)
+                downloadProgressDialog.update(percent, ADDON.getLocalizedString(32110), destination)
             if not dir_exists(path):
                 try:
                     xbmcvfs.mkdir(path)
@@ -200,14 +196,14 @@ class TvTunesFetcher():
             # Get the selection list to display to the user
             displayList = []
             # start with the custom option to manual search
-            displayList.insert(0, __language__(32120) % "")
+            displayList.insert(0, ADDON.getLocalizedString(32120) % "")
 
             # Now add all the other entries
             for theme in theme_list:
                 displayList.append(theme.getDisplayString())
 
             # Show the list to the user
-            select = xbmcgui.Dialog().select(("%s %s" % (__language__(32112), searchname.decode("utf-8"))), displayList)
+            select = xbmcgui.Dialog().select(("%s %s" % (ADDON.getLocalizedString(32112), searchname.decode("utf-8"))), displayList)
             if select == -1:
                 log("getUserChoice: Cancelled by user")
                 return None
@@ -222,7 +218,7 @@ class TvTunesFetcher():
 
                     if isManualSearch:
                         # Manual search selected, prompt the user
-                        kb = xbmc.Keyboard(showname, __language__(32113), False)
+                        kb = xbmc.Keyboard(showname, ADDON.getLocalizedString(32113), False)
                         kb.doModal()
                         result = kb.getText()
                         if (result is None) or (result == ""):
@@ -330,25 +326,25 @@ class TvTunesFetcher():
     def promptForSearchEngine(self, showManualOptions=True):
         displayList = []
         # Add the theme library first
-        displayList.insert(0, __language__(32125))
-        displayList.insert(1, __language__(32132))
+        displayList.insert(0, ADDON.getLocalizedString(32125))
+        displayList.insert(1, ADDON.getLocalizedString(32132))
         displayList.insert(2, Settings.TELEVISION_TUNES)
         displayList.insert(3, Settings.SOUNDCLOUD)
         displayList.insert(4, Settings.GOEAR)
 
         manualSearchOffset = 5
 
-        displayList.insert(manualSearchOffset, "** %s **" % __language__(32121))
+        displayList.insert(manualSearchOffset, "** %s **" % ADDON.getLocalizedString(32121))
 
         if showManualOptions:
-            displayList.insert(manualSearchOffset + 1, "%s %s" % (Settings.TELEVISION_TUNES, __language__(32118)))
-            displayList.insert(manualSearchOffset + 2, "%s %s" % (Settings.SOUNDCLOUD, __language__(32118)))
-            displayList.insert(manualSearchOffset + 3, "%s %s" % (Settings.GOEAR, __language__(32118)))
+            displayList.insert(manualSearchOffset + 1, "%s %s" % (Settings.TELEVISION_TUNES, ADDON.getLocalizedString(32118)))
+            displayList.insert(manualSearchOffset + 2, "%s %s" % (Settings.SOUNDCLOUD, ADDON.getLocalizedString(32118)))
+            displayList.insert(manualSearchOffset + 3, "%s %s" % (Settings.GOEAR, ADDON.getLocalizedString(32118)))
 
         isManualSearch = False
 
         # Show the list to the user
-        select = xbmcgui.Dialog().select((__language__(32120) % ""), displayList)
+        select = xbmcgui.Dialog().select((ADDON.getLocalizedString(32120) % ""), displayList)
         if select == -1:
             log("promptForSearchEngine: Cancelled by user")
             return False, None
@@ -461,7 +457,7 @@ class ThemeItemDetails():
         xbmcgui.Window(10025).setProperty("PlayingBackgroundMedia", "true")
         xbmc.Player().play(theme_url, listitem)
         # Prompt the user to see if this is the theme to download
-        isSelected = xbmcgui.Dialog().yesno(__language__(32103), __language__(32114))
+        isSelected = xbmcgui.Dialog().yesno(ADDON.getLocalizedString(32103), ADDON.getLocalizedString(32114))
 
         # Now stop playing the preview theme
         if xbmc.Player().isPlayingAudio():
@@ -492,7 +488,7 @@ class ProgressDialog(DummyProgressDialog):
     def __init__(self, showTitle="", percetageProgressDivisor=1):
         self.showTitle = showTitle.decode("utf-8")
         self.progressDialog = xbmcgui.DialogProgress()
-        self.progressDialog.create(__language__(32105), __language__(32106))
+        self.progressDialog.create(ADDON.getLocalizedString(32105), ADDON.getLocalizedString(32106))
 
         # The percetageProgressDivisor is a value that allows us to pass a single progress
         # bar around and let lots of different areas think they are going 100% of the
@@ -512,7 +508,7 @@ class ProgressDialog(DummyProgressDialog):
         if percentageProgress == 100:
             self.divisorProgress = self.divisorProgress + 1
 
-        self.progressDialog.update(int(percentageProgress), ("%s %s" % (__language__(32107), self.showTitle)), ' ')
+        self.progressDialog.update(int(percentageProgress), ("%s %s" % (ADDON.getLocalizedString(32107), self.showTitle)), ' ')
 
     # Check if the user has cancelled the operation
     def isUserCancelled(self, displayNotice=True):
@@ -521,7 +517,7 @@ class ProgressDialog(DummyProgressDialog):
         if self.progressDialog.iscanceled():
             self.closeProgress()
             if displayNotice:
-                xbmcgui.Dialog().ok(__language__(32108), __language__(32109), __language__(32115))
+                xbmcgui.Dialog().ok(ADDON.getLocalizedString(32108), ADDON.getLocalizedString(32109), ADDON.getLocalizedString(32115))
             userCancelled = True
 
         return userCancelled
@@ -942,7 +938,7 @@ class TelevisionTunesListing(DefaultListing):
         except:
             log("TelevisionTunesListing: ERROR opening page %s" % url, True, xbmc.LOGERROR)
             log("TelevisionTunesListing: %s" % traceback.format_exc(), True, xbmc.LOGERROR)
-            xbmcgui.Dialog().ok(__language__(32101), __language__(32102))
+            xbmcgui.Dialog().ok(ADDON.getLocalizedString(32101), ADDON.getLocalizedString(32102))
             return None
         return doc
 
@@ -1092,7 +1088,7 @@ class GoearListing(DefaultListing):
         if requestFailed:
             # pop up a notification, and then return than none were found
             if not is404error:
-                xbmc.executebuiltin('Notification(%s, %s, %d, %s)' % (__language__(32105).encode('utf-8'), __language__(32994).encode('utf-8'), 3000, __icon__))
+                xbmc.executebuiltin('Notification(%s, %s, %d, %s)' % (ADDON.getLocalizedString(32105).encode('utf-8'), ADDON.getLocalizedString(32994).encode('utf-8'), 3000, ICON))
             return None
 
         # Load the output of the search request into Soup
@@ -1332,10 +1328,10 @@ class ThemeLibraryListing(DefaultListing):
                 title = ""
                 if Settings.isVideoFile(themeUrl):
                     videoThemeNum = videoThemeNum + 1
-                    title = "%s %d" % (__language__(32126), videoThemeNum)
+                    title = "%s %d" % (ADDON.getLocalizedString(32126), videoThemeNum)
                 else:
                     audioThemeNum = audioThemeNum + 1
-                    title = "%s %d" % (__language__(32124), audioThemeNum)
+                    title = "%s %d" % (ADDON.getLocalizedString(32124), audioThemeNum)
 
                 # Get the size of the track
                 sizeStr = self.getSizeString(themeDetails[themeUrl])
@@ -1416,7 +1412,7 @@ class PlexLibraryListing(DefaultListing):
         for themeUrl in themeUrls:
             title = ""
             themeNum = themeNum + 1
-            title = "%s %d" % (__language__(32131), themeNum)
+            title = "%s %d" % (ADDON.getLocalizedString(32131), themeNum)
 
             theme = PlexLibraryItemDetails(title, themeUrl)
             theme.setPriority(1)
@@ -1465,7 +1461,7 @@ class PlexLibraryItemDetails(ThemeItemDetails):
         # passing the URL to the player only plays a small fragment
         isSelected = False
         theme_file = 'plex_tmptheme.mp3'
-        tmpdestination = xbmc.translatePath('special://profile/addon_data/%s/temp/%s' % (__addonid__, theme_file)).decode("utf-8")
+        tmpdestination = xbmc.translatePath('special://profile/addon_data/%s/temp/%s' % (ADDON_ID, theme_file)).decode("utf-8")
 
         try:
             fp, h = urllib.urlretrieve(self.getMediaURL(), tmpdestination)

@@ -10,8 +10,7 @@ import xbmcgui
 from settings import log
 from idLookup import IdLookup
 
-__addon__ = xbmcaddon.Addon(id='script.tvtunes')
-__addonid__ = __addon__.getAddonInfo('id')
+ADDON = xbmcaddon.Addon(id='script.tvtunes')
 
 
 # Class to handle the uploading of themes
@@ -142,9 +141,10 @@ class ThemeLibrary():
         return True
 
     def getThemes(self, title, isTvShow, year, imdb, includeAudio=True, includeVideo=True):
+        log("ThemeLibrary: Getting themes for %s" % title)
         if not self.loadLibraryContents():
             # Failed to load the library content
-            xbmcgui.Dialog().ok(__addon__.getLocalizedString(32101), __addon__.getLocalizedString(32123))
+            xbmcgui.Dialog().ok(ADDON.getLocalizedString(32101), ADDON.getLocalizedString(32123))
             return None
 
         # Check the details that have been passed in for a match against the Database

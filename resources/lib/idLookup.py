@@ -55,7 +55,8 @@ class IdLookup():
                     # No match was found, so try without the year
                     idDetails['imdb'] = self.getIMDB_id_by_name(name)
         else:
-            # Don't know if it is a Movie or TV Show, so check need to check both
+            # Don't know if it is a Movie or TV Show
+            log("IdLookup: No details provided if TV Show or Movie")
             pass
 
         return idDetails
@@ -73,6 +74,7 @@ class IdLookup():
         return newstring.strip()
 
     def getTMDB_by_name(self, name, year=''):
+        log("IdLookup: Getting TMDB by name %s" % name)
         clean_name = urllib2.quote(self.__clean_name(name))
         query = 'query=%s' % clean_name
 
@@ -135,6 +137,7 @@ class IdLookup():
 
     # Get the ID from imdb
     def getIMDB_id_by_name(self, name, year=''):
+        log("IdLookup: Getting IMDB by name %s" % name)
         clean_name = urllib2.quote(name)
         query = '?t=%s' % clean_name
 
@@ -160,6 +163,7 @@ class IdLookup():
         return imdb_id
 
     def getShowIds(self, name, year=''):
+        log("IdLookup: Getting TV Show %s" % name)
         searchName = name
         try:
             if type(searchName) == type(u''):

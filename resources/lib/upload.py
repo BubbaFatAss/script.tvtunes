@@ -16,19 +16,15 @@ if sys.version_info < (2, 7):
 else:
     import json as simplejson
 
-
-__addon__ = xbmcaddon.Addon(id='script.tvtunes')
-__addonid__ = __addon__.getAddonInfo('id')
-
-
 from settings import Settings
 from settings import log
 from settings import dir_exists
-
 from themeFinder import ThemeFiles
 from idLookup import IdLookup
-
 from library import ThemeLibrary
+
+ADDON = xbmcaddon.Addon(id='script.tvtunes')
+ADDON_ID = ADDON.getAddonInfo('id')
 
 
 # Class to handle the uploading of themes
@@ -37,10 +33,10 @@ class UploadThemes(ThemeLibrary):
         ThemeLibrary.__init__(self)
 
         # Set up the addon directories if they do not already exist
-        if not dir_exists(xbmc.translatePath('special://profile/addon_data/%s' % __addonid__).decode("utf-8")):
-            xbmcvfs.mkdir(xbmc.translatePath('special://profile/addon_data/%s' % __addonid__).decode("utf-8"))
+        if not dir_exists(xbmc.translatePath('special://profile/addon_data/%s' % ADDON_ID).decode("utf-8")):
+            xbmcvfs.mkdir(xbmc.translatePath('special://profile/addon_data/%s' % ADDON_ID).decode("utf-8"))
 
-        self.tvtunesUploadRecord = xbmc.translatePath('special://profile/addon_data/%s/tvtunesUpload.xml' % __addonid__).decode("utf-8")
+        self.tvtunesUploadRecord = xbmc.translatePath('special://profile/addon_data/%s/tvtunesUpload.xml' % ADDON_ID).decode("utf-8")
 
         # Records if the entire upload system is disabled
         self.uploadsDisabled = False
