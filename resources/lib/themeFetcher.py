@@ -168,6 +168,10 @@ class TvTunesFetcher():
             def _report_hook(count, blocksize, totalsize):
                 percent = int(float(count * blocksize * 100) / totalsize)
                 downloadProgressDialog.update(percent, ADDON.getLocalizedString(32110), destination)
+                if downloadProgressDialog.iscanceled():
+                    log("Download: Operation cancelled")
+                    raise ValueError('Download Cancelled')
+
             if not dir_exists(path):
                 try:
                     xbmcvfs.mkdir(path)
@@ -181,6 +185,10 @@ class TvTunesFetcher():
             else:
                 log("download: copy failed")
             xbmcvfs.delete(tmpdestination)
+        except ValueError:
+            # This was a cancel by the user, so remove any file that may be part downloaded
+            if xbmcvfs.exists(tmpdestination):
+                xbmcvfs.delete(tmpdestination)
         except:
             log("download: Theme download Failed!!!", True, xbmc.LOGERROR)
             log("download: %s" % traceback.format_exc(), True, xbmc.LOGERROR)
