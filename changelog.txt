@@ -1,5 +1,5 @@
 v6.3.2 (2016-05-01)
-- Change line endings for official repo
+- Move Screensaver into separate Addon
 
 v6.3.1 (2016-04-26)
 - Remove unnecessary processing

@@ -10,8 +10,8 @@
 	<extension point="xbmc.python.pluginsource" library="plugin.py">
 		<provides>video</provides>
 	</extension>
-	<extension point="xbmc.ui.screensaver" library="saver.py"/>
 	<extension point="xbmc.service" library="service.py" start="login"/>
+	<extension point="xbmc.python.module" library="resources/lib" />
 	<extension point="kodi.context.item" library="contextmenu.py">
 		<item>
 			<label>32105</label>
