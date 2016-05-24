@@ -57,6 +57,38 @@ def collectItems(rootDir, userlist, cleanLib=False):
     return userlist
 
 
+# Note: The following only works on directories and assumes audio themes
+def checkExistingLibrary(rootDir, userlist, cleanLib=False):
+    # Now add each user entry into the list
+    mediaIds = []
+    if os.path.exists(rootDir):
+        mediaIds = os.listdir(rootDir)
+    else:
+        return
+
+    # Check if there is a copy of the complete library available
+    existingMediaIds = []
+    if os.path.exists(rootDir + '.existing'):
+        existingMediaIds = os.listdir(rootDir + '.existing')
+    else:
+        return
+
+    newThemes = []
+    for newMediaId in mediaIds:
+        if newMediaId in existingMediaIds:
+            print "Theme %s in existing library" % newMediaId
+            if cleanLib:
+                # Get the contents of the directory
+                themesDir = "%s/%s" % (rootDir, newMediaId)
+                for theme in os.listdir(themesDir):
+                    os.remove(themesDir + '/' + theme)
+                os.rmdir(themesDir)
+        else:
+            newThemes.append(newMediaId)
+
+    print "Total New %s Themes are %d" % (rootDir, len(newThemes))
+
+
 ##################################
 # Main of the TvTunes Service
 ##################################
@@ -90,6 +122,9 @@ if __name__ == '__main__':
                         if themesArray[j]['fullPath'] not in filesToRemove:
                             print 'Matching size for %s, path = %s' % (userId, themesArray[j]['fullPath'])
                             filesToRemove.append(themesArray[j]['fullPath'])
+
+#    checkExistingLibrary('tvshows', userlist, cleanLib)
+#    checkExistingLibrary('movies', userlist, cleanLib)
 
     # Now remove the files if required
     if cleanLib and (len(filesToRemove) > 0):
