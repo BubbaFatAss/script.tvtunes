@@ -44,6 +44,7 @@ class UploadThemes(ThemeLibrary):
         self.isAudioEnabled = True
         self.isTvShowsEnabled = True
         self.isMoviesEnabled = True
+        self.skipMultipleThemes = False
 
         self.ftpArg = None
         self.userArg = None
@@ -103,6 +104,11 @@ class UploadThemes(ThemeLibrary):
             if (isMoviesElem is None) or (isMoviesElem.text != 'true'):
                 log("UploadThemes: Uploads disabled for movies via online settings")
                 self.isMoviesEnabled = False
+
+            isSkipMultipleElem = uploadSettingET.find('skipmultiple')
+            if (isSkipMultipleElem is None) or (isSkipMultipleElem.text != 'false'):
+                log("UploadThemes: Skip Multiple enabled via online settings")
+                self.skipMultipleThemes = True
 
             # Check if a reset is required
             isRecordResetElem = uploadSettingET.find('recordreset')
@@ -245,6 +251,10 @@ class UploadThemes(ThemeLibrary):
 
                 # Make sure there are themes
                 if not themeFileMgr.hasThemes():
+                    continue
+
+                if (len(themeFileMgr.getThemeLocations()) > 1) and self.skipMultipleThemes:
+                    log("UploadThemes: Skipping multiple themes")
                     continue
 
                 # Check if any of the themes available as suitable for upload
