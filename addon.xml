@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="script.tvtunes" name="TvTunes" version="6.4.0" provider-name="robwebset">
+<addon id="script.tvtunes" name="TvTunes" version="6.4.1" provider-name="robwebset">
 	<requires>
 		<import addon="xbmc.python" version="2.20.0"/>
 		<import addon="script.module.simplejson" version="3.3.0"/>
@@ -17,11 +17,6 @@
 			<label>32105</label>
 			<visible>!IsEmpty(Window(home).Property("TvTunes_ShowContextMenu")) + [Container.Content(movies) | Container.Content(episodes) | Container.Content(tvshows) | Container.Content(seasons)]</visible>
 		</item>
-	</extension>
-	<extension point="xbmc.addon.repository" name="robwebset's Repository">
-		<info compressed="false">http://raw.github.com/robwebset/repository.robwebset/master/addons.xml</info>
-		<checksum>http://raw.github.com/robwebset/repository.robwebset/master/addons.xml.md5</checksum>
-		<datadir zip="true">http://raw.github.com/robwebset/repository.robwebset/master</datadir>
 	</extension>
 	<extension point="xbmc.addon.metadata">
 		<summary lang="bg">Сваля и възпроизвежда мелодиите от вашите филми и сериали</summary>
