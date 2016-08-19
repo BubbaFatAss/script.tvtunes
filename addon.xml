@@ -68,7 +68,7 @@
 		<disclaimer lang="en">The collection of themes is maintain as a source to consult historical archives of music themes for movies and series. Thus its only purpose is educational and referential, and it is not maintained for the purpose of reselling and re-distributing music or for profitable purpose. Its access is intended strictly in the same way people access plots, trailers, scripts or other material in connection to a film. Any donation is with the purpose of supporting TvTunes' development and towards the costs of maintaining the library. Any holder of rights to these themes who would like to have their material removed from the archives just needs to request so by contacting TvTunes's Theme Library via the Kodi forum.</disclaimer>
 		<language></language>
 		<platform>all</platform>
-		<license>GNU GENERAL PUBLIC LICENSE. Version 2, June 1991</license>
+		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
 		<forum>http://forum.kodi.tv/showthread.php?tid=214287</forum>
 		<source>https://github.com/robwebset/script.tvtunes</source>
 	</extension>
