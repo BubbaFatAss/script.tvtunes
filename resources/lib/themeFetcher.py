@@ -1235,7 +1235,8 @@ class SoundcloudListing(DefaultListing):
             tracks = []
             # scdl_client_id = '95a4c0ef214f2a4a0852142807b54b35'
             # alternative_client_id = 'a3e059563d7fd3372b49b37f00a00bcf'
-            client = soundcloud.Client(client_id='b45b1aa10f1ac2941910a7f0d10f8e28')
+            # old_client_id='b45b1aa10f1ac2941910a7f0d10f8e28'
+            client = soundcloud.Client(client_id='95a4c0ef214f2a4a0852142807b54b35')
             try:
                 # Max value for limit is 200 entries
                 # That is more than enough - tried some cases to get more back - but the
