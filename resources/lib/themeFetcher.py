@@ -179,6 +179,18 @@ class TvTunesFetcher():
                     log("download: problem with path: %s" % destination, True, xbmc.LOGERROR)
             fp, h = urllib.urlretrieve(theme_url, tmpdestination, _report_hook)
             log(h)
+            # log("Attempting to copy %s to %s" % (tmpdestination, destination))
+            # Apply auth settings if we've not got any from the video path
+            if Settings.isSmbEnabled() and not ('@' in destination):
+                if destination.startswith("smb://"):
+                    log("### Try authentication share")
+                    destination = destination.replace("smb://", "smb://%s:%s@" % (Settings.getSmbUser(), Settings.getSmbPassword()))
+                    log("### %s" % destination)
+                # Also handle the apple format
+                elif destination.startswith("afp://"):
+                    log("### Try authentication share")
+                    destination = destination.replace("afp://", "afp://%s:%s@" % (Settings.getSmbUser(), Settings.getSmbPassword()))
+                    log("### %s" % destination)
             copy = xbmcvfs.copy(tmpdestination, destination)
             if copy:
                 log("download: copy successful")
